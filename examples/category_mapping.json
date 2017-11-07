@@ -1,0 +1,16 @@
+{
+  "bevoelkerung": "soci",
+  "bildung_wissenschaft": ["educ", "tech"],
+  "geo": null,
+  "gesetze_justiz": "just",
+  "gesundheit": "heal",
+  "infrastruktur_bauen_wohnen": null,
+  "kultur_freizeit_sport_tourismus": "educ",
+  "politik_wahlen": "gove",
+  "soziales": "soci",
+  "transport_verkehr": "tran",
+  "umwelt_klima": "envi",
+  "verbraucher": null,
+  "verwaltung": "gove",
+  "wirtschaft_arbeit": "econ"
+}

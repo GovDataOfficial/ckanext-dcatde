@@ -1,0 +1,15 @@
+{
+  "agri": "Landwirtschaft, Fischerei, Forstwirtschaft und Nahrungsmittel",
+  "econ": "Wirtschaft und Finanzen",
+  "educ": "Bildung, Kultur und Sport",
+  "ener": "Energie",
+  "envi": "Umwelt",
+  "heal": "Gesundheit",
+  "intr": "Internationale Themen",
+  "just": "Justiz, Rechtssystem und öffentliche Sicherheit",
+  "soci": "Bevölkerung und Gesellschaft",
+  "gove": "Regierung und öffentlicher Sektor",
+  "regi": "Regionen und Städte",
+  "tech": "Wissenschaft und Technologie",
+  "tran": "Verkehr"
+}

@@ -1,0 +1,5 @@
+*.pyc
+*.egg-info
+/.settings
+.idea
+bmi-govdata-ckanext-dcatde.iml
