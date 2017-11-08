@@ -1,4 +1,4 @@
-# ckanext-govdatade
+# ckanext-dcatde
 
 DCAT-AP.de specific CKAN extension for providing and importing DCAT-AP.de-Profile data.
 
