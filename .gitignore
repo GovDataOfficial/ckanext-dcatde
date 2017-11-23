@@ -3,3 +3,5 @@
 /.settings
 .idea
 bmi-govdata-ckanext-dcatde.iml
+/.project
+/.pydevproject
