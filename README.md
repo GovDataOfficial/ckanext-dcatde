@@ -2,8 +2,6 @@
 
 DCAT-AP.de specific CKAN extension for providing and importing DCAT-AP.de-Profile data.
 
-**_This version of ckanex-dcatde is in BETA state. Please do not use it in production!_**
-
 ## Dependencies
 
 The CKAN-Plugin ckanext-dcatde is based on the CKAN extension [ckanext-dcat](https://github.com/ckan/ckanext-dcat).
@@ -27,6 +25,19 @@ Add the following plugins to your CKAN configuration file:
 ```ini
 ckan.plugins = dcat dcatde
 ```
+
+Add the following parameter to your CKAN configuration file to activate the additional profile for DCAT-AP.de:
+
+```ini
+ckanext.dcat.rdf.profiles = euro_dcat_ap dcatap_de
+```
+
+## Installing patch for ckanext-dcat
+We have done some modifications on the CKAN plugin ckanext-dcat ([v0.0.6](https://github.com/ckan/ckanext-dcat/releases/tag/v0.0.6)), so it is needed to patching the ckanext-dcat installation. Copy the file [profiles.py](./src/deb/patches/profiles.py) to /path/to/virtualenv/lib/python2.7/site-packages/ckanext/dcat/profiles.py and overwrite the existent file. The patch changes the default behavior in the following way:
+* Adding prefix "mailto:" to the email address in the output and removing possible prefix
+* Changed the type from Literal to UriRef for some fields
+
+It is planned that the changes are going back in the ckanext-dcat project after implementing the specific harvester for DCAT-AP.de on the import side.
 
 ## Creating dcat-ap categories as groups
 You need to add the following parameter to your CKAN configuration file:
