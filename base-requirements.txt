@@ -1,5 +1,5 @@
 ckanapi>=3,<4
-ckanext-dcat==0.0.6
+ckanext-dcat==0.0.6-patched
 requests>=2.7,<3.0
 rdflib==4.2.1
 rdflib-jsonld==0.4.0
