@@ -2,9 +2,6 @@ from setuptools import setup, find_packages
 
 version = '1.0.0'
 
-with open('base-requirements.txt') as f:
-    required = [line.strip() for line in f]
-
 setup(
     name='ckanext-dcatde',
     version=version,
@@ -21,7 +18,9 @@ setup(
     namespace_packages=['ckanext', 'ckanext.dcatde'],
     include_package_data=True,
     zip_safe=False,
-    install_requires=required,
+    install_requires=[
+        # -*- Extra requirements: -*-
+    ],
     entry_points='''
     [ckan.plugins]
     dcatde=ckanext.dcatde.plugins:DCATdePlugin
