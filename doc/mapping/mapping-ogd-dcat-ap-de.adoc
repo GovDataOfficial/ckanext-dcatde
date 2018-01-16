@@ -1,0 +1,226 @@
+= Mapping von OGD nach DCAT-AP.de
+Ralph Nörenberg (SEITENBAU GmbH) <ralph.noerenberg@seitenbau.com>
+v0.1, 2018-01-15
+
+Erklärung der Spaltenbezeichnungen
+
+* OGD/CKAN-Feldname: Name des derzeitigen Feldes
+* DCAT-AP.de-Eigenschaft: Name des Attributs in der Spezifikation
+* DCAT-AP.de/CKAN-Feldname: Name des neuen Namens im konvertierten CKAN-Datensatz
+
+Die folgende Tabelle zeigt das Mapping der Felder in CKAN und zur RDF-Repräsentation.
+
+.Tabelle Mapping der Felder von OGD nach DCAT-AP.de
+[cols="a,a,a,a"]
+|===
+|OGD/CKAN-Feldname |DCAT-AP.de/CKAN-Feldname |DCAT-AP.de-Eigenschaft |Anmerkung
+
+|extra:metadata_original_portal
+|extra:contributorID
+|dcatde:contributorID
+|Umbenennen, damit der Name dem DCAT-AP.de-Standard entspricht
+
+|extra:metadata_original_id
+|extra:alternate_identifier
+|adms:alternate_identifier
+|Umbenennen, wird mit dem neuen Namen bereits vom DCAT-Plugin verarbeitet
+
+|extra:spatial_reference.text
+|extra:geocodingText (als Liste)
+|dcatde:geocodingText
+|Umbenennen, damit der Name dem DCAT-AP.de-Standard entspricht
+
+|extra:temporal_coverage_from
+|extra:temporal_start
+|DCT:temporal / SCHEMA.startDate
+|Umbenennen, wird mit dem neuen Namen bereits vom DCAT-Plugin verarbeitet
+
+|extra:temporal_coverage_to
+|extra:temporal_end
+|DCT:temporal / SCHEMA.endDate
+|Umbenennen, wird mit dem neuen Namen bereits vom DCAT-Plugin verarbeitet
+
+3+|extra:dates
+|Die Rolle "erstellt" entfällt in DCAT-AP.de
+
+3+|* extra:dates.role = "veroeffentlicht"
+|
+
+|extra:dates.date
+|extra:issued
+|Dataset.dct:issued
+|
+
+3+|* extra:dates.role ="aktualisiert"
+|
+
+|extra:dates.date
+|extra:modified
+|Dataset.dct:modified
+|
+
+|extra:geographical_granularity
+|extra:politicalGeocodingLevelURI
+|dcatde:politicalGeocodingLevelURI
+|Umbenennen. Konvertieren in diese Werteliste: 
+http://dcat-ap.de/def/politicalGeocoding/Level
+
+In OGD Enum aus: bund, land, kommune, stadt
+Konvertierung zu: http://dcat-ap.de/def/politicalGeocoding/Level/${level}
+
+Mapping der Werte:
+bund -> federal
+land -> state
+kommune -> municipality
+stadt -> municipality
+kreis -> administrativeDistrict
+
+|extra:spatial_reference.text
+|extra:geocodingText
+|dcatde:geocodingText
+|
+
+|extra:used_datasets
+|extra:used_datasets
+extra:related_resource (wird nicht gemappt, sondern nur beim Harvesting durch ckanext-dat geschrieben)
+|dct:relation
+|
+
+|license_id
+|license_id
+resources.extra:license
+|dcat:Distribution.dct:license
+|Die Lizenz gehört laut DCAT-AP.de zur Distribution (Resource). Die CKAN-Resource unterstützt undokumentiert (aber immer noch im aktuellen GIT vorhanden) ein Extras-Feld pro Resource, in das diese Werte geschrieben werden können.
+Das konkrete Mapping ist im Konventionenhandbuch enthalten.
+
+|extra:terms_of_use.attribution_text
+|resources.extra:licenseAttributionByText
+|dcat:Distribution.dcatde:licenseAttributionByText
+|Siehe Bemerkung zu "license_id"
+
+4+|extra:contacts
+
+2+|* extra:contacts.role = "autor"
+|dct:creator
+|
+
+|extra:contacts.name
+|author
+|FOAF.name
+.2+|Die Felder werden nur überschrieben, wenn beide gefüllt sind.
+
+|extra:contacts.email
+|author_email
+|FOAF.mbox
+
+|extra:contacts.url
+|extra:author_url
+|FOAF.homepage
+|
+
+|extra:contacts.address
+|extra:author_addressee (erste Zeile eines Standard-Adressfelds)
+extra:author_details (zweite Zeile, Adresszusatz)
+extra:author_street (Straße und Hausnummer)
+extra:author_zip (PLZ)
+extra:author_city
+extra:author_country
+|
+|Die Adresse wird zwar analog zum dct:contatPoint in die entsprechenden Felder im CKAN gemappt, aber kann nicht in das RDF übernommen werden, da der Typ foaf:Agent keine Adressfelder enthält, in denen die die Informationen transportiert werden könnten.
+
+2+|* extra:contacts.role = "ansprechpartner"
+|dcat:contactPoint
+|
+
+|extra:contacts.name
+|maintainer
+|VCARD.fn
+.2+|Die Felder werden nur überschrieben, wenn beide gefüllt sind.
+
+|extra:contacts.email
+|maintainer_email
+|VCARD.hasEmail
+
+|extra:contacts.url
+|extra:maintainer_url
+|VCARD.hasURL
+|
+
+.5+|extra:contacts.address
+
+|extra:maintainer_street (Straße und Hausnummer)
+|VCARD.hasStreetAddress
+|
+
+|extra:maintainer_zip (PLZ)
+|VCARD.hasPostalCode
+|
+
+|extra:maintainer_city
+|VCARD.hasLocality
+|
+
+|extra:maintainer_country
+|VCARD.hasCountryName
+|Die Adresse wird zwar analog zum dct:contatPoint in die entsprechenden Felder im CKAN gemappt, aber kann nicht in das RDF übernommen werden, da der Typ foaf:Agent keine Adressfelder enthält, in denen die die Informationen transportiert werden könnten.
+
+|extra:maintainer_addressee (erste Zeile eines Standard-Adressfelds)
+extra:maintainer_details (zweite Zeile, Adresszusatz)
+|
+|Die Felder werden nicht in das RDF übernommen.
+
+2+|* extra:contacts.role = "veroeffentlichende_stelle"
+|dcat:publisher
+|
+
+|extra:contacts.name
+|extra:publisher_name
+|FOAF.name
+.2+|Die Felder werden nur überschrieben, wenn beide gefüllt sind.
+
+|extra:contacts.email
+|extra:publisher_email
+|FOAF.mbox
+
+|extra:contacts.url
+|extra:publisher_url
+|FOAF.homepage
+|
+
+|extra:contacts.address
+|extra:publisher_addressee (erste Zeile eines Standard-Adressfelds)
+extra:publisher_details (zweite Zeile, Adresszusatz)
+extra:publisher_street (Straße und Hausnummer)
+extra:publisher_zip (PLZ)
+extra:publisher_city
+extra:publisher_country
+|
+|Die Adresse wird zwar analog zum dct:contatPoint in die entsprechenden Felder im CKAN gemappt, aber kann nicht in das RDF übernommen werden, da der Typ foaf:Agent keine Adressfelder enthält, in denen die die Informationen transportiert werden könnten.
+
+|groups
+|groups
+extra:theme (wird nicht gemappt, sondern nur beim Harvesting durch ckanext-dat geschrieben)
+|DCAT:theme
+|Es wird vom DCAT-Plugin bereits die CKAN-Eigenschaft "theme" verwendet, da allerdings CKAN in der eigenen Verwaltung "groups" benutzt wird dieses Feld intern weiter verwendet.
+Beim Export über das Profil wird das URI-Prefix (alles vor z.B. "AGRI") hinzugefügt. Die Gruppe in CKAN hat den "name" "AGRI".
+
+|title
+|title
+|dct:title
+|Das Feld bleibt unverändert bestehen und wird von ckanext-dcat in das RDF übernommen.
+
+|notes
+|notes
+|dct:description
+|Das Feld bleibt unverändert bestehen und wird von ckanext-dcat in das RDF übernommen.
+
+|tags
+|tags
+|dcat:keyword
+|Das Feld bleibt unverändert bestehen und wird von ckanext-dcat in das RDF übernommen.
+
+|url
+|url
+|dcat:landingPage
+|Das Feld bleibt unverändert bestehen und wird von ckanext-dcat in das RDF übernommen.
+|===
