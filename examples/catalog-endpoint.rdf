@@ -199,7 +199,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
         <dct:title>Naturräume Geest und Marsch</dct:title>
         <dcat:keyword>Grundwasser</dcat:keyword>
         <dcat:landingPage rdf:resource="https://www.govdata.de/web/guest/daten/-/details/naturraume-geest-und-marsch3"/>
-        <dct:language>de</dct:language>
+        <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
         <dct:temporal>
           <dct:PeriodOfTime rdf:nodeID="Nf817a1db09ed411191a1fe130ba669e5">
             <schema:endDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2016-12-31T00:00:00</schema:endDate>
@@ -211,7 +211,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
           <vcard:Organization rdf:nodeID="N98f453ff4d0e41d7b8b108704274ce73">
             <vcard:hasStreetAddress>Beispielstraße 4</vcard:hasStreetAddress>
             <vcard:hasEmail rdf:resource="mailto:michael.schroeder@bue.hamburg.de"/>
-            <vcard:hasTelephone rdf:resource="tel:+49 40 4 28 40 - 3494"/>
+            <vcard:hasTelephone rdf:resource="tel:+494042840-3494"/>
             <vcard:hasLocality>Beispielort</vcard:hasLocality>
             <vcard:hasCountryName>DE</vcard:hasCountryName>
             <vcard:fn>Herr Dr. Michael Schröder</vcard:fn>
@@ -265,7 +265,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
         <adms:sample>Referenz auf Beispieldatenstruktur</adms:sample>
       </dcat:Dataset>
     </dcat:dataset>
-    <dct:language>de</dct:language>
+    <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
     <dcat:dataset>
       <dcat:Dataset rdf:about="http://data.example-domain.de/dataset/3ca58f59-adfd-4ae7-a277-1707973fd755">
         <dct:publisher rdf:resource="http://data.example-domain.de/organization/7346695b-8e83-45f1-92b7-48324aa4806e"/>
@@ -331,7 +331,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
     <dct:conformsTo>Eine Regel oder eine URL</dct:conformsTo>
     <dcatde:licenseAttributionByText>Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2015</dcatde:licenseAttributionByText>
     <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
-    <dct:language>de</dct:language>
+    <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
     <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">685246.0</dcat:byteSize>
     <spdx:checksum>
       <spdx:Checksum rdf:nodeID="Ne1054c62ba5b484ba526d9bc5559c96b">
@@ -413,7 +413,7 @@ doc: http://support.berlin.de/wiki/index.php/SimpleSearch_API</dct:description>
     <dcat:accessURL rdf:resource="http://daten-hamburg.de/umwelt_klima/naturraeume_geest_und_marsch/Naturraeume_Geest_und_Marsch_HH_2017-02-20.zip_abweichend"/>
     <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">222441.0</dcat:byteSize>
     <dcat:mediaType>ZIP</dcat:mediaType>
-    <dct:language>de</dct:language>
+    <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
     <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-02-27T00:00:00</dct:issued>
     <dcatde:licenseAttributionByText>Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2015</dcatde:licenseAttributionByText>
     <spdx:checksum>
