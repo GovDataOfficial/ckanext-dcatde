@@ -35,7 +35,7 @@ namespaces = {
     'locn': LOCN,
     'gsp': GSP,
     'owl': OWL,
-    
+
     # own extension
     'dcatde': DCATDE
 }
@@ -141,9 +141,14 @@ class DCATdeProfile(RDFProfile):
                 g.add((contact_point, vcard_mapping[vc_name], Literal(vcard_fld)))
 
         # Groups
-        groups = self._get_dataset_value(dataset_dict, 'groups')
-        for group in groups:
-            g.add((dataset_ref, DCAT.theme, Literal(dcat_theme_prefix + group['name'].upper())))
+        # groups = self._get_dataset_value(dataset_dict, 'groups')
+        # for group in groups:
+        #     g.add((dataset_ref, DCAT.theme, Literal(dcat_theme_prefix + group['name'].upper())))
+
+        # Categories
+        categories = self._get_dataset_value(dataset_dict, 'dcat_ap_eu_data_category')
+        for category in categories:
+            g.add((dataset_ref, DCAT.theme, Literal(dcat_theme_prefix + category)))
 
         # used_datasets
         items = [
