@@ -147,8 +147,9 @@ class DCATdeProfile(RDFProfile):
 
         # Categories
         categories = self._get_dataset_value(dataset_dict, 'dcat_ap_eu_data_category')
-        for category in categories:
-            g.add((dataset_ref, DCAT.theme, Literal(dcat_theme_prefix + category)))
+        if categories is not None:
+            for category in categories:
+                g.add((dataset_ref, DCAT.theme, Literal(dcat_theme_prefix + category)))
 
         # used_datasets
         items = [
