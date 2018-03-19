@@ -1,19 +1,15 @@
 import datetime
 import json
 
+from ckan.plugins import toolkit
+from ckanext.dcat.utils import resource_uri, publisher_uri_from_dataset_dict
 from dateutil.parser import parse as parse_date
-
+from geomet import wkt, InvalidGeoJSONException
 from pylons import config
-
-import rdflib
 from rdflib import URIRef, BNode, Literal
+import rdflib
 from rdflib.namespace import Namespace, RDF, XSD, SKOS, RDFS
 
-from geomet import wkt, InvalidGeoJSONException
-
-from ckan.plugins import toolkit
-
-from ckanext.dcat.utils import resource_uri, publisher_uri_from_dataset_dict
 
 DCT = Namespace("http://purl.org/dc/terms/")
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
@@ -125,7 +121,7 @@ class RDFProfile(object):
         object_value = self._object_value(subject, predicate)
         if object_value:
             try:
-                return int(object_value)
+                return int(float(object_value))
             except ValueError:
                 pass
         return None
@@ -472,6 +468,7 @@ class RDFProfile(object):
             self._add_date_triple(subject, predicate, value, _type)
         elif value:
             # Normal text value
+            value = self._removeWhitespacesInURIRef(_type, value)
             self.g.add((subject, predicate, _type(value)))
 
     def _add_list_triple(self, subject, predicate, value, _type=Literal):
@@ -501,7 +498,9 @@ class RDFProfile(object):
                     items = [value]
 
         for item in items:
-            self.g.add((subject, predicate, _type(item)))
+            if item:
+                item = self._removeWhitespacesInURIRef(_type, item)
+                self.g.add((subject, predicate, _type(item)))
 
     def _add_date_triple(self, subject, predicate, value, _type=Literal):
         '''
@@ -563,6 +562,16 @@ class RDFProfile(object):
             return unicode(mail_addr).replace(PREFIX_MAILTO, u'')
         else:
             return mail_addr
+
+    def _removeWhitespacesInURIRef(self, _type, value):
+        if _type == URIRef:
+            value = self._removeWhitespaces(value)
+        return value
+
+    def _removeWhitespaces(self, value):
+        if value and isinstance(value, basestring):
+            value = value.replace(' ', '')
+        return value
 
     # Public methods for profiles to implement
 
@@ -879,7 +888,7 @@ class EuropeanDCATAPProfile(RDFProfile):
 
             contact_uri = self._get_dataset_value(dataset_dict, 'contact_uri')
             if contact_uri:
-                contact_details = URIRef(contact_uri)
+                contact_details = URIRef(self._removeWhitespaces(contact_uri))
             else:
                 contact_details = BNode()
 
@@ -907,7 +916,7 @@ class EuropeanDCATAPProfile(RDFProfile):
 
             publisher_uri = publisher_uri_from_dataset_dict(dataset_dict)
             if publisher_uri:
-                publisher_details = URIRef(publisher_uri)
+                publisher_details = URIRef(self._removeWhitespaces(publisher_uri))
             else:
                 # No organization nor publisher_uri
                 publisher_details = BNode()
@@ -952,7 +961,7 @@ class EuropeanDCATAPProfile(RDFProfile):
 
         if spatial_uri or spatial_text or spatial_geom:
             if spatial_uri:
-                spatial_ref = URIRef(spatial_uri)
+                spatial_ref = URIRef(self._removeWhitespaces(spatial_uri))
             else:
                 spatial_ref = BNode()
 
@@ -980,7 +989,7 @@ class EuropeanDCATAPProfile(RDFProfile):
         # Resources
         for resource_dict in dataset_dict.get('resources', []):
 
-            distribution = URIRef(resource_uri(resource_dict))
+            distribution = URIRef(self._removeWhitespaces(resource_uri(resource_dict)))
 
             g.add((dataset_ref, DCAT.distribution, distribution))
 
@@ -1011,7 +1020,7 @@ class EuropeanDCATAPProfile(RDFProfile):
                 if "http://" in resource_dict.get('format', '') or \
                    "https://" in resource_dict.get('format', ''):
                     g.add((distribution, DCAT.mediaType,
-                           URIRef(resource_dict['format'])))
+                           URIRef(self._removeWhitespaces(resource_dict['format']))))
                 else:
                     g.add((distribution, DCAT.mediaType,
                            Literal(resource_dict['format'])))
@@ -1028,9 +1037,10 @@ class EuropeanDCATAPProfile(RDFProfile):
             url = resource_dict.get('url')
             download_url = resource_dict.get('download_url')
             if download_url:
-                g.add((distribution, DCAT.downloadURL, URIRef(download_url)))
+                self._add_triple_from_dict(resource_dict, distribution, DCAT.downloadURL, 'download_url',
+                                           _type=URIRef)
             if (url and not download_url) or (url and url != download_url):
-                g.add((distribution, DCAT.accessURL, URIRef(url)))
+                self._add_triple_from_dict(resource_dict, distribution, DCAT.accessURL, 'url', _type=URIRef)
 
             # Dates
             items = [
@@ -1060,7 +1070,7 @@ class EuropeanDCATAPProfile(RDFProfile):
                 if resource_dict.get('hash_algorithm'):
                     if resource_dict['hash_algorithm'].startswith('http'):
                         g.add((checksum, SPDX.algorithm,
-                               URIRef(resource_dict['hash_algorithm'])))
+                               URIRef(self._removeWhitespaces(resource_dict['hash_algorithm']))))
                     else:
                         g.add((checksum, SPDX.algorithm,
                                Literal(resource_dict['hash_algorithm'])))

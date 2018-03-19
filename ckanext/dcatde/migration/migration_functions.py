@@ -5,6 +5,7 @@ import inspect
 import json
 
 import ckanext.dcatde.migration.util as util
+import ckanext.dcatde.dataset_utils as ds_utils
 
 
 class MigrationFunctionExecutor(object):
@@ -85,24 +86,24 @@ class MigrationFunctions(object):
 
     def metadata_original_portal(self, dataset):
         '''metadata_original_portal -> contributorID'''
-        orig_field = util.get_extras_field(dataset, u'metadata_original_portal')
-        target_field = util.get_extras_field(dataset, u'metadata_harvested_portal')
+        orig_field = ds_utils.get_extras_field(dataset, u'metadata_original_portal')
+        target_field = ds_utils.get_extras_field(dataset, u'metadata_harvested_portal')
 
         if orig_field:
-            util.rename_extras_field(dataset, u'metadata_original_portal',
-                                     u'contributorID', True, False)
+            util.rename_extras_field_migration(dataset, u'metadata_original_portal',
+                                               u'contributorID', True, False)
             if target_field is None:
-                util.insert_new_extras_field(dataset, u'metadata_harvested_portal',
-                                             orig_field['value'], False)
+                ds_utils.insert_new_extras_field(dataset, u'metadata_harvested_portal',
+                                                 orig_field['value'], False)
 
     def metadata_original_id(self, dataset):
         '''metadata_original_id -> alternate_identifier'''
-        util.rename_extras_field(dataset, u'metadata_original_id',
-                                 u'alternate_identifier', False, False)
+        util.rename_extras_field_migration(dataset, u'metadata_original_id',
+                                           u'alternate_identifier', False, False)
 
     def spatial_reference_text(self, dataset):
         '''spatial_reference.text -> extras.geocodingText'''
-        spatial_reference = util.get_extras_field(dataset, 'spatial_reference')
+        spatial_reference = ds_utils.get_extras_field(dataset, 'spatial_reference')
         if spatial_reference is not None:
             sr_value = spatial_reference['value']
         else:
@@ -114,8 +115,8 @@ class MigrationFunctions(object):
             field = sr_value_dict.get('text')
 
             if field is not None:
-                util.insert_new_extras_field(dataset, u'geocodingText',
-                                             field, True)
+                ds_utils.insert_new_extras_field(dataset, u'geocodingText',
+                                                 field, True)
 
                 sr_value_dict.pop('text', None)
                 spatial_reference['value'] = unicode(json.dumps(sr_value_dict,
@@ -142,13 +143,13 @@ class MigrationFunctions(object):
 
     def temporal_coverage_from(self, dataset):
         '''temporal_coverage_from -> temporal_start'''
-        util.rename_extras_field(dataset, u'temporal_coverage_from',
-                                 u'temporal_start', False, False)
+        util.rename_extras_field_migration(dataset, u'temporal_coverage_from',
+                                           u'temporal_start', False, False)
 
     def temporal_coverage_to(self, dataset):
         '''temporal_coverage_to -> temporal_end'''
-        util.rename_extras_field(dataset, u'temporal_coverage_to',
-                                 u'temporal_end', False, False)
+        util.rename_extras_field_migration(dataset, u'temporal_coverage_to',
+                                           u'temporal_end', False, False)
 
     def geographical_granularity(self, dataset):
         '''geographical_granularity -> politicalGeocodingLevelUri'''
@@ -162,9 +163,9 @@ class MigrationFunctions(object):
                         # Additional non-OGD value
                         'kreis': 'administrativeDistrict'}
 
-        geo_level = util.get_extras_field(dataset, 'geographical_granularity')
-        target_field = util.get_extras_field(dataset,
-                                             u'politicalGeocodingLevelURI')
+        geo_level = ds_utils.get_extras_field(dataset, 'geographical_granularity')
+        target_field = ds_utils.get_extras_field(dataset,
+                                                 u'politicalGeocodingLevelURI')
 
         # only add if the field hasn't been migrated before
         if target_field is None:
@@ -180,13 +181,13 @@ class MigrationFunctions(object):
 
                 geo_level['value'] = geo_level_value
 
-                util.rename_extras_field(dataset, u'geographical_granularity',
-                                         u'politicalGeocodingLevelURI', False)
+                util.rename_extras_field_migration(dataset, u'geographical_granularity',
+                                                   u'politicalGeocodingLevelURI', False)
 
     def contacts_role_autor(self, dataset):
         '''contacts.role.autor -> extras.author'''
         fields = util.get_extras_contacts_data(dataset, 'autor')
-        target_field = util.get_extras_field(dataset, u'author_contacttype')
+        target_field = ds_utils.get_extras_field(dataset, u'author_contacttype')
 
         # only add if the field hasn't been migrated before (check for added field)
         if target_field is None:
@@ -194,14 +195,14 @@ class MigrationFunctions(object):
                 if fields.get('name') and fields.get('email'):
                     dataset['author'] = fields.pop('name', '')
                     dataset['author_email'] = fields.pop('email', '')
-                    util.insert_new_extras_field(dataset, 'author_url',
-                                                 fields.pop('url', ''), False)
+                    ds_utils.insert_new_extras_field(dataset, 'author_url',
+                                                     fields.pop('url', ''), False)
 
                     util.update_extras_contacts_data(dataset, 'autor', fields)
 
                     # Additional field
-                    util.insert_new_extras_field(dataset, u'author_contacttype',
-                                                 u'Organization', False)
+                    ds_utils.insert_new_extras_field(dataset, u'author_contacttype',
+                                                     u'Organization', False)
 
                 util.move_extras_contacts_address(dataset, 'autor', 'author',
                                                   fields)
@@ -209,8 +210,8 @@ class MigrationFunctions(object):
     def contacts_role_ansprechpartner(self, dataset):
         '''contacts.role.ansprechpartner -> extras.maintainer'''
         fields = util.get_extras_contacts_data(dataset, 'ansprechpartner')
-        target_field = util.get_extras_field(dataset,
-                                             u'maintainer_contacttype')
+        target_field = ds_utils.get_extras_field(dataset,
+                                                 u'maintainer_contacttype')
 
         # only add if the field hasn't been migrated before (check for added field)
         if target_field is None:
@@ -218,15 +219,15 @@ class MigrationFunctions(object):
                 if fields.get('name') and fields.get('email'):
                     dataset['maintainer'] = fields.pop('name', '')
                     dataset['maintainer_email'] = fields.pop('email', '')
-                    util.insert_new_extras_field(dataset, u'maintainer_url',
-                                                 fields.pop('url', ''), False)
+                    ds_utils.insert_new_extras_field(dataset, u'maintainer_url',
+                                                     fields.pop('url', ''), False)
 
                     util.update_extras_contacts_data(dataset, 'ansprechpartner',
                                                      fields)
 
                     # Additional field
-                    util.insert_new_extras_field(dataset, u'maintainer_contacttype',
-                                                 u'Organization', False)
+                    ds_utils.insert_new_extras_field(dataset, u'maintainer_contacttype',
+                                                     u'Organization', False)
 
                 util.move_extras_contacts_address(dataset, 'ansprechpartner',
                                                   'maintainer', fields)
@@ -234,26 +235,26 @@ class MigrationFunctions(object):
     def contacts_role_veroeffentlichende_stelle(self, dataset):
         '''contacts.role.veroeffentlichende_stelle -> extras.publisher'''
         fields = util.get_extras_contacts_data(dataset, 'veroeffentlichende_stelle')
-        target_field = util.get_extras_field(dataset,
-                                             u'publisher_contacttype')
+        target_field = ds_utils.get_extras_field(dataset,
+                                                 u'publisher_contacttype')
 
         # only add if the field hasn't been migrated before (check for added field)
         if target_field is None:
             if fields is not None:
-                util.insert_new_extras_field(dataset, u'publisher_name',
-                                             fields.pop('name', ''), False)
-                util.insert_new_extras_field(dataset, u'publisher_email',
-                                             fields.pop('email', ''), False)
-                util.insert_new_extras_field(dataset, u'publisher_url',
-                                             fields.pop('url', ''), False)
+                ds_utils.insert_new_extras_field(dataset, u'publisher_name',
+                                                 fields.pop('name', ''), False)
+                ds_utils.insert_new_extras_field(dataset, u'publisher_email',
+                                                 fields.pop('email', ''), False)
+                ds_utils.insert_new_extras_field(dataset, u'publisher_url',
+                                                 fields.pop('url', ''), False)
 
                 util.update_extras_contacts_data(dataset,
                                                  'veroeffentlichende_stelle',
                                                  fields)
 
                 # Additional field
-                util.insert_new_extras_field(dataset, u'publisher_contacttype',
-                                             u'Organization', False)
+                ds_utils.insert_new_extras_field(dataset, u'publisher_contacttype',
+                                                 u'Organization', False)
                 util.move_extras_contacts_address(dataset, 'veroeffentlichende_stelle',
                                               'publisher', fields)
 
@@ -289,7 +290,7 @@ class MigrationFunctions(object):
         fieldname = u'terms_of_use'
         resources = dataset['resources']
 
-        terms_of_use = util.get_extras_field(dataset, fieldname)
+        terms_of_use = ds_utils.get_extras_field(dataset, fieldname)
         if terms_of_use is not None:
             text = json.loads(terms_of_use.get('value')).get('attribution_text')
 
@@ -314,7 +315,7 @@ class MigrationFunctions(object):
         field_name = u'language'
 
         # dataset
-        language_field = util.get_extras_field(dataset, field_name)
+        language_field = ds_utils.get_extras_field(dataset, field_name)
         if language_field:
             util.update_language_in(dataset, language_field, 'value', 'language')
 

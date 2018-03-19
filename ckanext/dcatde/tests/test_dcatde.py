@@ -1,13 +1,19 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
 """ DCAT-AP.de Profile """
 
 import re
 import unittest
 import rdflib
+import json
+import pprint
+import pkg_resources
 
-from rdflib import URIRef
+from rdflib import Graph, URIRef
 from rdflib.namespace import Namespace
 
 from ckanext.dcat.profiles import EuropeanDCATAPProfile
+from ckanext.dcat.processors import RDFParser
 from ckanext.dcatde.profiles import DCATdeProfile
 
 class TestDCATde(unittest.TestCase):
@@ -53,15 +59,15 @@ class TestDCATde(unittest.TestCase):
 
     predicate_pattern = re.compile("[a-zA-Z]:[a-zA-Z]")
 
-    def transform_to_key_value(self, source):
+    def _transform_to_key_value(self, source):
         """ convert dictionary entry to ckan-extras-field-format """
         return [{"key": key, "value": source[key]} for key in source]
 
-    def get_value_from_extras(self, extras, key):
+    def _get_value_from_extras(self, extras, key):
         """ retrieves a value from the key-value representation used in extras dict """
         return [x["value"] for x in extras if x["key"] == key][0]
 
-    def assert_list(self, ref, predicate, values):
+    def _assert_list(self, ref, predicate, values):
         """ check for every item of a predicate to exist in the graph """
         for obj in self.graph.objects(ref, predicate):
             if unicode(obj) in values:
@@ -70,13 +76,39 @@ class TestDCATde(unittest.TestCase):
         self.assertTrue(len(values) == 0, "Not all expected values were found in graph. remaining: "
                         + ", ".join(values))
 
-    def predicate_from_string(self, predicate):
+    def _assert_extras_list_serialized(self, extras, key, expected):
+        """ check if the extras list value matches with the expected content.
+        This assumes that the extras value is serialized as string."""
+        item = self._get_value_from_extras(extras, key)
+        content = json.loads(item)
+        self.assertItemsEqual(content, expected)
+
+    def _assert_extras_dict_serialized(self, extras, key, expected):
+        """ check if the extras field with the given key contains the expected dict
+        serialized as JSON."""
+        item = self._get_value_from_extras(extras, key)
+        content = json.loads(item)
+        self.assertDictEqual(content, expected)
+
+    def _assert_extras_string(self, extras, key, expected):
+        """ check if the extras field has the expected value. """
+        item = self._get_value_from_extras(extras, key)
+        self.assertEqual(item, expected)
+
+    def _assert_tag_list(self, dataset, expected_tags):
+        """ checks if the given tags are present in the dataset """
+        self.assertEqual(len(dataset['tags']), len(expected_tags))
+
+        for tag in expected_tags:
+            self.assertTrue({'name': tag} in dataset['tags'])
+
+    def _predicate_from_string(self, predicate):
         """ take "dct:title" and transform to DCT.title, to be read by rdflib """
         prefix, name = predicate.split(":")
         return self.namespaces[prefix][name]
 
 
-    def check_simple_items(self, source, ref, item):
+    def _check_simple_items(self, source, ref, item):
         """ checks the subgraph for different types of items """
         if isinstance(item, dict):  # handle extra-array items
             value = item["value"]
@@ -84,9 +116,9 @@ class TestDCATde(unittest.TestCase):
             value = source[item]
 
         if isinstance(value, str) and self.predicate_pattern.match(value):
-            self.assert_list(ref, self.predicate_from_string(value), [value])
+            self._assert_list(ref, self._predicate_from_string(value), [value])
 
-    def assert_contact_info(self, dataset_ref, predicate):
+    def _assert_contact_info(self, dataset_ref, predicate):
         """ check name, email and url for a given rdf-subelement """
         contact = list(self.graph.objects(dataset_ref, predicate))[0]
         self.assertEqual(len(list(self.graph.objects(contact, self.FOAF.name))), 1,
@@ -95,6 +127,12 @@ class TestDCATde(unittest.TestCase):
                          predicate + " mbox not found")
         self.assertEqual(len(list(self.graph.objects(contact, self.FOAF.homepage))), 1,
                          predicate + " homepage not found")
+
+    def _get_max_rdf(self):
+        data = pkg_resources.resource_string(__name__,
+                                             "resources/metadata_max.rdf")
+
+        return data
 
     def test_graph_from_dataset(self):
         """ test dcat and dcatde profiles """
@@ -123,7 +161,7 @@ class TestDCATde(unittest.TestCase):
             "maintainer": "nocheck",
             "maintainer_email": "nocheck",
 
-            "extras": self.transform_to_key_value({
+            "extras": self._transform_to_key_value({
                 "contributorID": ["dcatde:contributorID"],
                 "qualityProcessURI": "dcatde:qualityProcessURI",
                 "documentation": "foaf:page",
@@ -162,9 +200,9 @@ class TestDCATde(unittest.TestCase):
                 "temporal_start": "2017-07-06T13:08:40",
                 "temporal_end": "2017-07-06T13:08:41",
 
-                "spatial": "{\"type\":\"Polygon\",\"coordinates\":[[[8.852920532226562,"+
-                           "47.97245599240245],[9.133758544921875,47.97245599240245],"+
-                           "[9.133758544921875,48.17249666038475],[8.852920532226562,"+
+                "spatial": "{\"type\":\"Polygon\",\"coordinates\":[[[8.852920532226562," +
+                           "47.97245599240245],[9.133758544921875,47.97245599240245]," +
+                           "[9.133758544921875,48.17249666038475],[8.852920532226562," +
                            "48.17249666038475],[8.852920532226562,47.97245599240245]]]}",
 
                 "language": ["dct:language"],
@@ -184,7 +222,7 @@ class TestDCATde(unittest.TestCase):
                 "size": 10,
                 "hash": 24,
 
-                "extras": self.transform_to_key_value({
+                "extras": self._transform_to_key_value({
                     "issued": "dct:issued",
                     "modified": "dct:modified",
                     "documentation": "foaf:page",
@@ -215,10 +253,10 @@ class TestDCATde(unittest.TestCase):
         extras = dataset_dict["extras"]
 
         for key in dataset_dict:
-            self.check_simple_items(dataset_dict, dataset_ref, key)
+            self._check_simple_items(dataset_dict, dataset_ref, key)
 
         for key in extras:
-            self.check_simple_items(dataset_dict, dataset_ref, key)
+            self._check_simple_items(dataset_dict, dataset_ref, key)
 
         # issued, modified
         self.assertEqual(len(list(self.graph.objects(dataset_ref, self.DCT.issued))), 1,
@@ -227,17 +265,17 @@ class TestDCATde(unittest.TestCase):
                          "dct:modified not found")
 
         # groups, tags
-        self.assert_list(dataset_ref, self.DCAT.theme,
+        self._assert_list(dataset_ref, self.DCAT.theme,
                          [self.dcat_theme_prefix + x["name"] for x in dataset_dict["groups"]])
-        self.assert_list(dataset_ref, self.DCAT.keyword,
+        self._assert_list(dataset_ref, self.DCAT.keyword,
                          [x["name"] for x in dataset_dict["tags"]])
 
         # author, maintainer, originator, contributor, publisher
-        self.assert_contact_info(dataset_ref, self.DCATDE.originator)
-        self.assert_contact_info(dataset_ref, self.DCATDE.maintainer)
-        self.assert_contact_info(dataset_ref, self.DCT.contributor)
-        self.assert_contact_info(dataset_ref, self.DCT.creator)
-        self.assert_contact_info(dataset_ref, self.DCT.publisher)
+        self._assert_contact_info(dataset_ref, self.DCATDE.originator)
+        self._assert_contact_info(dataset_ref, self.DCATDE.maintainer)
+        self._assert_contact_info(dataset_ref, self.DCT.contributor)
+        self._assert_contact_info(dataset_ref, self.DCT.creator)
+        self._assert_contact_info(dataset_ref, self.DCT.publisher)
 
         # contactPoint
         contact_point = next(self.graph.objects(dataset_ref, self.DCAT.contactPoint))
@@ -270,26 +308,26 @@ class TestDCATde(unittest.TestCase):
                 self.fail("No valid spatial blocks found.")
 
         # lists in extras
-        self.assert_list(dataset_ref, self.DCT.language,
-                         self.get_value_from_extras(extras, "language"))
-        self.assert_list(dataset_ref, self.DCT.conformsTo,
-                         self.get_value_from_extras(extras, "conforms_to"))
-        self.assert_list(dataset_ref, self.ADMS.identifier,
-                         self.get_value_from_extras(extras, "alternate_identifier"))
-        self.assert_list(dataset_ref, self.DCT.relation,
-                         self.get_value_from_extras(extras, "used_datasets"))
-        self.assert_list(dataset_ref, self.DCT.hasVersion,
-                         self.get_value_from_extras(extras, "has_version"))
-        self.assert_list(dataset_ref, self.DCT.isVersionOf,
-                         self.get_value_from_extras(extras, "is_version_of"))
-        self.assert_list(dataset_ref, self.DCATDE.politicalGeocodingURI,
-                         self.get_value_from_extras(extras, "politicalGeocodingURI"))
-        self.assert_list(dataset_ref, self.DCATDE.geocodingText,
-                         self.get_value_from_extras(extras, "geocodingText"))
-        self.assert_list(dataset_ref, self.DCATDE.legalbasisText,
-                         self.get_value_from_extras(extras, "legalbasisText"))
-        self.assert_list(dataset_ref, self.DCATDE.contributorID,
-                         self.get_value_from_extras(extras, "contributorID"))
+        self._assert_list(dataset_ref, self.DCT.language,
+                         self._get_value_from_extras(extras, "language"))
+        self._assert_list(dataset_ref, self.DCT.conformsTo,
+                         self._get_value_from_extras(extras, "conforms_to"))
+        self._assert_list(dataset_ref, self.ADMS.identifier,
+                         self._get_value_from_extras(extras, "alternate_identifier"))
+        self._assert_list(dataset_ref, self.DCT.relation,
+                         self._get_value_from_extras(extras, "used_datasets"))
+        self._assert_list(dataset_ref, self.DCT.hasVersion,
+                         self._get_value_from_extras(extras, "has_version"))
+        self._assert_list(dataset_ref, self.DCT.isVersionOf,
+                         self._get_value_from_extras(extras, "is_version_of"))
+        self._assert_list(dataset_ref, self.DCATDE.politicalGeocodingURI,
+                         self._get_value_from_extras(extras, "politicalGeocodingURI"))
+        self._assert_list(dataset_ref, self.DCATDE.geocodingText,
+                         self._get_value_from_extras(extras, "geocodingText"))
+        self._assert_list(dataset_ref, self.DCATDE.legalbasisText,
+                         self._get_value_from_extras(extras, "legalbasisText"))
+        self._assert_list(dataset_ref, self.DCATDE.contributorID,
+                         self._get_value_from_extras(extras, "contributorID"))
 
         # resources
         resource = dataset_dict["resources"][0]
@@ -297,10 +335,10 @@ class TestDCATde(unittest.TestCase):
         resource_extras = resource["extras"]
 
         for key in resource:
-            self.check_simple_items(resource, resource_ref, key)
+            self._check_simple_items(resource, resource_ref, key)
 
         for key in resource_extras:
-            self.check_simple_items(resource, resource_ref, key)
+            self._check_simple_items(resource, resource_ref, key)
 
         # size
         self.assertEqual(len(list(self.graph.objects(resource_ref, self.DCAT.byteSize))), 1,
@@ -311,7 +349,122 @@ class TestDCATde(unittest.TestCase):
                          self.SPDX.checksum + " not found")
 
         # lists
-        self.assert_list(resource_ref, self.DCT.language,
-                         self.get_value_from_extras(resource_extras, "language"))
-        self.assert_list(resource_ref, self.DCT.conformsTo,
-                         self.get_value_from_extras(resource_extras, "conforms_to"))
+        self._assert_list(resource_ref, self.DCT.language,
+                         self._get_value_from_extras(resource_extras, "language"))
+        self._assert_list(resource_ref, self.DCT.conformsTo,
+                         self._get_value_from_extras(resource_extras, "conforms_to"))
+
+    def test_parse_dataset(self):
+        maxrdf = self._get_max_rdf()
+
+        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+
+        p.parse(maxrdf)
+
+        datasets = [d for d in p.datasets()]
+        self.assertEqual(len(datasets), 1)
+        dataset = datasets[0]
+
+        extras = dataset.get('extras')
+        self.assertTrue(len(extras) > 0)
+        resources = dataset.get('resources')
+        self.assertEqual(len(resources), 2)
+
+        # identify resources to be independent of their order
+        if u'Distribution 1' in resources[0].get('description'):
+            dist1 = resources[0]
+            dist2 = resources[1]
+        else:
+            dist1 = resources[1]
+            dist2 = resources[0]
+
+        # list values are serialized by parser
+
+        # dcatde:maintainer
+        self.assertEqual(dataset.get('maintainer'), u'Peter Schröder')
+        self._assert_extras_string(extras, 'maintainer_contacttype', u'Person')
+
+        # dcatde:contributorID
+        self._assert_extras_list_serialized(
+            extras, 'contributorID',
+            ['http://dcat-ap.de/def/contributors/transparenzportalHamburg'])
+
+        # dcatde:originator
+        self._assert_extras_string(extras, 'originator_name',
+                                  u'Peter Schröder originator')
+        self._assert_extras_string(extras, 'originator_contacttype', u'Person')
+
+        # dcatde:politicalGeocodingURI
+        self._assert_extras_list_serialized(
+            extras, 'politicalGeocodingURI',
+            ['http://dcat-ap.de/def/politicalGeocoding/regionalKey/020000000000',
+             'http://dcat-ap.de/def/politicalGeocoding/stateKey/02'])
+
+        # dcatde:politicalGeocodingLevelURI
+        self._assert_extras_string(extras, 'politicalGeocodingLevelURI',
+                                  'http://dcat-ap.de/def/politicalGeocoding/Level/state')
+
+        # dcatde:legalbasisText
+        self._assert_extras_list_serialized(extras, 'legalbasisText',
+                                           ['Umweltinformationsgesetz (UIG)'])
+
+        # dcatde:geocodingText
+        self._assert_extras_list_serialized(extras, 'geocodingText',
+                                           ['Hamburg'])
+
+        # dcatde:qualityProcessURI
+        self._assert_extras_string(extras, 'qualityProcessURI',
+                                  'https://www.example.com/')
+
+        # resource checks
+        self.assertEqual(dist1['__extras'].get('plannedAvailability'),
+                         'http://dcat-ap.de/def/plannedAvailability/experimental')
+        self.assertEqual(dist1['__extras'].get('licenseAttributionByText'),
+                         u'Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2016')
+        self.assertEqual(dist1.get('license'),
+                         "http://dcat-ap.de/def/licenses/dl-by-de/2_0")
+        self.assertEqual(dist1.get('size'), 685246)
+
+        self.assertEqual(dist2['__extras'].get('plannedAvailability'),
+                         'http://dcat-ap.de/def/plannedAvailability/available')
+        self.assertEqual(dist2['__extras'].get('licenseAttributionByText'),
+                         u'Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2015')
+        self.assertEqual(dist2.get('license'),
+                         "http://dcat-ap.de/def/licenses/dl-by-de/2_0")
+        self.assertEqual(dist2.get('size'), 222441)
+
+
+        # some non-dcatde fields
+        self._assert_extras_list_serialized(extras, 'alternate_identifier',
+                                           ['4635D337-4805-4C32-A211-13F8C038BF27'])
+
+        # dcat:contactPoint
+        self._assert_extras_string(extras, 'contact_email', u'michael.schroeder@bue.hamburg.de')
+        self._assert_extras_string(extras, 'contact_name', u'Herr Dr. Michael Schröder')
+        self._assert_extras_string(extras, 'maintainer_tel', u'+49 40 4 28 40 - 3494')
+        self._assert_extras_string(extras, 'maintainer_street', u'Beispielstraße 4')
+        self._assert_extras_string(extras, 'maintainer_city', u'Beispielort')
+        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
+        self._assert_extras_string(extras, 'maintainer_country', u'DE')
+
+        # Groups
+        self.assertEqual(len(dataset['groups']), 2)
+        self.assertTrue({'id': 'envi', 'name': 'envi'} in dataset['groups'])
+        self.assertTrue({'id': 'agri', 'name': 'agri'} in dataset['groups'])
+
+        # Keywords
+        self._assert_tag_list(
+            dataset,
+            [u'Karte', u'hmbtg_09_geodaten', u'Grundwasser', u'Bodenschutz', u'Geodaten',
+             u'Umwelt und Klima', u'hmbtg', u'opendata', u'Thematische Karte'])
+
+        # dct:location
+        self._assert_extras_dict_serialized(
+            extras, 'spatial', {"type": "Polygon",
+                                "coordinates": [[[10.3263, 53.3949], [10.3263, 53.9641], [8.4205, 53.9641],
+                                                 [8.4205, 53.3949], [10.3263, 53.3949]]]})
+
+        # dcat:landingPage
+        self._assert_extras_string(
+            extras, 'metadata_original_html',
+            'https://www.govdata.de/web/guest/daten/-/details/naturraume-geest-und-marsch3')
