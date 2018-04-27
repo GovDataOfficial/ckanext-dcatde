@@ -19,10 +19,6 @@ EXTRA_KEY_HARVESTED_PORTAL = 'metadata_harvested_portal'
 
 class DCATdeRDFHarvester(DCATRDFHarvester):
 
-    def __init__(self, name='dcatde_rdf_harvester'):
-        # this is set from config
-        self.portal = ''
-
     def info(self):
         return {
             'name': 'dcatde_rdf',
@@ -30,16 +26,18 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             'description': 'Harvester for DCAT-AP.de datasets from an RDF graph'
         }
 
-    def _set_portal_from_config(self, source_config):
+    def _get_portal_from_config(self, source_config):
         if source_config:
-            self.portal = json.loads(source_config).get(CONFIG_PARAM_HARVESTED_PORTAL)
+            return json.loads(source_config).get(CONFIG_PARAM_HARVESTED_PORTAL)
+
+        return ''
 
     def _mark_datasets_for_deletion(self, guids_in_source, harvest_job):
         # This is the same as the method in the base class, except that a different query is used.
 
         object_ids = []
 
-        self._set_portal_from_config(harvest_job.source.config)
+        portal = self._get_portal_from_config(harvest_job.source.config)
 
         # Get all previous current guids and dataset ids for this harvested portal independent of
         # the harvest objects. This allows cleaning the harvest data without loosing the
@@ -47,7 +45,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         # Build a subquery to get all the packages of the current portal first
         portal_packages = model.Session.query(model.PackageExtra.package_id.label('id')) \
             .filter(model.PackageExtra.key == EXTRA_KEY_HARVESTED_PORTAL) \
-            .filter(model.PackageExtra.value == self.portal) \
+            .filter(model.PackageExtra.value == portal) \
             .subquery()
 
         # then get the extras.guid for those packages
@@ -80,11 +78,11 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
         return object_ids
 
-    def amend_package(self, package):
+    def amend_package(self, package, portal):
         if 'extras' not in package:
             package['extras'] = []
 
-        set_extras_field(package, EXTRA_KEY_HARVESTED_PORTAL, self.portal)
+        set_extras_field(package, EXTRA_KEY_HARVESTED_PORTAL, portal)
 
     def import_stage(self, harvest_object):
         # override delete logic
@@ -95,14 +93,11 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                                                                    harvest_object.guid))
             return True
 
-        # This should have been set in _mark_datasets_for_deletion (i.e. gather_stage), but check again
-        # to be sure
-        if not self.portal:
-            self._set_portal_from_config(harvest_object.source.config)
+        portal = self._get_portal_from_config(harvest_object.source.config)
 
         # set custom field
         package = json.loads(harvest_object.content)
-        self.amend_package(package)
+        self.amend_package(package, portal)
         harvest_object.content = json.dumps(package)
         import_dataset = HarvestUtils.handle_duplicates(harvest_object.content)
         if import_dataset:

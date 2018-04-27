@@ -1,6 +1,6 @@
 = Mapping von OGD nach DCAT-AP.de
 Ralph Nörenberg (SEITENBAU GmbH) <ralph.noerenberg@seitenbau.com>
-v0.1, 2018-01-15
+v0.2, 2018-03-01
 
 Erklärung der Spaltenbezeichnungen
 
@@ -21,8 +21,8 @@ Die folgende Tabelle zeigt das Mapping der Felder in CKAN und zur RDF-Repräsent
 |Umbenennen, damit der Name dem DCAT-AP.de-Standard entspricht
 
 |extra:metadata_original_id
-|extra:alternate_identifier
-|adms:alternate_identifier
+|extra:identifier
+|dct:identifier
 |Umbenennen, wird mit dem neuen Namen bereits vom DCAT-Plugin verarbeitet
 
 |extra:spatial_reference.text

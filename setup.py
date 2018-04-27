@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 
-version = '3.1.0'
+VERSION = '3.1.1'
 
 with open('base-requirements.txt') as f:
     required = [line.strip() for line in f]
 
 setup(
     name='ckanext-dcatde',
-    version=version,
+    version=VERSION,
     description="Plugin to migrate to and provide DCAT-AP.de Profile",
     long_description='''\
     ''',

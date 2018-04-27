@@ -97,9 +97,9 @@ class MigrationFunctions(object):
                                                  orig_field['value'], False)
 
     def metadata_original_id(self, dataset):
-        '''metadata_original_id -> alternate_identifier'''
+        '''metadata_original_id -> extras.identifier'''
         util.rename_extras_field_migration(dataset, u'metadata_original_id',
-                                           u'alternate_identifier', False, False)
+                                           u'identifier', False, False)
 
     def spatial_reference_text(self, dataset):
         '''spatial_reference.text -> extras.geocodingText'''

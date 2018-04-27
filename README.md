@@ -77,6 +77,11 @@ If you want to migrate the datasets from ogd to dcat-ap.de you can use the ckan 
 
     (pyenv) $ paster --plugin=ckanext-dcatde dcatde_migrate --config=/etc/ckan/default/production.ini
 
+With the version 3.1.1 an additional option to the migrate command was added to fix the migration of the OGD field `metadata_original_id`. Instead of mapping this field to `adms:identifier` it will be mapped to the field `dct:identifier` now.
+The command can be executed as follows:
+
+    (pyenv) $ paster --plugin=ckanext-dcatde dcatde_migrate adms-id-migrate --config=/etc/ckan/default/production.ini
+
 ## Testing
 
 Unit tests are placed in the `ckanext/dcatde/tests` directory and can be run with the nose unit testing framework:
