@@ -1,52 +1,13 @@
 {
   "title": "Liste der Lizenzen",
-  "description": "Liste der Lizenzen, die im Feld dct:license einer DCAT-AP.de-konformen dcat:distribution erlaubt sind.",
-  "list": [{
-      "URI": "http://dcat-ap.de/def/licenses/official-work",
-      "Name": "Amtliches Werk, lizenzfrei nach §5 Abs. 1 UrhG",
-      "Lizenzcode": "officialWork",
-      "Lizenztext": "http://www.gesetze-im-internet.de/urhg/__5.html",
-      "OGDLizenzcode": "official-work",
-      "Lizenztyp": "offen"
-    },
+  "description": "Liste der Lizenzen, die im Feld dct:license einer DCAT-AP.de-konformen dcat:distribution für die Zulieferung an GovData erlaubt sind.",
+  "list": [
     {
-      "URI": "http://dcat-ap.de/def/licenses/other-freeware",
-      "Name": "Andere Freeware Lizenz",
-      "Lizenzcode": "otherfreeware",
-      "Lizenztext": "",
-      "OGDLizenzcode": "app_freeware",
-      "Lizenztyp": "geschlossen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/other-closed",
-      "Name": "Andere geschlossene Lizenz",
-      "Lizenzcode": "otherclosed",
-      "Lizenztext": "",
-      "OGDLizenzcode": "other-closed",
-      "Lizenztyp": "geschlossen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/other-commercial",
-      "Name": "Andere kommerzielle Lizenz",
-      "Lizenzcode": "othercommercial",
-      "Lizenztext": "",
-      "OGDLizenzcode": "app_commercial",
-      "Lizenztyp": "geschlossen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/other-open",
-      "Name": "Andere offene Lizenz",
-      "Lizenzcode": "otheropen",
-      "Lizenztext": "",
-      "OGDLizenzcode": "other-open",
-      "Lizenztyp": "offen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/other-opensource",
-      "Name": "Andere Open Source Lizenz",
-      "Lizenzcode": "otheropensource",
-      "Lizenztext": "",
-      "OGDLizenzcode": "app_opensource",
+      "URI": "http://dcat-ap.de/def/licenses/apache",
+      "Name": "Freie Softwarelizenz der Apache Software Foundation",
+      "Lizenzcode": "apache",
+      "Lizenztext": "http://www.apache.org/licenses",
+      "OGDLizenzcode": "apache",
       "Lizenztyp": "offen"
     },
     {
@@ -58,163 +19,139 @@
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/cc-by-sa",
-      "Name": "Creative Commons Attribution ShareAlike (ccbysa)",
-      "Lizenzcode": "ccbysa",
-      "Lizenztext": "http://www.opendefinition.org/licenses/cc-by-sa",
-      "OGDLizenzcode": "cc-by-sa",
-      "Lizenztyp": "offen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/cc-by-sa/4_0",
-      "Name": "Creative Commons Attribution ShareAlike 4.0 (CCBYSA4.0)",
-      "Lizenzcode": "ccbysa/4_0",
-      "Lizenztext": "http://creativecommons.org/licenses/by-sa/4.0/",
-      "OGDLizenzcode": "cc-by-sa-4.0",
-      "Lizenztyp": "offen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/cc-zero",
-      "Name": "Creative Commons CCZero (CC0)",
-      "Lizenzcode": "cczero",
-      "Lizenztext": "http://www.opendefinition.org/licenses/cc-zero",
-      "OGDLizenzcode": "cc-zero",
-      "Lizenztyp": "offen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/cc-by/4_0",
-      "Name": "Creative Commons Namensnennung  4.0 (CCBY)",
-      "Lizenzcode": "ccby/4_0",
-      "Lizenztext": "http://creativecommons.org/licenses/by/4.0/",
-      "OGDLizenzcode": "cc-by-4.0",
-      "Lizenztyp": "offen"
-    },
-    {
       "URI": "http://dcat-ap.de/def/licenses/cc-by",
-      "Name": "Creative Commons Namensnennung (CCBY)",
-      "Lizenzcode": "ccby",
+      "Name": "Creative Commons Namensnennung (CC-BY)",
+      "Lizenzcode": "cc-by",
       "Lizenztext": "http://www.opendefinition.org/licenses/cc-by",
       "OGDLizenzcode": "cc-by",
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/cc-by-de/3_0",
-      "Name": "Creative Commons Namensnennung 3.0 (CC-BY)",
-      "Lizenzcode": "ccbyde/3_0",
+      "URI": "http://dcat-ap.de/def/licenses/cc-by/4.0",
+      "Name": "Creative Commons Namensnennung – 4.0 International (CC BY 4.0)",
+      "Lizenzcode": "cc-by/4.0",
+      "Lizenztext": "http://creativecommons.org/licenses/by/4.0/",
+      "OGDLizenzcode": "cc-by-4.0",
+      "Lizenztyp": "offen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/cc-by-de/3.0",
+      "Name": "Creative Commons Namensnennung 3.0 Deutschland (CC BY 3.0 DE)",
+      "Lizenzcode": "cc-by-de/3.0",
       "Lizenztext": "https://creativecommons.org/licenses/by/3.0/de/",
       "OGDLizenzcode": "cc-by-3.0",
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/cc-by-nd",
-      "Name": "Creative Commons Namensnennung Keine Bearbeitung (CC-BY-ND)",
-      "Lizenzcode": "ccbynd",
-      "Lizenztext": "http://creativecommons.org/licenses/by-nd/3.0/",
-      "OGDLizenzcode": "cc-by-nd",
-      "Lizenztyp": "geschlossen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/cc-by-nd/3_0",
-      "Name": "Creative Commons Namensnennung Keine Bearbeitung 3.0 (CC-BY-ND)",
-      "Lizenzcode": "ccbynd/3_0",
-      "Lizenztext": "http://creativecommons.org/licenses/by-nd/3.0/",
-      "OGDLizenzcode": "cc-by-nd-3.0",
-      "Lizenztyp": "geschlossen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/cc-by-nd/4_0",
-      "Name": "Creative Commons Namensnennung Keine Bearbeitung 4.0 International (CC BYND 4.0)",
-      "Lizenzcode": "ccbynd/4_0",
-      "Lizenztext": "http://creativecommons.org/licenses/by-nd/4.0/",
-      "OGDLizenzcode": "cc-by-nd-4.0",
-      "Lizenztyp": "geschlossen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/cc-by-nc-de/4_0",
-      "Name": "Creative Commons Namensnennung Nichtkommerziell 4.0 (CCBY)",
-      "Lizenzcode": "ccbync/4_0",
-      "Lizenztext": "http://creativecommons.org/licenses/by-nc/4.0/",
-      "OGDLizenzcode": "cc-by-nc-4.0",
-      "Lizenztyp": "geschlossen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/cc-nc",
-      "Name": "Creative Commons Namensnennung-Nicht kommerziell",
-      "Lizenzcode": "cc-nc",
-      "Lizenztext": "http://creativecommons.org/licenses/by-nc/2.0/",
+      "URI": "http://dcat-ap.de/def/licenses/cc-by-nc",
+      "Name": "Creative Commons Namensnennung - Nicht kommerziell (CC BY-NC)",
+      "Lizenzcode": "cc-by-nc",
+      "Lizenztext": "http://creativecommons.org/licenses/by-nc/",
       "OGDLizenzcode": "cc-nc",
       "Lizenztyp": "geschlossen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/cc-nc/3_0",
-      "Name": "Creative Commons Namensnennung-Nicht kommerziell 3.0 ",
-      "Lizenzcode": "cc-nc/3_0",
+      "URI": "http://dcat-ap.de/def/licenses/cc-by-nc-de/3.0",
+      "Name": "Creative Commons Namensnennung-Nicht kommerziell 3.0 Deutschland (CC BY-NC 3.0 DE)",
+      "Lizenzcode": "cc-by-nc/3.0",
       "Lizenztext": "https://creativecommons.org/licenses/by-nc/3.0/de/",
       "OGDLizenzcode": "cc-nc-3.0",
       "Lizenztyp": "geschlossen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/dl-zero-de/2_0",
-      "Name": "Datenlizenz Deutschland – Zero – Version 2.0",
-      "Lizenzcode": "dlzerode/2_0",
-      "Lizenztext": "https://www.govdata.de/dl-de/zero-2-0",
-      "OGDLizenzcode": "dl-de-zero-2.0",
+      "URI": "http://dcat-ap.de/def/licenses/cc-by-nc/4.0",
+      "Name": "Creative Commons Namensnennung - Nicht kommerziell 4.0 International (CC BY-NC 4.0)",
+      "Lizenzcode": "cc-by-nc/4.0",
+      "Lizenztext": "http://creativecommons.org/licenses/by-nc/4.0/",
+      "OGDLizenzcode": "cc-by-nc-4.0",
+      "Lizenztyp": "geschlossen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/cc-by-nd",
+      "Name": "Creative Commons Namensnennung - Keine Bearbeitung (CC BY-ND)",
+      "Lizenzcode": "cc-by-nd",
+      "Lizenztext": "http://creativecommons.org/licenses/by-nd/3.0/",
+      "OGDLizenzcode": "cc-by-nd",
+      "Lizenztyp": "geschlossen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/cc-by-nd/3.0",
+      "Name": "Creative Commons Namensnennung -- Keine Bearbeitung 3.0 Unported (CC BY-ND 3.0)",
+      "Lizenzcode": "cc-by-nd/3.0",
+      "Lizenztext": "http://creativecommons.org/licenses/by-nd/3.0/",
+      "OGDLizenzcode": "cc-by-nd-3.0",
+      "Lizenztyp": "geschlossen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/cc-by-nd/4.0",
+      "Name": "Creative Commons Namensnennung - - Keine Bearbeitung 4.0 International (CC BY-ND 4.0)",
+      "Lizenzcode": "cc-by-nd/4.0",
+      "Lizenztext": "https://creativecommons.org/licenses/by-nd/4.0/",
+      "OGDLizenzcode": "cc-by-nd-4.0",
+      "Lizenztyp": "geschlossen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/cc-by-sa",
+      "Name": "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen (CC-BY-SA)",
+      "Lizenzcode": "cc-by-sa",
+      "Lizenztext": "http://www.opendefinition.org/licenses/cc-by-sa",
+      "OGDLizenzcode": "cc-by-sa",
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/dl-by-de/1_0",
+      "URI": "http://dcat-ap.de/def/licenses/cc-by-sa/4.0",
+      "Name": "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen 4.0 International (CC-BY-SA 4.0)",
+      "Lizenzcode": "cc-by-sa/4.0",
+      "Lizenztext": "http://creativecommons.org/licenses/by-sa/4.0/",
+      "OGDLizenzcode": "cc-by-sa-4.0",
+      "Lizenztyp": "offen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/ccpdm/1.0",
+      "Name": "Public Domain Mark 1.0 (PDM)",
+      "Lizenzcode": "ccpdm/1.0",
+      "Lizenztext": "http://creativecommons.org/publicdomain/mark/1.0/",
+      "OGDLizenzcode": "cc-pdm-1.0",
+      "Lizenztyp": "offen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/cc-zero",
+      "Name": "Creative Commons CC Zero License (cc-zero)",
+      "Lizenzcode": "cc-zero",
+      "Lizenztext": "http://www.opendefinition.org/licenses/cc-zero",
+      "OGDLizenzcode": "cc-zero",
+      "Lizenztyp": "offen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/dl-by-de/1.0",
       "Name": "Datenlizenz Deutschland Namensnennung 1.0",
-      "Lizenzcode": "dlbyde/1_0",
+      "Lizenzcode": "dl-by-de/1.0",
       "Lizenztext": "https://www.govdata.de/dl-de/by-1-0",
       "OGDLizenzcode": "dl-de-by-1.0",
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/dl-by-de/2_0",
+      "URI": "http://dcat-ap.de/def/licenses/dl-by-de/2.0",
       "Name": "Datenlizenz Deutschland Namensnennung 2.0",
-      "Lizenzcode": "dlbyde/2_0",
+      "Lizenzcode": "dl-by-de/2.0",
       "Lizenztext": "https://www.govdata.de/dl-de/by-2-0",
       "OGDLizenzcode": "dl-de-by-2.0",
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/dl-by-nc-de/1_0",
+      "URI": "http://dcat-ap.de/def/licenses/dl-by-nc-de/1.0",
       "Name": "Datenlizenz Deutschland Namensnennung nicht-kommerziell 1.0",
-      "Lizenzcode": "dlbyncde/1_0",
+      "Lizenzcode": "dl-by-nc-de/1.0",
       "Lizenztext": "https://www.govdata.de/dl-de/by-nc-1-0",
       "OGDLizenzcode": "dl-de-by-nc-1.0",
       "Lizenztyp": "geschlossen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/apache",
-      "Name": "FreieSoftwareLizenz der Apache Software Foundation, keine CopyleftLizenz",
-      "Lizenzcode": "apache",
-      "Lizenztext": "http://www.apache.org/licenses",
-      "OGDLizenzcode": "apache",
-      "Lizenztyp": "offen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/gfdl",
-      "Name": "GNU Free Documentation License",
-      "Lizenzcode": "gfdl",
-      "Lizenztext": "http://www.opendefinition.org/licenses/gfdl",
-      "OGDLizenzcode": "gfdl",
-      "Lizenztyp": "offen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/gpl/30",
-      "Name": "GNU General Public License version 3.0 (GPLv3)",
-      "Lizenzcode": "gpl/3_0",
-      "Lizenztext": "http://www.opensource.org/licenses/gpl-3.0.html",
-      "OGDLizenzcode": "gpl-3.0",
-      "Lizenztyp": "offen"
-    },
-    {
-      "URI": "http://dcat-ap.de/def/licenses/mozilla",
-      "Name": "Mozilla Public License 1.0 (MPL)",
-      "Lizenzcode": "mozilla",
-      "Lizenztext": "http://www.mozilla.org/MPL",
-      "OGDLizenzcode": "mozilla",
+      "URI": "http://dcat-ap.de/def/licenses/dl-zero-de/2.0",
+      "Name": "Datenlizenz Deutschland – Zero – Version 2.0",
+      "Lizenzcode": "dl-zero-de/2.0",
+      "Lizenztext": "https://www.govdata.de/dl-de/zero-2-0",
+      "OGDLizenzcode": "dl-de-zero-2.0",
       "Lizenztyp": "offen"
     },
     {
@@ -234,15 +171,31 @@
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/od-bc",
-      "Name": "Open Data Commons Attribution License (ODCBY)",
-      "Lizenzcode": "odby",
-      "Lizenztext": "http://www.opendefinition.org/licenses/odc-by",
-      "OGDLizenzcode": "odc-by",
+      "URI": "http://dcat-ap.de/def/licenses/gfdl",
+      "Name": "GNU Free Documentation License (GFDL)",
+      "Lizenzcode": "gfdl",
+      "Lizenztext": "http://www.opendefinition.org/licenses/gfdl",
+      "OGDLizenzcode": "gfdl",
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/od-bl",
+      "URI": "http://dcat-ap.de/def/licenses/gpl/3.0",
+      "Name": "GNU General Public License version 3.0 (GPLv3)",
+      "Lizenzcode": "gpl/3.0",
+      "Lizenztext": "http://www.opensource.org/licenses/gpl-3.0.html",
+      "OGDLizenzcode": "gpl-3.0",
+      "Lizenztyp": "offen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/mozilla",
+      "Name": "Mozilla Public License 2.0 (MPL)",
+      "Lizenzcode": "mozilla",
+      "Lizenztext": "http://www.mozilla.org/MPL",
+      "OGDLizenzcode": "mozilla",
+      "Lizenztyp": "offen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/odbl",
       "Name": "Open Data Commons Open Database License (ODbL)",
       "Lizenzcode": "odbl",
       "Lizenztext": "http://www.opendefinition.org/licenses/odc-odbl",
@@ -250,19 +203,67 @@
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/odc-pddl",
-      "Name": "Open Data Commons Public Domain Dedication and Licence (PDDL)",
+      "URI": "http://dcat-ap.de/def/licenses/odby",
+      "Name": "Open Data Commons Attribution License (ODC-BY 1.0)",
+      "Lizenzcode": "odby",
+      "Lizenztext": "http://www.opendefinition.org/licenses/odc-by",
+      "OGDLizenzcode": "odc-by",
+      "Lizenztyp": "offen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/odcpddl",
+      "Name": "Open Data Commons Public Domain Dedication and Licence (ODC PDDL)",
       "Lizenzcode": "odcpddl",
       "Lizenztext": "http://www.opendefinition.org/licenses/odc-pddl",
       "OGDLizenzcode": "odc-pddl",
       "Lizenztyp": "offen"
     },
     {
-      "URI": "http://dcat-ap.de/def/licenses/cc-pdm/1_0",
-      "Name": "Public Domain Mark 1.0 (PDM)",
-      "Lizenzcode": "ccpdm/10",
-      "Lizenztext": "http://creativecommons.org/publicdomain/mark/1.0/",
-      "OGDLizenzcode": "cc-pdm-1.0",
+      "URI": "http://dcat-ap.de/def/licenses/officialWork",
+      "Name": "Amtliches Werk, lizenzfrei nach §5 Abs. 1 UrhG",
+      "Lizenzcode": "officialWork",
+      "Lizenztext": "http://www.gesetze-im-internet.de/urhg/__5.html",
+      "OGDLizenzcode": "official-work",
+      "Lizenztyp": "offen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/other-closed",
+      "Name": "Andere geschlossene Lizenz",
+      "Lizenzcode": "other-closed",
+      "Lizenztext": "",
+      "OGDLizenzcode": "other-closed",
+      "Lizenztyp": "geschlossen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/other-commercial",
+      "Name": "Andere kommerzielle Lizenz",
+      "Lizenzcode": "other-commercial",
+      "Lizenztext": "",
+      "OGDLizenzcode": "app_commercial",
+      "Lizenztyp": "geschlossen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/other-freeware",
+      "Name": "Andere Freeware Lizenz",
+      "Lizenzcode": "other-freeware",
+      "Lizenztext": "",
+      "OGDLizenzcode": "app_freeware",
+      "Lizenztyp": "geschlossen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/other-open",
+      "Name": "Andere offene Lizenz",
+      "Lizenzcode": "other-open",
+      "Lizenztext": "",
+      "OGDLizenzcode": "other-open",
+      "Lizenztyp": "offen"
+    },
+    {
+      "URI": "http://dcat-ap.de/def/licenses/other-opensource",
+      "Name": "Andere Open Source Lizenz",
+      "Lizenzcode": "other-opensource",
+      "Lizenztext": "",
+      "OGDLizenzcode": "app_opensource",
       "Lizenztyp": "offen"
     }
   ]

@@ -8,6 +8,7 @@ from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcatde.dataset_utils import set_extras_field
 from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
+from ckanext.harvest.harvesters import HarvesterBase
 
 
 

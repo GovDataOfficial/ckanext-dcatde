@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.1.2 2018-05-18
+
+* Updated the examples for the licenses in CKAN and the license mapping to DCAT-AP.de v1.0.1
+* Updated the example for the RDF endpoint to DCAT-AP.de v1.0.1
+* Added patch for DCAT harvester that it uses the default `_get_user_name` logic of ckanext-harvest
+* Added patch for ckanext-harvest that the default dataset name suffix is configurable
+
 ## v3.1.1 2018-03-29
 
 * OGD `metadata_original_id` is now mapped to `dct:identifier` instead of `adms:identifier`

@@ -49,7 +49,7 @@ It is tested that ckanext-dcatde is working well with the release `v0.0.5` of ck
 
 
 ## Installing patch for ckanext-dcat
-We have done some modifications on the CKAN plugin ckanext-dcat ([v0.0.6](https://github.com/ckan/ckanext-dcat/releases/tag/v0.0.6)), so it is needed to patching the ckanext-dcat installation. Copy the file [profiles.py](./src/deb/patches/profiles.py) to /path/to/virtualenv/lib/python2.7/site-packages/ckanext/dcat/profiles.py and overwrite the existent file. The patch changes the default behavior in the following way:
+We have done some modifications on the CKAN plugin ckanext-dcat ([v0.0.6](https://github.com/ckan/ckanext-dcat/releases/tag/v0.0.6)), so it is needed to patching the ckanext-dcat installation. Copy the file [profiles.py](./src/deb/patches/dcat/profiles.py) to /path/to/virtualenv/lib/python2.7/site-packages/ckanext/dcat/profiles.py and overwrite the existent file. The patch changes the default behavior in the following way:
 * Adding prefix "mailto:" to the email address in the output and removing possible prefix
 * Changed the type from Literal to UriRef for some fields
 

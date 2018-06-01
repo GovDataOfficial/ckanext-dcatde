@@ -326,11 +326,11 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
     <foaf:page rdf:resource="https://www.govdata.de/ckan/api/rest/dataset/naturraume-geest-und-marsch3"/>
     <dcat:mediaType rdf:resource="https://www.iana.org/assignments/media-types/application/gml+xml"/>
     <dcat:accessURL rdf:resource="http://geodienste.hamburg.de/darf_nicht_die_gleiche_url_wie_downloadurl_sein_da_es_sonst_nicht_angezeigt_wird"/>
-    <dct:rights rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
+    <dct:rights rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
     <dcat:downloadURL rdf:resource="http://geodienste.hamburg.de/Geest-_Marsch"/>
     <dct:conformsTo>Eine Regel oder eine URL</dct:conformsTo>
     <dcatde:licenseAttributionByText>Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2015</dcatde:licenseAttributionByText>
-    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
     <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
     <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">685246.0</dcat:byteSize>
     <spdx:checksum>
@@ -358,7 +358,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
   <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/4ade8a03-2801-471a-8f7f-97c70265e7eb/resource/470321e8-dff4-447e-9436-f636ed771426">
     <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.0</dcat:byteSize>
     <dct:description>Test Ressource 2, existiert nicht wirklich</dct:description>
-    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-zero-de/2_0"/>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-zero-de/2.0"/>
     <dcat:mediaType rdf:resource="http://publications.europa.eu/mdr/resource/authority/file-type/xml/filetypes.xml"/>
     <dcatde:licenseAttributionByText>Datenlizenz Deutschland – Zero – Version 2.0</dcatde:licenseAttributionByText>
     <dcat:accessURL rdf:resource="http://www.testdatensatz.de/ressource2"/>
@@ -391,7 +391,7 @@ doc: http://support.berlin.de/wiki/index.php/SimpleSearch_JSON</dct:description>
   </dcat:Distribution>
   <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/b5882a57-d142-4930-9290-b12bbb6e3f0c/resource/c0763ddd-28a1-4d11-bb09-d8115e5f05b2">
     <dcat:accessURL rdf:resource="http://geodienste.hamburg.de/"/>
-    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
   </dcat:Distribution>
   <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/a9a6cb8f-b41f-4e33-ba09-b9285c8a43f1">
     <dct:description>REST-API mit CSV-Ausgabe für "Aktuelle Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren". Es existieren weitere GET-Parameter für spezielle Anfragen.
@@ -406,9 +406,9 @@ doc: http://support.berlin.de/wiki/index.php/SimpleSearch_API</dct:description>
     <dcat:downloadURL rdf:resource="http://daten-hamburg.de/umwelt_klima/naturraeume_geest_und_marsch/Naturraeume_Geest_und_Marsch_HH_2017-02-20.zip"/>
     <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
     <dct:description>Das ist eine deutsche Beschreibung der Distribution 4</dct:description>
-    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
     <foaf:page rdf:resource="https://www.govdata.de/ckan/api/rest/dataset/naturraume-geest-und-marsch3"/>
-    <dct:rights rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
+    <dct:rights rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
     <adms:status rdf:resource="http://purl.org/adms/status/Completed"/>
     <dcat:accessURL rdf:resource="http://daten-hamburg.de/umwelt_klima/naturraeume_geest_und_marsch/Naturraeume_Geest_und_Marsch_HH_2017-02-20.zip_abweichend"/>
     <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">222441.0</dcat:byteSize>
