@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
-version = '1.0.0'
+VERSION = '3.1.2'
 
 setup(
     name='ckanext-dcatde',
-    version=version,
+    version=VERSION,
     description="Plugin to migrate to and provide DCAT-AP.de Profile",
     long_description='''\
     ''',
@@ -23,6 +23,8 @@ setup(
     ],
     entry_points='''
     [ckan.plugins]
+    dcatde_rdf_harvester=ckanext.dcatde.harvesters.dcatde_rdf:DCATdeRDFHarvester
+
     dcatde=ckanext.dcatde.plugins:DCATdePlugin
 
     [ckan.rdf.profiles]

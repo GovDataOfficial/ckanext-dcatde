@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns:spdx="http://spdx.org/rdf/terms#"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:locn="http://www.w3.org/ns/locn#"
+  xmlns:hydra="http://www.w3.org/ns/hydra/core#"
+  xmlns:schema="http://schema.org/"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:dcat="http://www.w3.org/ns/dcat#"
+  xmlns:dct="http://purl.org/dc/terms/"
+  xmlns:adms="http://www.w3.org/ns/adms#"
+  xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
+  xmlns:dcatde="http://dcat-ap.de/def/dcatde/1_0/"
+>
+  <dcat:Catalog rdf:about="http://data.example-domain.de">
+    <dct:title>CKAN</dct:title>
+    <foaf:homepage rdf:resource="http://data.example-domain.de"/>
+    <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-12-21T11:34:24.670011</dct:modified>
+    <dcat:dataset>
+      <dcat:Dataset rdf:about="http://data.example-domain.de/dataset/b5882a57-d142-4930-9290-b12bbb6e3f0c">
+        <dct:title>Titel</dct:title>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-10-25T13:46:11.509167</dct:issued>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-10-25T13:46:11.522228</dct:modified>
+        <dct:description>Beschreibung</dct:description>
+        <dct:publisher rdf:resource="http://data.example-domain.de/organization/30b7e9ef-327c-4f32-9591-70a88bcbdda4"/>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/b5882a57-d142-4930-9290-b12bbb6e3f0c/resource/c0763ddd-28a1-4d11-bb09-d8115e5f05b2"/>
+        <dct:identifier>b5882a57-d142-4930-9290-b12bbb6e3f0c</dct:identifier>
+      </dcat:Dataset>
+    </dcat:dataset>
+    <dcat:dataset>
+      <dcat:Dataset rdf:about="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e">
+        <dcat:landingPage rdf:resource="http://www.berlin.de/ba-lichtenberg/wirtschaft/ausschreibung/"/>
+        <dcat:keyword>bezirk</dcat:keyword>
+        <dcatde:politicalGeocodingLevelURI rdf:resource="berlin"/>
+        <dcatde:contributorID>http://datenregister.berlin.de</dcatde:contributorID>
+        <dcat:keyword>simplesearch</dcat:keyword>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-10-25T13:36:02.808395</dct:modified>
+        <dcat:keyword>berlin</dcat:keyword>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/fef45495-8496-4f2a-84c0-f11c53a622da"/>
+        <dct:title>Aktuelle Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren</dct:title>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/049d1df5-2c00-4d6f-aed4-b1b280f57d96"/>
+        <dct:description>Sie interessieren sich für Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren beziehungsweise sonstige Wettbewerbe? Hier finden Sie Informationen zu den aktuellen Ausschreibungen in Lichtenberg.</dct:description>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/1cf0b32f-fb00-4fa7-ad3e-1c9ca78712f6"/>
+        <dct:creator>
+          <foaf:Organization rdf:nodeID="Ndcc5992d965c4c49b89ad0c37e5430ec">
+            <foaf:mbox>manuela.maedge@lichtenberg.berlin.de</foaf:mbox>
+            <foaf:name>Facility Management Lichtenberg</foaf:name>
+          </foaf:Organization>
+        </dct:creator>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/bba0879c-1dc4-4fef-8e2b-bcff7a212dfb"/>
+        <dcat:keyword>fristen</dcat:keyword>
+        <dcat:keyword>lichtenberg</dcat:keyword>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/2bc86287-6712-48f1-adf4-9e3d42f759e3"/>
+        <dcat:keyword>vergaben</dcat:keyword>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/0d96eb16-9846-40a2-9762-e6bb8ce8c4ea"/>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/a9a6cb8f-b41f-4e33-ba09-b9285c8a43f1"/>
+        <dcat:contactPoint>
+          <vcard:Organization rdf:nodeID="N082589a0b6274c408a6eca223226d59a">
+            <vcard:hasEmail rdf:resource="mailto:manuela.maedge@lichtenberg.berlin.de"/>
+            <vcard:fn>Manuela Mädge</vcard:fn>
+          </vcard:Organization>
+        </dcat:contactPoint>
+        <dcat:keyword>vof</dcat:keyword>
+        <dcat:keyword>wettbewerbe</dcat:keyword>
+        <dcat:keyword>ausschreibungen</dcat:keyword>
+        <dct:identifier>63961baa-2fd0-40d4-9242-4a9640ff5f1e</dct:identifier>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2015-01-19T09:12:31.072938</dct:issued>
+        <dcatde:maintainer>
+          <foaf:Organization rdf:nodeID="N4d99e3d890bc4ac1bf8b702570ac9ad3">
+            <foaf:mbox>manuela.maedge@lichtenberg.berlin.de</foaf:mbox>
+            <foaf:name>Manuela Mädge</foaf:name>
+          </foaf:Organization>
+        </dcatde:maintainer>
+        <dcat:keyword>vol</dcat:keyword>
+        <dct:publisher rdf:resource="http://data.example-domain.de/organization/a1a3b112-e395-45d5-8447-e710bd44dcc7"/>
+        <dcat:keyword>veroffentlichungen</dcat:keyword>
+        <dcat:keyword>zuschlag</dcat:keyword>
+      </dcat:Dataset>
+    </dcat:dataset>
+    <dcat:dataset>
+      <dcat:Dataset rdf:about="http://data.example-domain.de/dataset/0ee2fe79-fc37-400d-a8ca-4915b0295aec">
+        <dcatde:contributorID>http://daten.rlp.de</dcatde:contributorID>
+        <dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/SOCI"/>
+        <dct:description>Thematische Karten zur Europawahl am 7. Juni 2009 in Rheinland-Pfalz. Ergebnisse der Parteien auf Kreis- und Verbandsgemeindeebene. Stimmenanteile in % sowie Gewinne und Verluste in Prozentpunkten.&#13;
+Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2004 in %-Punkten, Kreisebene</dct:description>
+        <dct:publisher rdf:resource="http://data.example-domain.de/organization/74f64a0a-f499-49ac-9067-70524fe12926"/>
+        <dcatde:maintainer>
+          <foaf:Organization rdf:nodeID="N2c4d8c048e36407190888d35a37d0730">
+            <foaf:name>Statistisches Landesamt Rheinland-Pfalz </foaf:name>
+          </foaf:Organization>
+        </dcatde:maintainer>
+        <dct:spatial>
+          <dct:Location rdf:nodeID="N0919130fd6024217aa478c12fc4d8715">
+            <locn:geometry rdf:datatype="https://www.iana.org/assignments/media-types/application/vnd.geo+json">{"type": "polygon", "coordinates": [[[5.5652739999999996, 47.141213999999998], [15.571372, 47.141213999999998], [15.571372, 55.058926999999997], [5.5652739999999996, 55.058926999999997], [5.5652739999999996, 47.141213999999998]], [[5.5652739999999996, 47.141213999999998], [15.571372, 47.141213999999998], [15.571372, 55.058926999999997], [5.5652739999999996, 55.058926999999997], [5.5652739999999996, 47.141213999999998]]]}</locn:geometry>
+          </dct:Location>
+        </dct:spatial>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-10-25T13:37:05.410879</dct:modified>
+        <dct:identifier>0ee2fe79-fc37-400d-a8ca-4915b0295aec</dct:identifier>
+        <dcat:keyword>spd</dcat:keyword>
+        <dcat:keyword>verbandsgemeindedaten</dcat:keyword>
+        <dct:title>Europawahl 2009 - Ebene: SPD, Gewinne und Verluste gegenüber Europawahl 2004 in %-Punkten (VG)</dct:title>
+        <dct:temporal>
+          <dct:PeriodOfTime rdf:nodeID="N5b52297f58a54697bcdd3bbe5840da01">
+            <schema:startDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2013-07-22T00:00:00</schema:startDate>
+            <schema:endDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2013-11-23T00:00:00</schema:endDate>
+          </dct:PeriodOfTime>
+        </dct:temporal>
+        <dcat:keyword>wahlergebnisse</dcat:keyword>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/0ee2fe79-fc37-400d-a8ca-4915b0295aec/resource/cab9daa0-8f30-48b7-a4f0-2cad6bc4c0e9"/>
+        <dcat:keyword>europawahl-2009</dcat:keyword>
+        <dcat:keyword>gewinne-und-verluste</dcat:keyword>
+        <dcat:contactPoint>
+          <vcard:Organization rdf:nodeID="N7c1f9341099d463caa166116b45cf08b">
+            <vcard:fn>Statistisches Landesamt Rheinland-Pfalz </vcard:fn>
+            <vcard:hasEmail rdf:resource="mailto:poststelle(at)statistik.rlp.de"/>
+          </vcard:Organization>
+        </dcat:contactPoint>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/0ee2fe79-fc37-400d-a8ca-4915b0295aec/resource/890f7e3e-4a2c-4532-a24a-70c525dca19b"/>
+        <dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/EDUC"/>
+        <dcat:keyword>wahlen</dcat:keyword>
+        <dct:creator>
+          <foaf:Organization rdf:nodeID="N4b68a7b63842459f9621188c5ea8e88d">
+            <foaf:mbox>poststelle(at)statistik.rlp.de</foaf:mbox>
+            <foaf:name>Statistisches Landesamt Rheinland-Pfalz </foaf:name>
+          </foaf:Organization>
+        </dct:creator>
+        <dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/TECH"/>
+        <dcat:keyword>stimmen</dcat:keyword>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2014-04-29T13:27:44.728450</dct:issued>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/0ee2fe79-fc37-400d-a8ca-4915b0295aec/resource/1b520bba-9130-4a44-ba8d-446a545178bf"/>
+        <dcatde:geocodingText>Boeblingen</dcatde:geocodingText>
+      </dcat:Dataset>
+    </dcat:dataset>
+    <dcat:dataset>
+      <dcat:Dataset rdf:about="http://data.example-domain.de/dataset/4ade8a03-2801-471a-8f7f-97c70265e7eb">
+        <dct:publisher rdf:resource="http://data.example-domain.de/organization/7346695b-8e83-45f1-92b7-48324aa4806e"/>
+        <dct:title>Testdatensatz Lizenz Offenheit</dct:title>
+        <dcat:contactPoint>
+          <vcard:Organization rdf:nodeID="N6df42aaa7cea48b9b5520913f19d3b5d">
+            <vcard:hasStreetAddress>Ligusterweg 4</vcard:hasStreetAddress>
+            <vcard:fn>Anton Test</vcard:fn>
+            <vcard:hasCountryName>Great Britain</vcard:hasCountryName>
+            <vcard:hasURL rdf:resource="http://www.testdatensatz.de"/>
+            <vcard:hasEmail rdf:resource="mailto:anton.test@testdatensatz.de"/>
+          </vcard:Organization>
+        </dcat:contactPoint>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/4ade8a03-2801-471a-8f7f-97c70265e7eb/resource/f09df255-914c-4966-9be3-0d91ecf83eb1"/>
+        <dct:description>Besitzt Ressourcen mit offener und geschlossener Lizenz.</dct:description>
+        <dct:spatial>
+          <dct:Location rdf:nodeID="N6ef8307cfe1c47b094fbf1fc72ba794a"/>
+        </dct:spatial>
+        <dct:creator>
+          <foaf:Organization rdf:nodeID="N8454cc22e5694f1d8bc513f6013493ca">
+            <foaf:mbox>tom.test@testdatensatz.de</foaf:mbox>
+            <foaf:homepage rdf:resource="http://www.testdatensatz.de"/>
+            <foaf:name>Tom Test</foaf:name>
+          </foaf:Organization>
+        </dct:creator>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-11-06T15:07:54.723057</dct:modified>
+        <dct:identifier>4ade8a03-2801-471a-8f7f-97c70265e7eb</dct:identifier>
+        <dcatde:maintainer>
+          <foaf:Organization rdf:nodeID="N33e7b1d2d424423b92777d53c6c18280">
+            <foaf:mbox>anton.test@testdatensatz.de</foaf:mbox>
+            <foaf:homepage rdf:resource="http://www.testdatensatz.de"/>
+            <foaf:name>Anton Test</foaf:name>
+          </foaf:Organization>
+        </dcatde:maintainer>
+        <dcat:landingPage rdf:resource="http://www.testdatensatz.de"/>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/4ade8a03-2801-471a-8f7f-97c70265e7eb/resource/470321e8-dff4-447e-9436-f636ed771426"/>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-11-02T11:50:16.069087</dct:issued>
+        <dct:temporal>
+          <dct:PeriodOfTime rdf:nodeID="Nf4d3958d9d934ed19470c5004522043f">
+            <schema:endDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2018-01-01T00:00:00</schema:endDate>
+            <schema:startDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2000-01-01T00:00:00</schema:startDate>
+          </dct:PeriodOfTime>
+        </dct:temporal>
+        <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
+        <dcatde:politicalGeocodingLevelURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/Level/municipality"/>
+        <adms:identifier>id.testdatensatz.de</adms:identifier>
+        <dcatde:contributorID>portal.testdatensatz.de</dcatde:contributorID>
+        <dcatde:geocodingText>Boeblingen</dcatde:geocodingText>
+      </dcat:Dataset>
+    </dcat:dataset>
+    <dcat:dataset>
+      <dcat:Dataset rdf:about="http://data.example-domain.de/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9">
+        <dct:isVersionOf rdf:resource="https://www.govdata.de/web/guest/suchen/-/details/naturraume-geest-und-marsch2"/>
+        <adms:versionNotes>Teilweise geänderte Fassung</adms:versionNotes>
+        <dct:spatial>
+          <dct:Location rdf:nodeID="N6fe4d0f5afa145babc805e71b8312c50">
+            <locn:geometry rdf:datatype="https://www.iana.org/assignments/media-types/application/vnd.geo+json">{"type":"Polygon","coordinates":[[[10.3263,53.3949],[10.3263,53.9641],[8.4205,53.9641],[8.4205,53.3949],[10.3263,53.3949]]]}</locn:geometry>
+            <locn:geometry rdf:datatype="http://www.opengis.net/ont/geosparql#wktLiteral">POLYGON ((10.3263 53.3949, 10.3263 53.9641, 8.4205 53.9641, 8.4205 53.3949, 10.3263 53.3949))</locn:geometry>
+          </dct:Location>
+        </dct:spatial>
+        <dcat:keyword>Umwelt und Klima</dcat:keyword>
+        <owl:versionInfo>2.0</owl:versionInfo>
+        <dct:conformsTo>Eine Regel oder eine URL</dct:conformsTo>
+        <dcatde:politicalGeocodingURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/regionalKey/020000000000"/>
+        <dct:title>Naturräume Geest und Marsch</dct:title>
+        <dcat:keyword>Grundwasser</dcat:keyword>
+        <dcat:landingPage rdf:resource="https://www.govdata.de/web/guest/daten/-/details/naturraume-geest-und-marsch3"/>
+        <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
+        <dct:temporal>
+          <dct:PeriodOfTime rdf:nodeID="Nf817a1db09ed411191a1fe130ba669e5">
+            <schema:endDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2016-12-31T00:00:00</schema:endDate>
+            <schema:startDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2016-01-01T00:00:00</schema:startDate>
+          </dct:PeriodOfTime>
+        </dct:temporal>
+        <dcatde:politicalGeocodingURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/stateKey/02"/>
+        <dcat:contactPoint>
+          <vcard:Organization rdf:nodeID="N98f453ff4d0e41d7b8b108704274ce73">
+            <vcard:hasStreetAddress>Beispielstraße 4</vcard:hasStreetAddress>
+            <vcard:hasEmail rdf:resource="mailto:michael.schroeder@bue.hamburg.de"/>
+            <vcard:hasTelephone rdf:resource="tel:+494042840-3494"/>
+            <vcard:hasLocality>Beispielort</vcard:hasLocality>
+            <vcard:hasCountryName>DE</vcard:hasCountryName>
+            <vcard:fn>Herr Dr. Michael Schröder</vcard:fn>
+            <vcard:hasPostalCode>12345</vcard:hasPostalCode>
+          </vcard:Organization>
+        </dcat:contactPoint>
+        <dct:relation rdf:resource="http://www.hamburg.de/grundwasser/;jsessionid=2955D422DF427EF0F3DBCA0E67239DC7.liveWorker2"/>
+        <dct:publisher rdf:resource="http://www.hamburg.de/bue/"/>
+        <dcatde:contributorID>http://dcat-ap.de/def/contributors/transparenzportalHamburg</dcatde:contributorID>
+        <dct:provenance>MDK/c71a34e1-bf96-44d8-8020-5ebb0c7012a3</dct:provenance>
+        <dcat:keyword>hmbtg</dcat:keyword>
+        <dct:accrualPeriodicity rdf:resource="http://publications.europa.eu/resource/authority/frequency/ANNUAL"/>
+        <dcatde:geocodingText>Hamburg</dcatde:geocodingText>
+        <dct:hasVersion rdf:resource="https://www.govdata.de/web/guest/suchen/-/details/naturraume-geest-und-marsch4"/>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9/resource/7322bc08-a30e-42d0-aff0-2c90864ed72a"/>
+        <foaf:page rdf:resource="http://metaver.de/trefferanzeige?docuuid=4635D337-4805-4C32-A211-13F8C038BF27"/>
+        <dct:spatial>
+          <dct:Location rdf:nodeID="N5cee4a7a6c3b4d7cb075ae22beb0b13b">
+            <locn:adminUnitL2 rdf:resource="http://dcat-ap.de/def/politicalGeocoding/stateKey/02"/>
+            <locn:adminUnitL2 rdf:resource="http://dcat-ap.de/def/politicalGeocoding/regionalKey/020000000000"/>
+          </dct:Location>
+        </dct:spatial>
+        <adms:identifier>4635D337-4805-4C32-A211-13F8C038BF27</adms:identifier>
+        <dcat:keyword>Thematische Karte</dcat:keyword>
+        <dcatde:legalbasisText>Umweltinformationsgesetz (UIG)</dcatde:legalbasisText>
+        <dct:source>HMDK/c71a34e1-bf96-44d8-8020-5ebb0c7012a3</dct:source>
+        <dcatde:qualityProcessURI rdf:resource="https://www.example.com/"/>
+        <dct:description>Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. Die Karte ist auch als Hilfskarte für den Kontext -Einbau Ersatzbaustoffe- zu verstehen. Hier gibt es unterschiedliche Richtlinien je nachdem, ob ein Bauvorhaben in bzw. auf Geest- oder Marsch-Boden geplant ist. Die Daten werden als WMS-Darstellungsdienst und als WFS-Downloaddienst bereitgestellt.</dct:description>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-10-25T13:45:51.426366</dct:issued>
+        <dcat:keyword>hmbtg_09_geodaten</dcat:keyword>
+        <dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/ENVI"/>
+        <dcat:keyword>Geodaten</dcat:keyword>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9/resource/d1dc16a1-9a67-4e67-b88f-2c6c0441a292"/>
+        <dcatde:originator>
+          <foaf:Person rdf:nodeID="N59fbf5bf30484d7596b31a3cc495de47">
+            <foaf:name>Peter Schröder</foaf:name>
+          </foaf:Person>
+        </dcatde:originator>
+        <dcat:keyword>Bodenschutz</dcat:keyword>
+        <dcat:keyword>opendata</dcat:keyword>
+        <dct:identifier>bd2d4fa6-e9ad-470d-888b-5eb1378d39e9</dct:identifier>
+        <dct:accessRights>public</dct:accessRights>
+        <dcat:keyword>Karte</dcat:keyword>
+        <dcatde:maintainer>
+          <foaf:Person rdf:nodeID="N2ad355b208d64881a9bcb9f0dc4dde30">
+            <foaf:name>Peter Schröder</foaf:name>
+          </foaf:Person>
+        </dcatde:maintainer>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-12-21T11:34:24.670011</dct:modified>
+        <dcatde:politicalGeocodingLevelURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/Level/state"/>
+        <adms:sample>Referenz auf Beispieldatenstruktur</adms:sample>
+      </dcat:Dataset>
+    </dcat:dataset>
+    <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
+    <dcat:dataset>
+      <dcat:Dataset rdf:about="http://data.example-domain.de/dataset/3ca58f59-adfd-4ae7-a277-1707973fd755">
+        <dct:publisher rdf:resource="http://data.example-domain.de/organization/7346695b-8e83-45f1-92b7-48324aa4806e"/>
+        <dct:identifier>3ca58f59-adfd-4ae7-a277-1707973fd755</dct:identifier>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-10-25T13:36:52.971505</dct:modified>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/3ca58f59-adfd-4ae7-a277-1707973fd755/resource/f23fd0ee-36c3-43b2-be00-623a1193e76c"/>
+        <dct:title>Testdatensatz DCATde Migration</dct:title>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-09-26T10:30:05.600340</dct:issued>
+        <dcatde:politicalGeocodingLevelURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/Level/municipality"/>
+        <dcatde:geocodingText>Boeblingen</dcatde:geocodingText>
+        <dcatde:maintainer>
+          <foaf:Organization rdf:nodeID="N73c77665a7df4bbeb2533845cb69685b">
+            <foaf:name>Anton Test</foaf:name>
+            <foaf:homepage rdf:resource="http://www.testdatensatz.de"/>
+            <foaf:mbox>anton.test@testdatensatz.de</foaf:mbox>
+          </foaf:Organization>
+        </dcatde:maintainer>
+        <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
+        <dct:description>Dies ist ein Datensatz, der alle von der Migration betroffenen Felder besitzt.</dct:description>
+        <dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/EDUC"/>
+        <dcat:contactPoint>
+          <vcard:Organization rdf:nodeID="N613c7c98617949609a794245e3483943">
+            <vcard:hasStreetAddress>Ligusterweg 4</vcard:hasStreetAddress>
+            <vcard:fn>Anton Test</vcard:fn>
+            <vcard:hasCountryName>Little Whinging</vcard:hasCountryName>
+            <vcard:hasURL rdf:resource="http://www.testdatensatz.de"/>
+            <vcard:hasEmail rdf:resource="mailto:anton.test@testdatensatz.de"/>
+          </vcard:Organization>
+        </dcat:contactPoint>
+        <dct:creator>
+          <foaf:Organization rdf:nodeID="Nbc159c7f75d84b50ad9589991e6ba89b">
+            <foaf:mbox>tom.test@testdatensatz.de</foaf:mbox>
+            <foaf:homepage rdf:resource="http://www.testdatensatz.de"/>
+            <foaf:name>Tom Test</foaf:name>
+          </foaf:Organization>
+        </dct:creator>
+        <adms:identifier>id.testdatensatz.de</adms:identifier>
+        <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/3ca58f59-adfd-4ae7-a277-1707973fd755/resource/75e366c1-579d-45cc-9c42-88fdf75dbb93"/>
+        <dct:temporal>
+          <dct:PeriodOfTime rdf:nodeID="N7004d830f0084124aa7df3aaf09a193c">
+            <schema:endDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2018-01-01T00:00:00</schema:endDate>
+            <schema:startDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2000-01-01T00:00:00</schema:startDate>
+          </dct:PeriodOfTime>
+        </dct:temporal>
+        <dcatde:contributorID>portal.testdatensatz.de</dcatde:contributorID>
+        <dcat:landingPage rdf:resource="http://www.testdatensatz.de"/>
+        <dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/TECH"/>
+      </dcat:Dataset>
+    </dcat:dataset>
+  </dcat:Catalog>
+  <hydra:PagedCollection rdf:about="http://data.example-domain.de/catalog.rdf?page=1">
+    <hydra:lastPage>http://data.example-domain.de/catalog.rdf?page=1</hydra:lastPage>
+    <hydra:itemsPerPage rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">100</hydra:itemsPerPage>
+    <hydra:firstPage>http://data.example-domain.de/catalog.rdf?page=1</hydra:firstPage>
+    <hydra:totalItems rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">6</hydra:totalItems>
+  </hydra:PagedCollection>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9/resource/d1dc16a1-9a67-4e67-b88f-2c6c0441a292">
+    <foaf:page rdf:resource="https://www.govdata.de/ckan/api/rest/dataset/naturraume-geest-und-marsch3"/>
+    <dcat:mediaType rdf:resource="https://www.iana.org/assignments/media-types/application/gml+xml"/>
+    <dcat:accessURL rdf:resource="http://geodienste.hamburg.de/darf_nicht_die_gleiche_url_wie_downloadurl_sein_da_es_sonst_nicht_angezeigt_wird"/>
+    <dct:rights rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
+    <dcat:downloadURL rdf:resource="http://geodienste.hamburg.de/Geest-_Marsch"/>
+    <dct:conformsTo>Eine Regel oder eine URL</dct:conformsTo>
+    <dcatde:licenseAttributionByText>Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2015</dcatde:licenseAttributionByText>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
+    <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
+    <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">685246.0</dcat:byteSize>
+    <spdx:checksum>
+      <spdx:Checksum rdf:nodeID="Ne1054c62ba5b484ba526d9bc5559c96b">
+        <spdx:algorithm rdf:resource="http://dcat-ap.de/def/hashAlgorithms/sha/256"/>
+        <spdx:checksumValue rdf:datatype="http://www.w3.org/2001/XMLSchema#hexBinary">5bcc814127be171c75595d419f371c74c9cf041419c45d6e8d2c789e5c303b47</spdx:checksumValue>
+      </spdx:Checksum>
+    </spdx:checksum>
+    <adms:status rdf:resource="http://purl.org/adms/status/Completed"/>
+    <dcatde:plannedAvailability rdf:resource="http://dcat-ap.de/def/plannedAvailability/available"/>
+    <dct:description>Das ist eine deutsche Beschreibung der Distribution 1</dct:description>
+    <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-03-07T10:00:00</dct:modified>
+    <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-02-27T00:00:00</dct:issued>
+    <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/3ca58f59-adfd-4ae7-a277-1707973fd755/resource/f23fd0ee-36c3-43b2-be00-623a1193e76c">
+    <dcatde:licenseAttributionByText>Darf zu Testzwecken genutzt werden</dcatde:licenseAttributionByText>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/mozilla"/>
+    <dcat:accessURL rdf:resource="http://www.testdatensatz.de/ressource1"/>
+    <dct:format>JSON</dct:format>
+    <dct:description>Test Ressource 1, existiert nicht wirklich</dct:description>
+    <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
+    <dct:title>Test Ressource 1</dct:title>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/4ade8a03-2801-471a-8f7f-97c70265e7eb/resource/470321e8-dff4-447e-9436-f636ed771426">
+    <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.0</dcat:byteSize>
+    <dct:description>Test Ressource 2, existiert nicht wirklich</dct:description>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-zero-de/2.0"/>
+    <dcat:mediaType rdf:resource="http://publications.europa.eu/mdr/resource/authority/file-type/xml/filetypes.xml"/>
+    <dcatde:licenseAttributionByText>Datenlizenz Deutschland – Zero – Version 2.0</dcatde:licenseAttributionByText>
+    <dcat:accessURL rdf:resource="http://www.testdatensatz.de/ressource2"/>
+    <dcatde:plannedAvailability rdf:resource="http://dcat-ap.de/def/plannedAvailability/stable"/>
+    <dct:title>Test Ressource 2</dct:title>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/049d1df5-2c00-4d6f-aed4-b1b280f57d96">
+    <dct:description>REST-API mit XML-Ausgabe für "Aktuelle Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren". Es existieren weitere GET-Parameter für spezielle Anfragen.
+lang: de
+doc: http://support.berlin.de/wiki/index.php/SimpleSearch_XML</dct:description>
+    <dcat:accessURL rdf:resource="http://www.berlin.de/ba-lichtenberg/wirtschaft/ausschreibung/index.php/index/all.xml?q="/>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+    <dct:format>XML</dct:format>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/2bc86287-6712-48f1-adf4-9e3d42f759e3">
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+    <dct:format>XLS</dct:format>
+    <dct:description>REST-API mit Excel(XLS)-Ausgabe für "Aktuelle Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren". Es existieren weitere GET-Parameter für spezielle Anfragen.
+lang: de
+doc: http://support.berlin.de/wiki/index.php/SimpleSearch_API</dct:description>
+    <dcat:accessURL rdf:resource="http://www.berlin.de/ba-lichtenberg/wirtschaft/ausschreibung/index.php/index/all.xls?q="/>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/fef45495-8496-4f2a-84c0-f11c53a622da">
+    <dcat:accessURL rdf:resource="http://www.berlin.de/ba-lichtenberg/wirtschaft/ausschreibung/index.php/index/all.json?q="/>
+    <dct:description>REST-API mit JSON-Ausgabe für "Aktuelle Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren". Es existieren weitere GET-Parameter für spezielle Anfragen.
+lang: de
+doc: http://support.berlin.de/wiki/index.php/SimpleSearch_JSON</dct:description>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+    <dct:format>JSON</dct:format>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/b5882a57-d142-4930-9290-b12bbb6e3f0c/resource/c0763ddd-28a1-4d11-bb09-d8115e5f05b2">
+    <dcat:accessURL rdf:resource="http://geodienste.hamburg.de/"/>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/a9a6cb8f-b41f-4e33-ba09-b9285c8a43f1">
+    <dct:description>REST-API mit CSV-Ausgabe für "Aktuelle Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren". Es existieren weitere GET-Parameter für spezielle Anfragen.
+lang: de
+doc: http://support.berlin.de/wiki/index.php/SimpleSearch_API</dct:description>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+    <dct:format>CSV</dct:format>
+    <dcat:accessURL rdf:resource="http://www.berlin.de/ba-lichtenberg/wirtschaft/ausschreibung/index.php/index/all.csv?q="/>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9/resource/7322bc08-a30e-42d0-aff0-2c90864ed72a">
+    <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-03-07T10:00:00</dct:modified>
+    <dcat:downloadURL rdf:resource="http://daten-hamburg.de/umwelt_klima/naturraeume_geest_und_marsch/Naturraeume_Geest_und_Marsch_HH_2017-02-20.zip"/>
+    <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
+    <dct:description>Das ist eine deutsche Beschreibung der Distribution 4</dct:description>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
+    <foaf:page rdf:resource="https://www.govdata.de/ckan/api/rest/dataset/naturraume-geest-und-marsch3"/>
+    <dct:rights rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2.0"/>
+    <adms:status rdf:resource="http://purl.org/adms/status/Completed"/>
+    <dcat:accessURL rdf:resource="http://daten-hamburg.de/umwelt_klima/naturraeume_geest_und_marsch/Naturraeume_Geest_und_Marsch_HH_2017-02-20.zip_abweichend"/>
+    <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">222441.0</dcat:byteSize>
+    <dcat:mediaType>ZIP</dcat:mediaType>
+    <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
+    <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-02-27T00:00:00</dct:issued>
+    <dcatde:licenseAttributionByText>Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2015</dcatde:licenseAttributionByText>
+    <spdx:checksum>
+      <spdx:Checksum rdf:nodeID="N1d3b3090c77a4e82906a323c7e923a2f">
+        <spdx:checksumValue rdf:datatype="http://www.w3.org/2001/XMLSchema#hexBinary">BBBBA2505BD74BE6C4775591E45DF702B93FBDC55CAFE2774FE77275DB1277AF</spdx:checksumValue>
+        <spdx:algorithm rdf:resource="http://dcat-ap.de/def/hashAlgorithms/sha/256"/>
+      </spdx:Checksum>
+    </spdx:checksum>
+    <dcatde:plannedAvailability rdf:resource="http://dcat-ap.de/def/plannedAvailability/available"/>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/0ee2fe79-fc37-400d-a8ca-4915b0295aec/resource/1b520bba-9130-4a44-ba8d-446a545178bf">
+    <dcat:accessURL rdf:resource="http://www.geoportal.rlp.de/mapbender/php/mod_showMetadata.php?languageCode=de&amp;resource=layer&amp;layout=tabs&amp;id=38836"/>
+    <dct:format>HTML</dct:format>
+    <dct:description>Metadaten zur WMS Kartenebene</dct:description>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/3ca58f59-adfd-4ae7-a277-1707973fd755/resource/75e366c1-579d-45cc-9c42-88fdf75dbb93">
+    <dct:description>Test Ressource 2, existiert nicht wirklich</dct:description>
+    <dct:title>Test Ressource 2</dct:title>
+    <dcatde:licenseAttributionByText>Darf zu Testzwecken genutzt werden</dcatde:licenseAttributionByText>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/mozilla"/>
+    <dcat:accessURL rdf:resource="http://www.testdatensatz.de/ressource2"/>
+    <dct:language>http://publications.europa.eu/resource/authority/language/DEU</dct:language>
+    <dct:format>XML</dct:format>
+  </dcat:Distribution>
+  <foaf:Organization rdf:about="http://data.example-domain.de/organization/7346695b-8e83-45f1-92b7-48324aa4806e">
+    <foaf:mbox>heinz.test@testdatensatz.de</foaf:mbox>
+    <foaf:homepage rdf:resource="http://www.testdatensatz.de"/>
+    <foaf:name>Heinz Test</foaf:name>
+  </foaf:Organization>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/1cf0b32f-fb00-4fa7-ad3e-1c9ca78712f6">
+    <dcat:accessURL rdf:resource="http://www.berlin.de/ba-lichtenberg/wirtschaft/ausschreibung/index.php/index/all.jrss?q="/>
+    <dct:format>jrss</dct:format>
+    <dct:description>REST-API mit JSON-RSS-Ausgabe für "Aktuelle Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren". Es existieren weitere GET-Parameter für spezielle Anfragen.
+lang: de
+doc: http://support.berlin.de/wiki/index.php/JSON-RSS</dct:description>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/0ee2fe79-fc37-400d-a8ca-4915b0295aec/resource/cab9daa0-8f30-48b7-a4f0-2cad6bc4c0e9">
+    <dcat:accessURL rdf:resource="http://www.geoportal.rlp.de:80/portal/karten.html?LAYER[zoom]=1&amp;LAYER[id]=38836"/>
+    <dct:description>Anzeige im GeoPortal.rlp</dct:description>
+    <dct:format>Kartenviewer</dct:format>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/0d96eb16-9846-40a2-9762-e6bb8ce8c4ea">
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+    <dcat:accessURL rdf:resource="http://www.berlin.de/ba-lichtenberg/wirtschaft/ausschreibung/index.php/index/all.rss?q="/>
+    <dct:description>REST-API mit XML-RSS-Ausgabe für "Aktuelle Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren". Es existieren weitere GET-Parameter für spezielle Anfragen.
+lang: de
+doc: http://www.rssboard.org/rss-specification</dct:description>
+    <dct:format>RSS</dct:format>
+  </dcat:Distribution>
+  <foaf:Organization rdf:about="http://data.example-domain.de/organization/30b7e9ef-327c-4f32-9591-70a88bcbdda4">
+    <foaf:name>Datahub.io</foaf:name>
+  </foaf:Organization>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/4ade8a03-2801-471a-8f7f-97c70265e7eb/resource/f09df255-914c-4966-9be3-0d91ecf83eb1">
+    <dcatde:plannedAvailability rdf:resource="http://dcat-ap.de/def/plannedAvailability/stable"/>
+    <dcat:mediaType rdf:resource="https://www.iana.org/assignments/media-types/application/json"/>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by-nd"/>
+    <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.0</dcat:byteSize>
+    <dct:title>Test Ressource 1</dct:title>
+    <dcat:accessURL rdf:resource="http://www.testdatensatz.de/ressource1"/>
+    <dct:description>Test Ressource 1, existiert nicht wirklich</dct:description>
+    <dcatde:licenseAttributionByText>Creative Commons Namensnennung Keine Bearbeitung (CC-BY-ND)</dcatde:licenseAttributionByText>
+  </dcat:Distribution>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/0ee2fe79-fc37-400d-a8ca-4915b0295aec/resource/890f7e3e-4a2c-4532-a24a-70c525dca19b">
+    <dct:format>WMS</dct:format>
+    <dct:description>WMS Capabilities Link zur Integration in GIS oder Webapplikationen</dct:description>
+    <dcat:accessURL rdf:resource="http://www.geoportal.rlp.de/mapbender/php/wms.php?layer_id=38836&amp;REQUEST=GetCapabilities&amp;VERSION=1.1.1&amp;SERVICE=WMS"/>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+  </dcat:Distribution>
+  <foaf:Organization rdf:about="http://data.example-domain.de/organization/a1a3b112-e395-45d5-8447-e710bd44dcc7">
+    <foaf:name>Datenportal Berlin</foaf:name>
+  </foaf:Organization>
+  <dcat:Distribution rdf:about="http://data.example-domain.de/dataset/63961baa-2fd0-40d4-9242-4a9640ff5f1e/resource/bba0879c-1dc4-4fef-8e2b-bcff7a212dfb">
+    <dcat:accessURL rdf:resource="http://www.berlin.de/ba-lichtenberg/wirtschaft/ausschreibung/index.php"/>
+    <dct:license rdf:resource="http://dcat-ap.de/def/licenses/cc-by"/>
+    <dct:format>HTML</dct:format>
+    <dct:description>Webseite von "Aktuelle Ausschreibungen nach VOL, VOB, VOF oder für Interessenbekundungsverfahren". Hier können Sie bereits Anfragen abschicken und Daten ansehen.
+lang: de
+doc: http://support.berlin.de/wiki/index.php/SimpleSearch_API</dct:description>
+  </dcat:Distribution>
+  <foaf:Organization rdf:about="http://data.example-domain.de/organization/74f64a0a-f499-49ac-9067-70524fe12926">
+    <foaf:name>Datenportal Rheinland-Pfalz</foaf:name>
+  </foaf:Organization>
+  <foaf:Organization rdf:about="http://www.hamburg.de/bue/">
+    <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
+    <foaf:name>Behörde für Umwelt und Energie (BUE), Amt für Umweltschutz</foaf:name>
+    <foaf:homepage rdf:resource="http://www.hamburg.de/bue/"/>
+  </foaf:Organization>
+</rdf:RDF>

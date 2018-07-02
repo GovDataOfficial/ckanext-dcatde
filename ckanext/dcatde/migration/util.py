@@ -6,6 +6,7 @@ import logging
 import re
 import urllib2
 import pycountry
+import ckanext.dcatde.dataset_utils as ds_utils
 
 
 def log_dataset_prefix(dataset):
@@ -36,34 +37,11 @@ def load_json_mapping(url, errorhint):
         get_migrator_log().error('Could not load ' + errorhint + ' mapping')
         return {}
 
-def get_extras_field(dataset, name):
-    for field in dataset['extras']:
-        if field['key'] == name:
-            return field
 
-    return None
+def rename_extras_field_migration(dataset, name_old, name_new, as_list, do_log=False):
+    result = ds_utils.rename_extras_field(dataset, name_old, name_new, as_list)
 
-
-def insert_new_extras_field(dataset, key, tmp_value, as_list):
-    value = tmp_value
-
-    if as_list:
-        value = json.dumps([value])
-
-    dataset['extras'].insert(0, {u'value': value, u'key': key})
-
-
-def delete_extras_field(dataset, name):
-    dataset['extras'].remove(get_extras_field(dataset, name))
-
-
-def rename_extras_field(dataset, name_old, name_new, as_list, do_log=False):
-    field = get_extras_field(dataset, name_old)
-
-    if field is not None:
-        insert_new_extras_field(dataset, name_new, field['value'], as_list)
-        delete_extras_field(dataset, name_old)
-    elif do_log:
+    if do_log and not result:
         log_warn(dataset, "Field '%s' was not found" % name_old)
 
 
@@ -80,7 +58,7 @@ def get_extras_json_list_data(dataset, extras_field, check_key, expected_val):
     dicts as JSON string.
     This method returns the deserialized list entry having expected_val in
     check_key, or None if no such element exists.'''
-    fld_content = get_extras_field(dataset, extras_field)
+    fld_content = ds_utils.get_extras_field(dataset, extras_field)
 
     if fld_content is not None:
         fld_list = json.loads(fld_content['value'], encoding='utf-8')
@@ -100,7 +78,7 @@ def update_extras_json_list_data(dataset, extras_field, check_key, expected_val,
     pairs than the checked pair, the data is updated.
     Otherwise, the dict is dropped from the list.
     If the whole list became empty, the extras field is dropped.'''
-    fld_content = get_extras_field(dataset, extras_field)
+    fld_content = ds_utils.get_extras_field(dataset, extras_field)
 
     if fld_content is not None:
         fld_list = json.loads(fld_content['value'], encoding='utf-8')
@@ -117,7 +95,7 @@ def update_extras_json_list_data(dataset, extras_field, check_key, expected_val,
             fld_content['value'] = unicode(json.dumps(fld_list, sort_keys=True))
         else:
             # drop contacts if it became empty
-            delete_extras_field(dataset, extras_field)
+            ds_utils.delete_extras_field(dataset, extras_field)
     else:
         log_warn(dataset, 'Could not update data, no field "' +
                  extras_field + '" in extras')
@@ -144,11 +122,11 @@ def update_extras_dates_data(dataset, role, content):
 def migrate_dates_field(dataset, from_field, to_field):
     '''extras.dates.<<from_field>> -> extras.<<to_field>>'''
     extras_dates = get_extras_dates_data(dataset, from_field)
-    target_field = get_extras_field(dataset, to_field)
+    target_field = ds_utils.get_extras_field(dataset, to_field)
 
     if target_field is None and extras_dates:
-        insert_new_extras_field(dataset, to_field,
-                                extras_dates.pop('date', ''), False)
+        ds_utils.insert_new_extras_field(dataset, to_field,
+                                         extras_dates.pop('date', ''), False)
         update_extras_dates_data(dataset, from_field,
                                  extras_dates)
 
@@ -166,13 +144,13 @@ def move_extras_contacts_address(dataset, role, new_role, contact_data=None):
             # first, check if any of the new fields is present. If yes, skip
             # the movement to avoid corrupt datasets
             for k in keys:
-                if get_extras_field(dataset, new_role + '_' + k):
+                if ds_utils.get_extras_field(dataset, new_role + '_' + k):
                     return
 
             for k in keys:
                 if k in parsed_addr:
-                    insert_new_extras_field(dataset, new_role + '_' + k,
-                                            parsed_addr[k], False)
+                    ds_utils.insert_new_extras_field(dataset, new_role + '_' + k,
+                                                     parsed_addr[k], False)
 
             addr_field_new = parsed_addr.get('unknown')
             if addr_field_new:

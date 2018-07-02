@@ -177,7 +177,7 @@ class TestMigrationFunctions(unittest.TestCase):
         self.migrations.metadata_original_id(test_ds)
 
         self._assert_correct_extras(test_ds)
-        self._assert_extras_key_value(test_ds, u'alternate_identifier',
+        self._assert_extras_key_value(test_ds, u'identifier',
                                       u'my id')
 
     def test_spatial_reference_text(self):

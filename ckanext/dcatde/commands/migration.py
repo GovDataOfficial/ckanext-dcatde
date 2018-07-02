@@ -9,18 +9,24 @@ import sys
 from ckan.lib.base import model
 import ckan.plugins.toolkit as tk
 from ckanext.dcatde.migration import migration_functions, util
+from ckanext.dcatde import dataset_utils
 import pylons
 from sqlalchemy import or_
 
+EXTRA_KEY_ADMS_IDENTIFIER = 'alternate_identifier'
+EXTRA_KEY_DCT_IDENTIFIER = 'identifier'
 
 class DCATdeMigrateCommand(tk.CkanCommand):
     '''
     Migrates CKAN datasets from OGD to DCAT-AP.de.
 
-    Usage: dcatde_migrate [dry-run]
+    Usage: dcatde_migrate [dry-run] [adms-id-migrate]
     Params:
-        dry-run    If given, perform all migration tasks without saving. A full
-                   log file is written.
+        dry-run             If given, perform all migration tasks without saving. A full
+                            log file is written.
+
+        adms-id-migrate     If given, only migrate adms:identifier to dct:identifier for all affected
+                            datasets.
 
     Connect with "nc -ul 5005" on the same machine to receive status updates.
     '''
@@ -31,7 +37,12 @@ class DCATdeMigrateCommand(tk.CkanCommand):
     UDP_IP = "127.0.0.1"
     UDP_PORT = 5005
 
+    # constants for different migration modes
+    MODE_OGD = 0
+    MODE_ADMS_ID = 1
+
     dry_run = False
+    migration_mode = MODE_OGD
 
     def __init__(self, name):
         super(DCATdeMigrateCommand, self).__init__(name)
@@ -47,21 +58,24 @@ class DCATdeMigrateCommand(tk.CkanCommand):
         '''
         Executes command.
         '''
-        if len(self.args) > 0:
-            cmd = self.args[0]
-
+        for cmd in self.args:
             if cmd == 'dry-run':
                 self.dry_run = True
+            elif cmd == 'adms-id-migrate':
+                self.migration_mode = self.MODE_ADMS_ID
             else:
                 print 'Command %s not recognized' % cmd
                 self.parser.print_usage()
                 sys.exit(1)
 
         self._load_config()
-        self.executor = migration_functions.MigrationFunctionExecutor(
-            pylons.config.get('ckanext.dcatde.urls.license_mapping'),
-            pylons.config.get('ckanext.dcatde.urls.category_mapping'))
-        self.migrate_datasets()
+        if self.migration_mode == self.MODE_ADMS_ID:
+            self.migrate_adms_identifier()
+        else:
+            self.executor = migration_functions.MigrationFunctionExecutor(
+                pylons.config.get('ckanext.dcatde.urls.license_mapping'),
+                pylons.config.get('ckanext.dcatde.urls.category_mapping'))
+            self.migrate_datasets()
 
     def migrate_datasets(self):
         '''
@@ -95,21 +109,33 @@ class DCATdeMigrateCommand(tk.CkanCommand):
             'Dataset migration finished' +
             (' [dry run, did not save]' if self.dry_run else ''))
 
-    def iterate_local_datasets(self):
-        '''
-        Iterates over all local datasets
-        '''
-        package_list = tk.get_action('package_list')
-        package_show = tk.get_action('package_show')
+    def migrate_adms_identifier(self):
+        util.get_migrator_log().info(
+            'Migrating adms:identifier to dct:identifier' +
+            (' [dry run without saving]' if self.dry_run else ''))
 
-        # returns only active datasets (missing datasets with status "private" and "draft")
-        package_ids = package_list(self.create_context(), {})
-        # Query all private and draft packages except harvest packages
-        query = model.Session.query(model.Package)\
-            .filter(or_(model.Package.private == True, model.Package.state == 'draft'))\
-            .filter(model.Package.type != 'harvest')
-        for package_object in query:
-            package_ids.append(package_object.id)
+        for dataset in self.iterate_adms_id_datasets():
+            # only migrate if dct:identifier is not already present
+            if not dataset_utils.get_extras_field(dataset, EXTRA_KEY_DCT_IDENTIFIER):
+                util.rename_extras_field_migration(dataset, EXTRA_KEY_ADMS_IDENTIFIER,
+                                                   EXTRA_KEY_DCT_IDENTIFIER, False)
+                self.update_dataset(dataset)
+            else:
+                util.get_migrator_log().info(
+                    '%sSkipping package as it already has a dct:identifier',
+                    util.log_dataset_prefix(dataset)
+                )
+
+        util.get_migrator_log().info(
+            'Finished migration of adms:identifier to dct:identifier' +
+            (' [dry run without saving]' if self.dry_run else ''))
+
+    def iterate_datasets(self, package_ids):
+        '''
+        Helper which iterates over all datasets in package_ids, i.e. fetches the package
+        for all IDs
+        '''
+        package_show = tk.get_action('package_show')
 
         package_ids_unique = set(package_ids)
         progress_total = len(package_ids_unique)
@@ -136,9 +162,39 @@ class DCATdeMigrateCommand(tk.CkanCommand):
                 util.get_migrator_log().exception("Package '%s' was not found",
                                                   dataset_id)
 
+    def iterate_local_datasets(self):
+        '''
+        Iterates over all local datasets
+        '''
+        package_list = tk.get_action('package_list')
+
+        # returns only active datasets (missing datasets with status "private" and "draft")
+        package_ids = package_list(self.create_context(), {})
+        # Query all private and draft packages except harvest packages
+        query = model.Session.query(model.Package)\
+            .filter(or_(model.Package.private == True, model.Package.state == 'draft'))\
+            .filter(model.Package.type != 'harvest')
+        for package_object in query:
+            package_ids.append(package_object.id)
+
+        return self.iterate_datasets(package_ids)
+
+    def iterate_adms_id_datasets(self):
+        '''
+        Iterates over all datasets having an adms:identifier (extras.alternate_identifier) field
+        '''
+        query = model.Session.query(model.PackageExtra.package_id) \
+            .filter(model.PackageExtra.key == EXTRA_KEY_ADMS_IDENTIFIER) \
+            .filter(model.PackageExtra.state != 'deleted')
+        package_ids = []
+        for package_object in query:
+            package_ids.append(package_object.package_id)
+
+        return self.iterate_datasets(package_ids)
+
     def update_dataset(self, dataset):
         '''
-        Updates dataset in CKAN
+        Updates dataset in CKAN.
         '''
         if not self.dry_run:
             try:

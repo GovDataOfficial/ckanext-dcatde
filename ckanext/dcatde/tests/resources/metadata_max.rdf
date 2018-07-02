@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:spdx="http://spdx.org/rdf/terms#"
+  xmlns:locn="http://www.w3.org/ns/locn#"
+  xmlns:schema="http://schema.org/"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:dcat="http://www.w3.org/ns/dcat#"
+  xmlns:dct="http://purl.org/dc/terms/"
+  xmlns:adms="http://www.w3.org/ns/adms#"
+  xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
+  xmlns:dcatde="http://dcat-ap.de/def/dcatde/1_0/"
+>
+  <dcat:Dataset rdf:about="http://mtest6.gd.swe.seitenbau.net:5000/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9">
+    <dct:relation rdf:resource="http://www.hamburg.de/grundwasser/;jsessionid=2955D422DF427EF0F3DBCA0E67239DC7.liveWorker2"/>
+    <adms:versionNotes>Teilweise geänderte Fassung</adms:versionNotes>
+    <dcat:keyword>Karte</dcat:keyword>
+    <dcatde:qualityProcessURI rdf:resource="https://www.example.com/"/>
+    <dct:source>HMDK/c71a34e1-bf96-44d8-8020-5ebb0c7012a3</dct:source>
+    <dcatde:maintainer>
+      <foaf:Person rdf:nodeID="N8c44dec506154c269ec60476e1a25429">
+        <foaf:name>Peter Schröder</foaf:name>
+      </foaf:Person>
+    </dcatde:maintainer>
+    <dcat:keyword>hmbtg_09_geodaten</dcat:keyword>
+    <dcat:keyword>Grundwasser</dcat:keyword>
+    <dcat:distribution>
+      <dcat:Distribution rdf:about="http://mtest6.gd.swe.seitenbau.net:5000/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9/resource/e3987e21-80ad-44fb-bd46-067744d94fd3">
+        <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-02-27T00:00:00</dct:issued>
+        <dct:conformsTo>Eine Regel oder eine URL</dct:conformsTo>
+        <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
+        <dcat:downloadURL rdf:resource="http://geodienste.hamburg.de/Geest-_Marsch"/>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-03-07T10:00:00</dct:modified>
+        <dcatde:plannedAvailability rdf:resource="http://dcat-ap.de/def/plannedAvailability/experimental"/>
+        <dcatde:licenseAttributionByText>Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2016</dcatde:licenseAttributionByText>
+        <adms:status rdf:resource="http://purl.org/adms/status/Completed"/>
+        <foaf:page rdf:resource="https://www.govdata.de/ckan/api/rest/dataset/naturraume-geest-und-marsch3"/>
+        <dct:language>de</dct:language>
+        <dct:description>Das ist eine deutsche Beschreibung der Distribution 1</dct:description>
+        <dct:rights rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
+        <dcat:mediaType rdf:resource="https://www.iana.org/assignments/media-types/application/gml+xml"/>
+        <dcat:accessURL rdf:resource="http://geodienste.hamburg.de/darf_nicht_die_gleiche_url_wie_downloadurl_sein_da_es_sonst_nicht_angezeigt_wird"/>
+        <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">685246.0</dcat:byteSize>
+        <spdx:checksum>
+          <spdx:Checksum rdf:nodeID="N4b3aeba0592e4880ad0400b872e53ffc">
+            <spdx:algorithm rdf:resource="http://dcat-ap.de/def/hashAlgorithms/sha/256"/>
+            <spdx:checksumValue rdf:datatype="http://www.w3.org/2001/XMLSchema#hexBinary">5bcc814127be171c75595d419f371c74c9cf041419c45d6e8d2c789e5c303b47</spdx:checksumValue>
+          </spdx:Checksum>
+        </spdx:checksum>
+      </dcat:Distribution>
+    </dcat:distribution>
+    <dcatde:geocodingText>Hamburg</dcatde:geocodingText>
+    <dcatde:politicalGeocodingURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/regionalKey/020000000000"/>
+    <dcatde:legalbasisText>Umweltinformationsgesetz (UIG)</dcatde:legalbasisText>
+    <dcatde:politicalGeocodingURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/stateKey/02"/>
+    <owl:versionInfo>2.0</owl:versionInfo>
+    <dcat:keyword>Bodenschutz</dcat:keyword>
+    <dct:accrualPeriodicity rdf:resource="http://publications.europa.eu/resource/authority/frequency/ANNUAL"/>
+    <dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/ENVI"/>
+    <dcatde:originator>
+      <foaf:Person rdf:nodeID="N7c3cb6824ee84deb9387fb967600df44">
+        <foaf:name>Peter Schröder originator</foaf:name>
+      </foaf:Person>
+    </dcatde:originator>
+    <dct:accessRights>public</dct:accessRights>
+    <dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/AGRI"/>
+    <dcatde:politicalGeocodingLevelURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/Level/state"/>
+    <dct:conformsTo>Eine Regel oder eine URL</dct:conformsTo>
+    <dct:provenance>MDK/c71a34e1-bf96-44d8-8020-5ebb0c7012a3</dct:provenance>
+    <dct:identifier>bd2d4fa6-e9ad-470d-888b-5eb1378d39e9</dct:identifier>
+    <dct:language>de</dct:language>
+    <dcat:landingPage rdf:resource="https://www.govdata.de/web/guest/daten/-/details/naturraume-geest-und-marsch3"/>
+    <dct:spatial>
+      <dct:Location rdf:nodeID="Na4c63b5fd75c4e5a81c63d1ad239f043">
+        <locn:adminUnitL2 rdf:resource="http://dcat-ap.de/def/politicalGeocoding/stateKey/02"/>
+        <locn:adminUnitL2 rdf:resource="http://dcat-ap.de/def/politicalGeocoding/regionalKey/020000000000"/>
+      </dct:Location>
+    </dct:spatial>
+    <dct:title>Naturräume Geest und Marsch</dct:title>
+    <dcat:contactPoint>
+      <vcard:Organization rdf:nodeID="N3f843f71d48d488e8c85a64e5903a191">
+        <vcard:hasTelephone rdf:resource="tel:+49 40 4 28 40 - 3494"/>
+        <vcard:fn>Herr Dr. Michael Schröder</vcard:fn>
+        <vcard:hasEmail rdf:resource="mailto:michael.schroeder@bue.hamburg.de"/>
+        <vcard:hasStreetAddress>Beispielstraße 4</vcard:hasStreetAddress>
+        <vcard:hasCountryName>DE</vcard:hasCountryName>
+        <vcard:hasLocality>Beispielort</vcard:hasLocality>
+        <vcard:hasPostalCode>12345</vcard:hasPostalCode>
+      </vcard:Organization>
+    </dcat:contactPoint>
+    <foaf:page rdf:resource="http://metaver.de/trefferanzeige?docuuid=4635D337-4805-4C32-A211-13F8C038BF27"/>
+    <dct:hasVersion rdf:resource="https://www.govdata.de/web/guest/suchen/-/details/naturraume-geest-und-marsch4"/>
+    <dct:isVersionOf rdf:resource="https://www.govdata.de/web/guest/suchen/-/details/naturraume-geest-und-marsch2"/>
+    <dct:spatial>
+      <dct:Location rdf:nodeID="N7794126f066a4e38bba4f05e146cee39">
+        <locn:geometry rdf:datatype="http://www.opengis.net/ont/geosparql#wktLiteral">POLYGON ((10.3263 53.3949, 10.3263 53.9641, 8.4205 53.9641, 8.4205 53.3949, 10.3263 53.3949))</locn:geometry>
+        <locn:geometry rdf:datatype="https://www.iana.org/assignments/media-types/application/vnd.geo+json">{"type":"Polygon","coordinates":[[[10.3263,53.3949],[10.3263,53.9641],[8.4205,53.9641],[8.4205,53.3949],[10.3263,53.3949]]]}</locn:geometry>
+      </dct:Location>
+    </dct:spatial>
+    <dcat:distribution>
+      <dcat:Distribution rdf:about="http://mtest6.gd.swe.seitenbau.net:5000/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9/resource/e725a934-a827-4581-b040-24721b72e918">
+        <dcat:mediaType>ZIP</dcat:mediaType>
+        <dcatde:plannedAvailability rdf:resource="http://dcat-ap.de/def/plannedAvailability/available"/>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-02-27T00:00:00</dct:issued>
+        <dct:language>de</dct:language>
+        <spdx:checksum>
+          <spdx:Checksum rdf:nodeID="N48a71c595de24d449af0399992098e85">
+            <spdx:algorithm rdf:resource="http://dcat-ap.de/def/hashAlgorithms/sha/256"/>
+            <spdx:checksumValue rdf:datatype="http://www.w3.org/2001/XMLSchema#hexBinary">BBBBA2505BD74BE6C4775591E45DF702B93FBDC55CAFE2774FE77275DB1277AF</spdx:checksumValue>
+          </spdx:Checksum>
+        </spdx:checksum>
+        <foaf:page rdf:resource="https://www.govdata.de/ckan/api/rest/dataset/naturraume-geest-und-marsch3"/>
+        <dcatde:licenseAttributionByText>Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2015</dcatde:licenseAttributionByText>
+        <dct:description>Das ist eine deutsche Beschreibung der Distribution 4</dct:description>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-03-07T10:00:00</dct:modified>
+        <dct:rights rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
+        <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
+        <dcat:accessURL rdf:resource="http://daten-hamburg.de/umwelt_klima/naturraeume_geest_und_marsch/Naturraeume_Geest_und_Marsch_HH_2017-02-20.zip_abweichend"/>
+        <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
+        <dcat:downloadURL rdf:resource="http://daten-hamburg.de/umwelt_klima/naturraeume_geest_und_marsch/Naturraeume_Geest_und_Marsch_HH_2017-02-20.zip"/>
+        <adms:status rdf:resource="http://purl.org/adms/status/Completed"/>
+        <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">222441.0</dcat:byteSize>
+      </dcat:Distribution>
+    </dcat:distribution>
+    <dcat:keyword>Geodaten</dcat:keyword>
+    <dct:publisher>
+      <foaf:Organization rdf:about="http://www.hamburg.de/bue/">
+        <foaf:name>Behörde für Umwelt und Energie (BUE), Amt für Umweltschutz</foaf:name>
+        <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
+        <foaf:homepage rdf:resource="http://www.hamburg.de/bue/"/>
+      </foaf:Organization>
+    </dct:publisher>
+    <adms:sample>Referenz auf Beispieldatenstruktur</adms:sample>
+    <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-10-25T13:45:51.426366</dct:issued>
+    <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-10-25T13:45:51.456148</dct:modified>
+    <dct:temporal>
+      <dct:PeriodOfTime rdf:nodeID="N6ae429a59b3c4993a4198f12aa913197">
+        <schema:startDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2016-01-01T00:00:00</schema:startDate>
+        <schema:endDate rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2016-12-31T00:00:00</schema:endDate>
+      </dct:PeriodOfTime>
+    </dct:temporal>
+    <dcat:keyword>Umwelt und Klima</dcat:keyword>
+    <adms:identifier>4635D337-4805-4C32-A211-13F8C038BF27</adms:identifier>
+    <dcatde:contributorID>http://dcat-ap.de/def/contributors/transparenzportalHamburg</dcatde:contributorID>
+    <dct:description>Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. Die Karte ist auch als Hilfskarte für den Kontext -Einbau Ersatzbaustoffe- zu verstehen. Hier gibt es unterschiedliche Richtlinien je nachdem, ob ein Bauvorhaben in bzw. auf Geest- oder Marsch-Boden geplant ist. Die Daten werden als WMS-Darstellungsdienst und als WFS-Downloaddienst bereitgestellt.</dct:description>
+    <dcat:keyword>hmbtg</dcat:keyword>
+    <dcat:keyword>opendata</dcat:keyword>
+    <dcat:keyword>Thematische Karte</dcat:keyword>
+  </dcat:Dataset>
+</rdf:RDF>

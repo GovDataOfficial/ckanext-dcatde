@@ -5,7 +5,7 @@ import unittest
 
 from ckanext.dcatde.commands.migration import DCATdeMigrateCommand
 import ckanext.dcatde.tests.commands.common_helpers as helpers
-from mock import patch, call
+from mock import patch, call, Mock, MagicMock
 
 
 PYLONS_TEST_CFG = {
@@ -53,16 +53,20 @@ class GetActionHelperMigration(helpers.GetActionHelper):
             return None
 
         ds_id = data['id']
-        dataset = {'id': ds_id}
+        dataset = {'id': ds_id, 'type': 'datensatz'}
         self.shown_ids.append(ds_id)
 
         if ds_id == 'pkg1':
             dataset['groups'] = [{'name': 'needed'}]
             dataset['license_id'] = 'id1'
             dataset['resources'] = {}
-            dataset['type'] = 'datensatz'
         elif ds_id == 'pkg2':
             dataset['type'] = 'harvest'
+        elif ds_id == 'pkg3':
+            dataset['extras'] = [{'key': 'alternate_identifier', 'value': 'adms-id'}]
+        elif ds_id == 'pkg4':
+            dataset['extras'] = [{'key': 'alternate_identifier', 'value': 'adms-id'},
+                                 {'key': 'identifier', 'value': 'existing-id'}]
 
         return dataset
 
@@ -128,6 +132,19 @@ class TestMigration(unittest.TestCase):
         '''Asserts that the datbase logic was not called'''
         mock_model.Session.query.assert_not_called()
         mock_model.repo.commit.assert_not_called()
+
+    def _mock_model_query_filter(self, mock_model, pkg_id='pkg3'):
+        """
+        Mocks calls to query().filter()[.filter()...] such that they return a dataset ID
+        """
+        mock_package = Mock(package_id=pkg_id)
+        mock_filter = MagicMock()
+        # make filter() return itself to allow variable length chains, and use the list iterator for it
+        mock_filter.filter.return_value = mock_filter
+        mock_filter.__iter__.return_value = iter([mock_package])
+        mock_query = Mock()
+        mock_query.return_value = mock_filter
+        mock_model.Session.query = mock_query
 
     def test_without_groups(self, mock_super_load_config,
                             mock_get_action, mock_model, mock_sa_or):
@@ -218,3 +235,81 @@ class TestMigration(unittest.TestCase):
 
         # no DB logic may have been called
         self._assert_db_not_updated(mock_model, mock_sa_or)
+
+    def test_adms_id(self, mock_super_load_config,
+                         mock_get_action, mock_model, _):
+        """
+        Calls the migration command with adms-id-migrate flag.
+        """
+        action_hlp = GetActionHelperMigration()
+        mock_get_action.side_effect = action_hlp.mock_get_action
+
+        # mock the database query to return the test package ID
+        self._mock_model_query_filter(mock_model)
+
+        self.cmd.args = ['adms-id-migrate']
+        self.cmd.command()
+
+        # ensure config was loaded
+        mock_super_load_config.assert_called_once_with()
+
+        # assert that the needed methods were obtained in the expected
+        # order. Update gets obtained for each dataset, but we only use one dataset anyway.
+        mock_get_action.assert_has_calls([call('package_show'),
+                                          call('package_update')])
+        self.assertEqual(mock_get_action.call_count, 2)
+
+        # check if the extras field contains exactly one entry with the new key
+        self.assertEqual(action_hlp.updated_datasets['pkg3']['extras'],
+                         [{'key': 'identifier', 'value': 'adms-id'}])
+
+    def _check_adms_id_no_save(self, mock_super_load_config, mock_get_action):
+        """
+        Helper to run the command and perform checks for test_adms_id_dry
+        """
+        # run
+        self.cmd.command()
+
+        # ensure config was loaded
+        mock_super_load_config.assert_called_once_with()
+
+        # assert that only the package was shown and no update call was made.
+        mock_get_action.assert_has_calls([call('package_show')])
+        self.assertEqual(mock_get_action.call_count, 1)
+
+    def test_adms_id_dry(self, mock_super_load_config,
+                         mock_get_action, mock_model, _):
+        """
+        Calls the migration command with adms-id-migrate and dry-run flags.
+        """
+        action_hlp = GetActionHelperMigration()
+        mock_get_action.side_effect = action_hlp.mock_get_action
+
+        # mock the database query to return the test package ID
+        self._mock_model_query_filter(mock_model)
+
+        # test both arrangements of the arguments
+        self.cmd.args = ['adms-id-migrate', 'dry-run']
+        self._check_adms_id_no_save(mock_super_load_config, mock_get_action)
+
+        mock_super_load_config.reset_mock()
+        mock_get_action.reset_mock()
+        mock_model.reset_mock()
+        self.cmd.args = ['dry-run', 'adms-id-migrate']
+        self._check_adms_id_no_save(mock_super_load_config, mock_get_action)
+
+    def test_adms_id_with_dct_id(self, mock_super_load_config,
+                                 mock_get_action, mock_model, _):
+        """
+        Calls the migration command with adms-id-migrate. Assumes there is a dataset which
+        already has an extras.identifier.
+        """
+        action_hlp = GetActionHelperMigration()
+        mock_get_action.side_effect = action_hlp.mock_get_action
+
+        # mock the database query to return the test package ID with existing extras.identifier
+        self._mock_model_query_filter(mock_model, pkg_id='pkg4')
+
+        # run the command and assert nothing was saved
+        self.cmd.args = ['adms-id-migrate']
+        self._check_adms_id_no_save(mock_super_load_config, mock_get_action)
