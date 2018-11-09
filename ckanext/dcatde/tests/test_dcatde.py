@@ -9,12 +9,14 @@ import json
 import pprint
 import pkg_resources
 
-from rdflib import Graph, URIRef
+from rdflib import Graph, URIRef, Literal
 from rdflib.namespace import Namespace
 
 from ckanext.dcat.profiles import EuropeanDCATAPProfile
 from ckanext.dcat.processors import RDFParser
 from ckanext.dcatde.profiles import DCATdeProfile
+
+from ckantoolkit.tests import helpers
 
 class TestDCATde(unittest.TestCase):
     """ Test CKAN -> DCAT-AP.de export """
@@ -55,9 +57,38 @@ class TestDCATde(unittest.TestCase):
         'dcatde': DCATDE
     }
 
-    graph = rdflib.Graph()
-
     predicate_pattern = re.compile("[a-zA-Z]:[a-zA-Z]")
+
+    def _add_basic_fields_with_languages(self, rdf_parser):
+        dataset_refs = [d for d in rdf_parser._datasets()]
+        self.assertEqual(len(dataset_refs), 1)
+        dataset_ref = dataset_refs[0]
+        rdf_parser.g.add((dataset_ref, self.DCT.title, Literal(u'Naturräume Geest und Marsch (DE)', lang='de')))
+        rdf_parser.g.add((dataset_ref, self.DCT.title, Literal(u'Naturräume Geest und Marsch (EN)', lang='en')))
+        rdf_parser.g.add((dataset_ref,
+                          self.DCT.description,
+                          Literal(u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. (DE)', lang='de')))
+        rdf_parser.g.add((dataset_ref,
+                          self.DCT.description,
+                          Literal(u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. (EN)', lang='en')))
+
+        distribution_refs = [d for d in rdf_parser.g.objects(dataset_ref, self.DCAT.distribution)]
+        self.assertEqual(len(distribution_refs), 2)
+        for dist_ref in distribution_refs:
+            description_objects = [d for d in rdf_parser.g.objects(dist_ref, self.DCT.description)]
+            self.assertEqual(len(description_objects), 1)
+            description = description_objects[0]
+            number = "4"
+            if u'Distribution 1' in description:
+                number = "1"
+            rdf_parser.g.add((dist_ref, self.DCT.title, Literal(u'Naturräume Geest und Marsch (DE)', lang='de')))
+            rdf_parser.g.add((dist_ref, self.DCT.title, Literal(u'Naturräume Geest und Marsch (EN)', lang='en')))
+            rdf_parser.g.add((dist_ref,
+                              self.DCT.description,
+                              Literal(u'Das ist eine deutsche Beschreibung der Distribution %s (DE)' % number, lang='de')))
+            rdf_parser.g.add((dist_ref,
+                              self.DCT.description,
+                              Literal(u'Das ist eine deutsche Beschreibung der Distribution %s (EN)' % number, lang='en')))
 
     def _transform_to_key_value(self, source):
         """ convert dictionary entry to ckan-extras-field-format """
@@ -107,7 +138,6 @@ class TestDCATde(unittest.TestCase):
         prefix, name = predicate.split(":")
         return self.namespaces[prefix][name]
 
-
     def _check_simple_items(self, source, ref, item):
         """ checks the subgraph for different types of items """
         if isinstance(item, dict):  # handle extra-array items
@@ -128,16 +158,48 @@ class TestDCATde(unittest.TestCase):
         self.assertEqual(len(list(self.graph.objects(contact, self.FOAF.homepage))), 1,
                          predicate + " homepage not found")
 
+    def _assert_contact_point(self, dataset_ref, remove_attr=[]):
+        contact_point = next(self.graph.objects(dataset_ref, self.DCAT.contactPoint))
+        vcard_attrs = [
+            self.VCARD.fn, self.VCARD.hasEmail, self.VCARD.hasURL,
+            self.VCARD.hasTelephone, self.VCARD.hasStreetAddress,
+            self.VCARD.hasLocality, self.VCARD.hasCountryName,
+            self.VCARD.hasPostalCode
+        ]
+        # remove unexpected values
+        for v_attr in remove_attr:
+            vcard_attrs.remove(v_attr)
+        # assert expected values
+        for v_attr in vcard_attrs:
+            self.assertEqual(len(list(self.graph.objects(contact_point, v_attr))), 1,
+                             self.DCAT.contactPoint + str(v_attr) + " not found")
+        # assert unexpected values
+        for v_attr in remove_attr:
+            self.assertEqual(len(list(self.graph.objects(contact_point, v_attr))), 0,
+                             self.DCAT.contactPoint + str(v_attr) + " found")
+
+    def _assert_resource_lang(self, dataset, lang_string):
+        resources = dataset.get('resources')
+        self.assertEqual(len(resources), 2)
+        for res in resources:
+            number = "4"
+            if u'Distribution 1' in res.get('description'):
+                number = "1"
+            # Title and description to be in default language "de"
+            self.assertEqual(res.get('name'), u'Naturräume Geest und Marsch (%s)' % lang_string)
+            self.assertEqual(
+                res.get('description'),
+                u'Das ist eine deutsche Beschreibung der Distribution %s (%s)' % (number, lang_string))
+
     def _get_max_rdf(self):
         data = pkg_resources.resource_string(__name__,
                                              "resources/metadata_max.rdf")
 
         return data
 
-    def test_graph_from_dataset(self):
-        """ test dcat and dcatde profiles """
+    def _get_default_dataset_dict(self):
 
-        dataset_dict = {
+        return {
             "id": "dct:identifier",
             "notes": "dct:description",
             "title": "dct:title",
@@ -240,6 +302,12 @@ class TestDCATde(unittest.TestCase):
             }]
         }
 
+    def test_graph_from_dataset(self):
+        """ test dcat and dcatde profiles """
+
+        ### prepare ###
+        self.graph = rdflib.Graph()
+        dataset_dict = self._get_default_dataset_dict()
         dataset_ref = URIRef("http://testuri/")
 
         dcat = EuropeanDCATAPProfile(self.graph, False)
@@ -247,7 +315,6 @@ class TestDCATde(unittest.TestCase):
 
         dcatde = DCATdeProfile(self.graph, False)
         dcatde.graph_from_dataset(dataset_dict, dataset_ref)
-
 
         # Assert structure of graph - basic values
         extras = dataset_dict["extras"]
@@ -278,16 +345,7 @@ class TestDCATde(unittest.TestCase):
         self._assert_contact_info(dataset_ref, self.DCT.publisher)
 
         # contactPoint
-        contact_point = next(self.graph.objects(dataset_ref, self.DCAT.contactPoint))
-        vcard_attrs = [
-            self.VCARD.fn, self.VCARD.hasEmail, self.VCARD.hasURL,
-            self.VCARD.hasTelephone, self.VCARD.hasStreetAddress,
-            self.VCARD.hasLocality, self.VCARD.hasCountryName,
-            self.VCARD.hasPostalCode
-        ]
-        for v_attr in vcard_attrs:
-            self.assertEqual(len(list(self.graph.objects(contact_point, v_attr))), 1,
-                             self.DCAT.contactPoint + str(v_attr) + " not found")
+        self._assert_contact_point(dataset_ref)
 
         # temporal
         temporal = list(self.graph.objects(dataset_ref, self.DCT.temporal))[0]
@@ -353,6 +411,29 @@ class TestDCATde(unittest.TestCase):
                          self._get_value_from_extras(resource_extras, "language"))
         self._assert_list(resource_ref, self.DCT.conformsTo,
                          self._get_value_from_extras(resource_extras, "conforms_to"))
+
+    def test_graph_from_dataset_only_dcatde_contact_point_values(self):
+
+        ### prepare ###
+        self.graph = rdflib.Graph()
+        dataset_dict = self._get_default_dataset_dict()
+        # remove fields processed by ckanext-dcat default profile
+        dataset_dict.pop('maintainer')
+        dataset_dict.pop('maintainer_email')
+        dataset_dict.pop('author')
+        dataset_dict.pop('author_email')
+        dataset_ref = URIRef("http://testuri/")
+
+        ### execute ###
+        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat.graph_from_dataset(dataset_dict, dataset_ref)
+
+        dcatde = DCATdeProfile(self.graph, False)
+        dcatde.graph_from_dataset(dataset_dict, dataset_ref)
+
+        ### assert ###
+        # contactPoint
+        self._assert_contact_point(dataset_ref, [self.VCARD.fn, self.VCARD.hasEmail])
 
     def test_parse_dataset(self):
         maxrdf = self._get_max_rdf()
@@ -468,3 +549,73 @@ class TestDCATde(unittest.TestCase):
         self._assert_extras_string(
             extras, 'metadata_original_html',
             'https://www.govdata.de/web/guest/daten/-/details/naturraume-geest-und-marsch3')
+
+    @helpers.change_config('ckan.locale_default', 'en')
+    def test_parse_dataset_default_lang_en(self):
+        maxrdf = self._get_max_rdf()
+
+        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+
+        p.parse(maxrdf)
+        self._add_basic_fields_with_languages(p)
+
+        datasets = [d for d in p.datasets()]
+        self.assertEqual(len(datasets), 1)
+        dataset = datasets[0]
+
+        # Title and description to be in default language "en"
+        self.assertEqual(dataset.get('title'), u'Naturräume Geest und Marsch (EN)')
+        self.assertEqual(
+            dataset.get('notes'),
+            u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. (EN)')
+
+        self._assert_resource_lang(dataset, 'EN')
+
+    @helpers.change_config('ckan.locale_default', 'de')
+    def test_parse_dataset_default_lang_de(self):
+        maxrdf = self._get_max_rdf()
+
+        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+
+        p.parse(maxrdf)
+        self._add_basic_fields_with_languages(p)
+
+        datasets = [d for d in p.datasets()]
+        self.assertEqual(len(datasets), 1)
+        dataset = datasets[0]
+
+        # Title and description to be in default language "de"
+        self.assertEqual(dataset.get('title'), u'Naturräume Geest und Marsch (DE)')
+        self.assertEqual(
+            dataset.get('notes'),
+            u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. (DE)')
+
+        self._assert_resource_lang(dataset, 'DE')
+
+    @helpers.change_config('ckan.locale_default', 'fr')
+    def test_parse_dataset_default_lang_not_in_graph(self):
+        maxrdf = self._get_max_rdf()
+
+        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+
+        p.parse(maxrdf)
+        self._add_basic_fields_with_languages(p)
+
+        datasets = [d for d in p.datasets()]
+        self.assertEqual(len(datasets), 1)
+        dataset = datasets[0]
+
+        # Title and description random
+        self.assertIn(u'Naturräume Geest und Marsch', dataset.get('title'))
+        self.assertIn(
+            u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt',
+            dataset.get('notes'))
+
+        resources = dataset.get('resources')
+        self.assertEqual(len(resources), 2)
+        for res in resources:
+            # Title and description random
+            self.assertIn(u'Naturräume Geest und Marsch', res.get('name'))
+            self.assertIn(
+                u'Das ist eine deutsche Beschreibung der Distribution',
+                res.get('description'))

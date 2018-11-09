@@ -6,7 +6,6 @@ import ckanext.dcatde.dataset_utils as ds_utils
 from rdflib import URIRef, BNode, Literal
 from rdflib.namespace import Namespace, RDF, SKOS
 
-
 # copied from ckanext.dcat.profiles
 DCT = Namespace("http://purl.org/dc/terms/")
 DCAT = Namespace("http://www.w3.org/ns/dcat#")

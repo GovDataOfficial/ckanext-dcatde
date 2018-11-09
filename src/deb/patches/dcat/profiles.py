@@ -1,10 +1,10 @@
 import datetime
-import json
 
 from ckan.plugins import toolkit
 from ckanext.dcat.utils import resource_uri, publisher_uri_from_dataset_dict
 from dateutil.parser import parse as parse_date
 from geomet import wkt, InvalidGeoJSONException
+import json
 from pylons import config
 from rdflib import URIRef, BNode, Literal
 import rdflib
@@ -97,7 +97,7 @@ class RDFProfile(object):
             return _object
         return None
 
-    def _object_value(self, subject, predicate):
+    def _object_value(self, subject, predicate, multilang=False):
         '''
         Given a subject and a predicate, returns the value of the object
 
@@ -105,9 +105,18 @@ class RDFProfile(object):
 
         If found, the unicode representation is returned, else None
         '''
+        default_lang = config.get('ckan.locale_default', 'en')
+        fallback = None
         for o in self.g.objects(subject, predicate):
-            return unicode(o)
-        return None
+            if multilang:
+                if o.language and o.language == default_lang:
+                    return unicode(o)
+                # Use first object as fallback if no object with the default language is available
+                elif fallback is None:
+                    fallback = unicode(o)
+            else:
+                return unicode(o)
+        return fallback
 
     def _object_value_int(self, subject, predicate):
         '''
@@ -635,12 +644,19 @@ class EuropeanDCATAPProfile(RDFProfile):
 
         # Basic fields
         for key, predicate in (
-                ('title', DCT.title),
-                ('notes', DCT.description),
                 ('url', DCAT.landingPage),
                 ('version', OWL.versionInfo),
                 ):
             value = self._object_value(dataset_ref, predicate)
+            if value:
+                dataset_dict[key] = value
+
+        # Multilingual basic fields
+        for key, predicate in (
+                ('title', DCT.title),
+                ('notes', DCT.description),
+                ):
+            value = self._object_value(dataset_ref, predicate, multilang=True)
             if value:
                 dataset_dict[key] = value
 
@@ -747,8 +763,7 @@ class EuropeanDCATAPProfile(RDFProfile):
 
             #  Simple values
             for key, predicate in (
-                    ('name', DCT.title),
-                    ('description', DCT.description),
+                    ('access_url', DCAT.accessURL),
                     ('download_url', DCAT.downloadURL),
                     ('issued', DCT.issued),
                     ('modified', DCT.modified),
@@ -760,10 +775,19 @@ class EuropeanDCATAPProfile(RDFProfile):
                 if value:
                     resource_dict[key] = value
 
+            # Multilingual basic fields
+            for key, predicate in (
+                    ('name', DCT.title),
+                    ('description', DCT.description),
+                    ):
+                value = self._object_value(distribution, predicate, multilang=True)
+                if value:
+                    resource_dict[key] = value
+
             resource_dict['url'] = (self._object_value(distribution,
-                                                       DCAT.accessURL) or
+                                                       DCAT.downloadURL) or
                                     self._object_value(distribution,
-                                                       DCAT.downloadURL))
+                                                       DCAT.accessURL))
             #  Lists
             for key, predicate in (
                     ('language', DCT.language),
@@ -1002,6 +1026,8 @@ class EuropeanDCATAPProfile(RDFProfile):
                 ('status', ADMS.status, None, URIRef),
                 ('rights', DCT.rights, None, URIRef),
                 ('license', DCT.license, None, URIRef),
+                ('access_url', DCAT.accessURL, None, URIRef),
+                ('download_url', DCAT.downloadURL, None, URIRef)
             ]
 
             self._add_triples_from_dict(resource_dict, distribution, items)
@@ -1033,13 +1059,13 @@ class EuropeanDCATAPProfile(RDFProfile):
                     g.add((distribution, DCAT.mediaType,
                            Literal(resource_dict['mimetype'])))
 
-            # URL
+            # URL fallback and old bevavior
             url = resource_dict.get('url')
             download_url = resource_dict.get('download_url')
-            if download_url:
-                self._add_triple_from_dict(resource_dict, distribution, DCAT.downloadURL, 'download_url',
-                                           _type=URIRef)
-            if (url and not download_url) or (url and url != download_url):
+            access_url = resource_dict.get('access_url')
+            # Use url as fallback for access_url if access_url is not set and download_url is not equal
+            if (url and ((not (access_url or download_url)) or
+                         ((not access_url) and (download_url and url != download_url)))):
                 self._add_triple_from_dict(resource_dict, distribution, DCAT.accessURL, 'url', _type=URIRef)
 
             # Dates

@@ -118,7 +118,7 @@
         <dct:rights rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
         <dct:license rdf:resource="http://dcat-ap.de/def/licenses/dl-by-de/2_0"/>
         <dcat:accessURL rdf:resource="http://daten-hamburg.de/umwelt_klima/naturraeume_geest_und_marsch/Naturraeume_Geest_und_Marsch_HH_2017-02-20.zip_abweichend"/>
-        <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
+        <dct:title>Download WFS Naturräume Geest und Marsch (ZIP)</dct:title>
         <dcat:downloadURL rdf:resource="http://daten-hamburg.de/umwelt_klima/naturraeume_geest_und_marsch/Naturraeume_Geest_und_Marsch_HH_2017-02-20.zip"/>
         <adms:status rdf:resource="http://purl.org/adms/status/Completed"/>
         <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">222441.0</dcat:byteSize>
