@@ -10,7 +10,7 @@
   xmlns:dct="http://purl.org/dc/terms/"
   xmlns:adms="http://www.w3.org/ns/adms#"
   xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
-  xmlns:dcatde="http://dcat-ap.de/def/dcatde/1.0.1/"
+  xmlns:dcatde="http://dcat-ap.de/def/dcatde/1_0/"
 >
   <dcat:Dataset rdf:about="http://mtest6.gd.swe.seitenbau.net:5000/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9">
     <dct:relation rdf:resource="http://www.hamburg.de/grundwasser/;jsessionid=2955D422DF427EF0F3DBCA0E67239DC7.liveWorker2"/>
@@ -51,9 +51,9 @@
         </spdx:checksum>
       </dcat:Distribution>
     </dcat:distribution>
-    <dcatde:geocodingDescription>Hamburg</dcatde:geocodingDescription>
+    <dcatde:geocodingText>Hamburg</dcatde:geocodingText>
     <dcatde:politicalGeocodingURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/regionalKey/020000000000"/>
-    <dcatde:legalBasis>Umweltinformationsgesetz (UIG)</dcatde:legalBasis>
+    <dcatde:legalbasisText>Umweltinformationsgesetz (UIG)</dcatde:legalbasisText>
     <dcatde:politicalGeocodingURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/stateKey/02"/>
     <owl:versionInfo>2.0</owl:versionInfo>
     <dcat:keyword>Bodenschutz</dcat:keyword>

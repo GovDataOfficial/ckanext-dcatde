@@ -12,22 +12,24 @@ def get_extras_field(dataset, name):
     return None
 
 
-def insert_new_extras_field(dataset, key, tmp_value, as_list=False):
-    value = tmp_value
-
+def process_value(value, as_list=False):
     if as_list:
-        value = json.dumps([value])
+        return json.dumps([value])
 
-    dataset['extras'].insert(0, {u'value': value, u'key': key})
+    return value
 
 
-def set_extras_field(dataset, key, value):
+def insert_new_extras_field(dataset, key, value, as_list=False):
+    dataset['extras'].insert(0, {u'value': process_value(value, as_list), u'key': key})
+
+
+def set_extras_field(dataset, key, value, as_list=False):
     current = get_extras_field(dataset, key)
 
     if current:
-        current['value'] = value
+        current['value'] = process_value(value, as_list)
     else:
-        insert_new_extras_field(dataset, key, value)
+        insert_new_extras_field(dataset, key, value, as_list)
 
 
 def delete_extras_field(dataset, name):

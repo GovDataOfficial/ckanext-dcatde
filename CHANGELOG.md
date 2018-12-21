@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.2.0 2018-12-21
+
+* The profile and examples now use the DCAT-AP.de v1.0.1 Namespace
+    * Renamed `legalbasisText` to `legalBasis` and `geocodingText` to `geocodingDescription`
+* Added logic to parse older DCAT-AP.de Namespaces
+* Improved dct:format and dcat:mediaType handling
+* Improved selecting of the default language
+
+## v3.1.3 2018-11-09
+
+* Fix problem with not deleting metadata without guid while harvesting
+* Fix handling of downloadURL and accessURL
+* Select title, description and names in the default language if available
+* Fix error in in graph_from_dataset() if there is no contactPoint exists in the graph
+
 ## v3.1.2 2018-05-18
 
 * Updated the examples for the licenses in CKAN and the license mapping to DCAT-AP.de v1.0.1

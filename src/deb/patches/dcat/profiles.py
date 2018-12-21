@@ -97,7 +97,7 @@ class RDFProfile(object):
             return _object
         return None
 
-    def _object_value(self, subject, predicate, multilang=False):
+    def _object_value(self, subject, predicate, use_default_lang=False):
         '''
         Given a subject and a predicate, returns the value of the object
 
@@ -108,7 +108,7 @@ class RDFProfile(object):
         default_lang = config.get('ckan.locale_default', 'en')
         fallback = None
         for o in self.g.objects(subject, predicate):
-            if multilang:
+            if use_default_lang and isinstance(o, Literal):
                 if o.language and o.language == default_lang:
                     return unicode(o)
                 # Use first object as fallback if no object with the default language is available
@@ -228,7 +228,7 @@ class RDFProfile(object):
             publisher['uri'] = (unicode(agent) if isinstance(agent,
                                 rdflib.term.URIRef) else None)
 
-            publisher['name'] = self._object_value(agent, FOAF.name)
+            publisher['name'] = self._object_value(agent, FOAF.name, use_default_lang=True)
 
             publisher['email'] = self._object_value(agent, FOAF.mbox)
 
@@ -255,7 +255,7 @@ class RDFProfile(object):
             contact['uri'] = (unicode(agent) if isinstance(agent,
                               rdflib.term.URIRef) else None)
 
-            contact['name'] = self._object_value(agent, VCARD.fn)
+            contact['name'] = self._object_value(agent, VCARD.fn, use_default_lang=True)
 
             contact['email'] = self._without_mailto(
                 self._object_value(agent, VCARD.hasEmail)
@@ -334,11 +334,13 @@ class RDFProfile(object):
             <dct:format>
                 <dct:IMT rdf:value="text/html" rdfs:label="HTML"/>
             </dct:format>
+        4. value of dct:format if it is an URIRef and appears to be an IANA type
 
         Values for the label will be checked in the following order:
 
         1. literal value of dct:format if it not contains a '/' character
         2. label of dct:format if it is an instance of dct:IMT (see above)
+        3. value of dct:format if it is an URIRef and doesn't look like an IANA type
 
         If `normalize_ckan_format` is True and using CKAN>=2.3, the label will
         be tried to match against the standard list of formats that is included
@@ -368,6 +370,14 @@ class RDFProfile(object):
                 if not imt:
                     imt = unicode(self.g.value(_format, default=None))
                 label = unicode(self.g.label(_format, default=None))
+            elif isinstance(_format, URIRef):
+                # If the URIRef does not reference a BNode, it could reference an IANA type.
+                # Otherwise, use it as label.
+                format_uri = unicode(_format)
+                if 'iana.org/assignments/media-types' in format_uri and not imt:
+                    imt = format_uri
+                else:
+                    label = format_uri
 
         if ((imt or label) and normalize_ckan_format and
                 toolkit.check_ckan_version(min_version='2.3')):
@@ -656,7 +666,7 @@ class EuropeanDCATAPProfile(RDFProfile):
                 ('title', DCT.title),
                 ('notes', DCT.description),
                 ):
-            value = self._object_value(dataset_ref, predicate, multilang=True)
+            value = self._object_value(dataset_ref, predicate, use_default_lang=True)
             if value:
                 dataset_dict[key] = value
 
@@ -780,7 +790,7 @@ class EuropeanDCATAPProfile(RDFProfile):
                     ('name', DCT.title),
                     ('description', DCT.description),
                     ):
-                value = self._object_value(distribution, predicate, multilang=True)
+                value = self._object_value(distribution, predicate, use_default_lang=True)
                 if value:
                     resource_dict[key] = value
 
@@ -1041,25 +1051,39 @@ class EuropeanDCATAPProfile(RDFProfile):
             self._add_list_triples_from_dict(resource_dict, distribution, items)
 
             # Format
-            if '/' in resource_dict.get('format', ''):
-                # If format is an URI, create an URIref
-                if "http://" in resource_dict.get('format', '') or \
-                   "https://" in resource_dict.get('format', ''):
+            mimetype = resource_dict.get('mimetype')
+            fmt = resource_dict.get('format')
+
+            # IANA media types (either URI or Literal) should be mapped as mediaType.
+            # In case format is available and mimetype is not set or identical to format,
+            # check which type is appropriate.
+            if fmt and (not mimetype or mimetype == fmt):
+                if ('iana.org/assignments/media-types' in fmt
+                        or not fmt.startswith('http') and '/' in fmt):
+                    # output format value as dcat:mediaType instead of dct:format
+                    mimetype = fmt
+                    fmt = None
+                else:
+                    # Use dct:format
+                    mimetype = None
+
+            if mimetype:
+                if mimetype.startswith('http'):
                     g.add((distribution, DCAT.mediaType,
-                           URIRef(self._removeWhitespaces(resource_dict['format']))))
+                           URIRef(self._removeWhitespaces(mimetype))))
                 else:
                     g.add((distribution, DCAT.mediaType,
-                           Literal(resource_dict['format'])))
-            else:
-                if resource_dict.get('format'):
+                           Literal(mimetype)))
+
+            if fmt:
+                if fmt.startswith('http'):
                     g.add((distribution, DCT['format'],
-                           Literal(resource_dict['format'])))
+                           URIRef(self._removeWhitespaces(fmt))))
+                else:
+                    g.add((distribution, DCT['format'],
+                           Literal(fmt)))
 
-                if resource_dict.get('mimetype'):
-                    g.add((distribution, DCAT.mediaType,
-                           Literal(resource_dict['mimetype'])))
-
-            # URL fallback and old bevavior
+            # URL fallback and old behavior
             url = resource_dict.get('url')
             download_url = resource_dict.get('download_url')
             access_url = resource_dict.get('access_url')

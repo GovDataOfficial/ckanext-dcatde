@@ -11,7 +11,7 @@
   xmlns:dct="http://purl.org/dc/terms/"
   xmlns:adms="http://www.w3.org/ns/adms#"
   xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
-  xmlns:dcatde="http://dcat-ap.de/def/dcatde/1_0/"
+  xmlns:dcatde="http://dcat-ap.de/def/dcatde/1.0.1/"
 >
   <dcat:Catalog rdf:about="http://data.example-domain.de">
     <dct:title>CKAN</dct:title>
@@ -129,7 +129,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
         <dcat:keyword>stimmen</dcat:keyword>
         <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2014-04-29T13:27:44.728450</dct:issued>
         <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/0ee2fe79-fc37-400d-a8ca-4915b0295aec/resource/1b520bba-9130-4a44-ba8d-446a545178bf"/>
-        <dcatde:geocodingText>Boeblingen</dcatde:geocodingText>
+        <dcatde:geocodingDescription>Boeblingen</dcatde:geocodingDescription>
       </dcat:Dataset>
     </dcat:dataset>
     <dcat:dataset>
@@ -179,7 +179,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
         <dcatde:politicalGeocodingLevelURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/Level/municipality"/>
         <adms:identifier>id.testdatensatz.de</adms:identifier>
         <dcatde:contributorID>portal.testdatensatz.de</dcatde:contributorID>
-        <dcatde:geocodingText>Boeblingen</dcatde:geocodingText>
+        <dcatde:geocodingDescription>Boeblingen</dcatde:geocodingDescription>
       </dcat:Dataset>
     </dcat:dataset>
     <dcat:dataset>
@@ -224,7 +224,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
         <dct:provenance>MDK/c71a34e1-bf96-44d8-8020-5ebb0c7012a3</dct:provenance>
         <dcat:keyword>hmbtg</dcat:keyword>
         <dct:accrualPeriodicity rdf:resource="http://publications.europa.eu/resource/authority/frequency/ANNUAL"/>
-        <dcatde:geocodingText>Hamburg</dcatde:geocodingText>
+        <dcatde:geocodingDescription>Hamburg</dcatde:geocodingDescription>
         <dct:hasVersion rdf:resource="https://www.govdata.de/web/guest/suchen/-/details/naturraume-geest-und-marsch4"/>
         <dcat:distribution rdf:resource="http://data.example-domain.de/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9/resource/7322bc08-a30e-42d0-aff0-2c90864ed72a"/>
         <foaf:page rdf:resource="http://metaver.de/trefferanzeige?docuuid=4635D337-4805-4C32-A211-13F8C038BF27"/>
@@ -236,7 +236,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
         </dct:spatial>
         <adms:identifier>4635D337-4805-4C32-A211-13F8C038BF27</adms:identifier>
         <dcat:keyword>Thematische Karte</dcat:keyword>
-        <dcatde:legalbasisText>Umweltinformationsgesetz (UIG)</dcatde:legalbasisText>
+        <dcatde:legalBasis>Umweltinformationsgesetz (UIG)</dcatde:legalBasis>
         <dct:source>HMDK/c71a34e1-bf96-44d8-8020-5ebb0c7012a3</dct:source>
         <dcatde:qualityProcessURI rdf:resource="https://www.example.com/"/>
         <dct:description>Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. Die Karte ist auch als Hilfskarte für den Kontext -Einbau Ersatzbaustoffe- zu verstehen. Hier gibt es unterschiedliche Richtlinien je nachdem, ob ein Bauvorhaben in bzw. auf Geest- oder Marsch-Boden geplant ist. Die Daten werden als WMS-Darstellungsdienst und als WFS-Downloaddienst bereitgestellt.</dct:description>
@@ -275,7 +275,7 @@ Europawahl 2009, Gewinne und Verluste an SPD Stimmen gegenüber der Europawahl 2
         <dct:title>Testdatensatz DCATde Migration</dct:title>
         <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-09-26T10:30:05.600340</dct:issued>
         <dcatde:politicalGeocodingLevelURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/Level/municipality"/>
-        <dcatde:geocodingText>Boeblingen</dcatde:geocodingText>
+        <dcatde:geocodingDescription>Boeblingen</dcatde:geocodingDescription>
         <dcatde:maintainer>
           <foaf:Organization rdf:nodeID="N73c77665a7df4bbeb2533845cb69685b">
             <foaf:name>Anton Test</foaf:name>

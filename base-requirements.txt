@@ -9,4 +9,4 @@ rdflib==4.2.1
 rdflib-jsonld==0.4.0
 geomet==0.1.2
 pycountry>=17
-python-dateutil>=1.5,<2.0
+python-dateutil>=2.7,<3.0
