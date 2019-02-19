@@ -135,6 +135,16 @@ class DCATdeProfile(RDFProfile):
         else:
             return value
 
+    def _removeWhitespacesInURIRef(self, _type, value):
+        if _type == URIRef:
+            value = self._removeWhitespaces(value)
+        return value
+
+    def _removeWhitespaces(self, value):
+        if value and isinstance(value, basestring):
+            value = value.replace(' ', '')
+        return value
+
     def parse_dataset(self, dataset_dict, dataset_ref):
         """ Transforms DCAT-AP.de-Data to CKAN-Dictionary """
         # Manage different versions of DCATDE namespaces first.
