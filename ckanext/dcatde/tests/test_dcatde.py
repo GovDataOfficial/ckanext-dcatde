@@ -160,6 +160,18 @@ class TestDCATde(unittest.TestCase):
         if isinstance(value, str) and self.predicate_pattern.match(value):
             self._assert_list(ref, self._predicate_from_string(value), [value])
 
+    def _assert_contact_info_in_dict(self, extras, field_name):
+        self._assert_extras_string(extras, field_name + '_name', u'Peter Schröder ' + field_name)
+        self._assert_extras_string(extras, field_name + '_contacttype', u'Person')
+        self._assert_extras_string(extras, field_name + '_type', u'http://purl.org/adms/publishertype/LocalAuthority')
+
+    def _assert_contact_info_combined_in_dict(self, dataset, extras, field_name, name_suffix=''):
+        if name_suffix:
+            name_suffix = ' ' + name_suffix
+        self.assertEqual(dataset.get(field_name), u'Peter Schröder' + name_suffix)
+        self._assert_extras_string(extras, field_name + '_contacttype', u'Person')
+        self._assert_extras_string(extras, field_name + '_type', u'http://purl.org/adms/publishertype/LocalAuthority')
+
     def _assert_contact_info(self, dataset_ref, predicate):
         """ check name, email and url for a given rdf-subelement """
         contact = list(self.graph.objects(dataset_ref, predicate))[0]
@@ -169,6 +181,8 @@ class TestDCATde(unittest.TestCase):
                          predicate + " mbox not found")
         self.assertEqual(len(list(self.graph.objects(contact, self.FOAF.homepage))), 1,
                          predicate + " homepage not found")
+        self.assertEqual(len(list(self.graph.objects(contact, self.DCT.type))), 1,
+                         predicate + " dct:type not found")
 
     def _assert_contact_point(self, dataset_ref, remove_attr=[]):
         contact_point = next(self.graph.objects(dataset_ref, self.DCAT.contactPoint))
@@ -244,6 +258,7 @@ class TestDCATde(unittest.TestCase):
                 "dcat_type": "dct:type",
 
                 "author_url": "nocheck",
+                "author_type": "nocheck",
 
                 "maintainer_url": "nocheck",
                 "maintainer_tel": "nocheck",
@@ -251,18 +266,22 @@ class TestDCATde(unittest.TestCase):
                 'maintainer_city': "nocheck",
                 'maintainer_zip': "nocheck",
                 'maintainer_country': "nocheck",
+                "maintainer_type": "nocheck",
 
                 "publisher_name": "nocheck",
                 "publisher_email": "nocheck",
                 "publisher_url": "nocheck",
+                "publisher_type": "nocheck",
 
                 "originator_name": "nocheck",
                 "originator_email": "nocheck",
                 "originator_url": "nocheck",
+                "originator_type": "nocheck",
 
                 "contributor_name": "nocheck",
                 "contributor_email": "nocheck",
                 "contributor_url": "nocheck",
+                "contributor_type": "nocheck",
 
                 "access_rights": "dct:accessRights",
                 "provenance": "dct:provenance",
@@ -605,8 +624,7 @@ class TestDCATde(unittest.TestCase):
         # list values are serialized by parser
 
         # dcatde:maintainer
-        self.assertEqual(dataset.get('maintainer'), u'Peter Schröder')
-        self._assert_extras_string(extras, 'maintainer_contacttype', u'Person')
+        self._assert_contact_info_combined_in_dict(dataset, extras, 'maintainer')
 
         # dcatde:contributorID
         self._assert_extras_list_serialized(
@@ -614,9 +632,13 @@ class TestDCATde(unittest.TestCase):
             ['http://dcat-ap.de/def/contributors/transparenzportalHamburg'])
 
         # dcatde:originator
-        self._assert_extras_string(extras, 'originator_name',
-                                  u'Peter Schröder originator')
-        self._assert_extras_string(extras, 'originator_contacttype', u'Person')
+        self._assert_contact_info_in_dict(extras, 'originator')
+
+        # dct:creator
+        self._assert_contact_info_combined_in_dict(dataset, extras, 'author', 'creator')
+
+        # dct:contributor
+        self._assert_contact_info_in_dict(extras, 'contributor')
 
         # dcatde:politicalGeocodingURI
         self._assert_extras_list_serialized(

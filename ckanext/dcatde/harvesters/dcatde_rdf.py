@@ -2,8 +2,10 @@
 # -*- coding: utf8 -*-
 import time
 
+from ckan import plugins as p
 from ckan import model
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
+from ckanext.dcat.interfaces import IDCATRDFHarvester
 from ckanext.dcatde.dataset_utils import set_extras_field
 from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
 from ckanext.harvest.harvesters import HarvesterBase
@@ -18,6 +20,33 @@ EXTRA_KEY_HARVESTED_PORTAL = 'metadata_harvested_portal'
 
 
 class DCATdeRDFHarvester(DCATRDFHarvester):
+
+    p.implements(IDCATRDFHarvester)
+    
+    # -- begin IDCATRDFHarvester implementation --
+    def before_download(self, url, harvest_job):
+        return url, []
+
+    def update_session(self, session):
+        # FIXME: use verify=False to allow harvesting with Python < 2.7.9. Remove after Python was upgraded.
+        session.verify = False
+        return session
+
+    def after_download(self, content, harvest_job):
+        return content, []
+
+    def before_update(self, harvest_object, dataset_dict, temp_dict):
+        pass
+
+    def after_update(self, harvest_object, dataset_dict, temp_dict):
+        return None
+
+    def before_create(self, harvest_object, dataset_dict, temp_dict):
+        pass
+
+    def after_create(self, harvest_object, dataset_dict, temp_dict):
+        return None
+    # -- end IDCATRDFHarvester implementation --
 
     def info(self):
         return {

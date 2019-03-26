@@ -21,6 +21,7 @@
     <dcatde:maintainer>
       <foaf:Person rdf:nodeID="N8c44dec506154c269ec60476e1a25429">
         <foaf:name>Peter Schröder</foaf:name>
+        <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
       </foaf:Person>
     </dcatde:maintainer>
     <dcat:keyword>hmbtg_09_geodaten</dcat:keyword>
@@ -62,8 +63,21 @@
     <dcatde:originator>
       <foaf:Person rdf:nodeID="N7c3cb6824ee84deb9387fb967600df44">
         <foaf:name>Peter Schröder originator</foaf:name>
+        <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
       </foaf:Person>
     </dcatde:originator>
+    <dct:creator>
+      <foaf:Person rdf:nodeID="N7c3cb6824ee84deb9387fb967600df55">
+        <foaf:name>Peter Schröder creator</foaf:name>
+        <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
+      </foaf:Person>
+    </dct:creator>
+    <dct:contributor>
+      <foaf:Person rdf:nodeID="N7c3cb6824ee84deb9387fb967600df66">
+        <foaf:name>Peter Schröder contributor</foaf:name>
+        <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
+      </foaf:Person>
+    </dct:contributor>
     <dct:accessRights>public</dct:accessRights>
     <dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/AGRI"/>
     <dcatde:politicalGeocodingLevelURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/Level/state"/>

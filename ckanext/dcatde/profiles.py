@@ -1,6 +1,6 @@
 import json
 
-from ckanext.dcat.profiles import RDFProfile
+from ckanext.dcat.profiles import RDFProfile, CleanedURIRef
 from ckanext.dcat.utils import resource_uri
 import ckanext.dcatde.dataset_utils as ds_utils
 from rdflib import URIRef, BNode, Literal
@@ -69,7 +69,8 @@ class DCATdeProfile(RDFProfile):
             items = [
                 (prefix, FOAF.name, [prefix + '_name'], Literal),
                 (prefix + '_email', FOAF.mbox, None, Literal),
-                (prefix + '_url', FOAF.homepage, None, URIRef)
+                (prefix + '_url', FOAF.homepage, None, URIRef),
+                (prefix + '_type', DCT.type, None, URIRef)
             ]
             self._add_triples_from_dict(dataset_dict, new_node, items)
 
@@ -85,6 +86,7 @@ class DCATdeProfile(RDFProfile):
                 name = self._object_value(node, FOAF.name)
                 email = self._object_value(node, FOAF.mbox)
                 url = self._object_value(node, FOAF.homepage)
+                dct_type = self._object_value(node, DCT.type)
                 ctype_string = "Person" if contacttype == FOAF.Person else "Organization"
 
                 # if the contact has items on top-level, the name has no _name suffix
@@ -93,6 +95,7 @@ class DCATdeProfile(RDFProfile):
                 ds_utils.insert(dataset_dict, name_key, name, extras_only)
                 ds_utils.insert(dataset_dict, prefix + "_email", email, extras_only)
                 ds_utils.insert(dataset_dict, prefix + "_url", url, True)
+                ds_utils.insert(dataset_dict, prefix + "_type", dct_type, True)
                 ds_utils.insert(dataset_dict, prefix + "_contacttype", ctype_string, True)
 
     def _get_or_create_contact_point(self, dataset_dict, dataset_ref):
@@ -102,7 +105,7 @@ class DCATdeProfile(RDFProfile):
         if len(contact_object_list) == 0:
             contact_uri = self._get_dataset_value(dataset_dict, 'contact_uri')
             if contact_uri:
-                contact_details = URIRef(self._removeWhitespaces(contact_uri))
+                contact_details = CleanedURIRef(contact_uri)
             else:
                 contact_details = BNode()
 
@@ -308,9 +311,7 @@ class DCATdeProfile(RDFProfile):
         for group in groups:
             group_name_in_dict = group['name']
             if group_name_in_dict:
-                value_to_add = self._removeWhitespaces(group_name_in_dict)
-                if value_to_add:
-                    g.add((dataset_ref, DCAT.theme, URIRef(dcat_theme_prefix + value_to_add.upper())))
+                g.add((dataset_ref, DCAT.theme, CleanedURIRef(dcat_theme_prefix + group_name_in_dict.upper())))
 
         # used_datasets
         items = [

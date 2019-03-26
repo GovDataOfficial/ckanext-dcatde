@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.3.0 2019-03-12
+
+* Update ckanext-dcat to v0.0.9
+* Update ckanext-harvest to v1.1.4
+* Remove patches (Fixes #6)
+* Delete requirements subfolder which contained pre-built wheels
+* Add supervisor config for harvesting `gather_consumer` and `fetch_consumer`
+* Add cronjob scripts to run and clear harvest jobs. These scripts are used with GovData and were previously
+  included in ckanext-govdatade.
+* Add support for dct:type in dcatde:originator, dcatde:maintainer, dct:contributor and dct:creator
+
 ## v3.2.0 2018-12-21
 
 * The profile and examples now use the DCAT-AP.de v1.0.1 Namespace
