@@ -1,10 +1,10 @@
 import datetime
-import json
 
 from ckan.plugins import toolkit
 from ckanext.dcat.utils import resource_uri, publisher_uri_from_dataset_dict
 from dateutil.parser import parse as parse_date
 from geomet import wkt, InvalidGeoJSONException
+import json
 from pylons import config
 from rdflib import URIRef, BNode, Literal
 import rdflib
@@ -97,7 +97,7 @@ class RDFProfile(object):
             return _object
         return None
 
-    def _object_value(self, subject, predicate):
+    def _object_value(self, subject, predicate, use_default_lang=False):
         '''
         Given a subject and a predicate, returns the value of the object
 
@@ -105,9 +105,18 @@ class RDFProfile(object):
 
         If found, the unicode representation is returned, else None
         '''
+        default_lang = config.get('ckan.locale_default', 'en')
+        fallback = None
         for o in self.g.objects(subject, predicate):
-            return unicode(o)
-        return None
+            if use_default_lang and isinstance(o, Literal):
+                if o.language and o.language == default_lang:
+                    return unicode(o)
+                # Use first object as fallback if no object with the default language is available
+                elif fallback is None:
+                    fallback = unicode(o)
+            else:
+                return unicode(o)
+        return fallback
 
     def _object_value_int(self, subject, predicate):
         '''
@@ -219,7 +228,7 @@ class RDFProfile(object):
             publisher['uri'] = (unicode(agent) if isinstance(agent,
                                 rdflib.term.URIRef) else None)
 
-            publisher['name'] = self._object_value(agent, FOAF.name)
+            publisher['name'] = self._object_value(agent, FOAF.name, use_default_lang=True)
 
             publisher['email'] = self._object_value(agent, FOAF.mbox)
 
@@ -246,7 +255,7 @@ class RDFProfile(object):
             contact['uri'] = (unicode(agent) if isinstance(agent,
                               rdflib.term.URIRef) else None)
 
-            contact['name'] = self._object_value(agent, VCARD.fn)
+            contact['name'] = self._object_value(agent, VCARD.fn, use_default_lang=True)
 
             contact['email'] = self._without_mailto(
                 self._object_value(agent, VCARD.hasEmail)
@@ -325,11 +334,13 @@ class RDFProfile(object):
             <dct:format>
                 <dct:IMT rdf:value="text/html" rdfs:label="HTML"/>
             </dct:format>
+        4. value of dct:format if it is an URIRef and appears to be an IANA type
 
         Values for the label will be checked in the following order:
 
         1. literal value of dct:format if it not contains a '/' character
         2. label of dct:format if it is an instance of dct:IMT (see above)
+        3. value of dct:format if it is an URIRef and doesn't look like an IANA type
 
         If `normalize_ckan_format` is True and using CKAN>=2.3, the label will
         be tried to match against the standard list of formats that is included
@@ -359,6 +370,14 @@ class RDFProfile(object):
                 if not imt:
                     imt = unicode(self.g.value(_format, default=None))
                 label = unicode(self.g.label(_format, default=None))
+            elif isinstance(_format, URIRef):
+                # If the URIRef does not reference a BNode, it could reference an IANA type.
+                # Otherwise, use it as label.
+                format_uri = unicode(_format)
+                if 'iana.org/assignments/media-types' in format_uri and not imt:
+                    imt = format_uri
+                else:
+                    label = format_uri
 
         if ((imt or label) and normalize_ckan_format and
                 toolkit.check_ckan_version(min_version='2.3')):
@@ -635,12 +654,19 @@ class EuropeanDCATAPProfile(RDFProfile):
 
         # Basic fields
         for key, predicate in (
-                ('title', DCT.title),
-                ('notes', DCT.description),
                 ('url', DCAT.landingPage),
                 ('version', OWL.versionInfo),
                 ):
             value = self._object_value(dataset_ref, predicate)
+            if value:
+                dataset_dict[key] = value
+
+        # Multilingual basic fields
+        for key, predicate in (
+                ('title', DCT.title),
+                ('notes', DCT.description),
+                ):
+            value = self._object_value(dataset_ref, predicate, use_default_lang=True)
             if value:
                 dataset_dict[key] = value
 
@@ -747,8 +773,7 @@ class EuropeanDCATAPProfile(RDFProfile):
 
             #  Simple values
             for key, predicate in (
-                    ('name', DCT.title),
-                    ('description', DCT.description),
+                    ('access_url', DCAT.accessURL),
                     ('download_url', DCAT.downloadURL),
                     ('issued', DCT.issued),
                     ('modified', DCT.modified),
@@ -760,10 +785,19 @@ class EuropeanDCATAPProfile(RDFProfile):
                 if value:
                     resource_dict[key] = value
 
+            # Multilingual basic fields
+            for key, predicate in (
+                    ('name', DCT.title),
+                    ('description', DCT.description),
+                    ):
+                value = self._object_value(distribution, predicate, use_default_lang=True)
+                if value:
+                    resource_dict[key] = value
+
             resource_dict['url'] = (self._object_value(distribution,
-                                                       DCAT.accessURL) or
+                                                       DCAT.downloadURL) or
                                     self._object_value(distribution,
-                                                       DCAT.downloadURL))
+                                                       DCAT.accessURL))
             #  Lists
             for key, predicate in (
                     ('language', DCT.language),
@@ -1002,6 +1036,8 @@ class EuropeanDCATAPProfile(RDFProfile):
                 ('status', ADMS.status, None, URIRef),
                 ('rights', DCT.rights, None, URIRef),
                 ('license', DCT.license, None, URIRef),
+                ('access_url', DCAT.accessURL, None, URIRef),
+                ('download_url', DCAT.downloadURL, None, URIRef)
             ]
 
             self._add_triples_from_dict(resource_dict, distribution, items)
@@ -1015,31 +1051,45 @@ class EuropeanDCATAPProfile(RDFProfile):
             self._add_list_triples_from_dict(resource_dict, distribution, items)
 
             # Format
-            if '/' in resource_dict.get('format', ''):
-                # If format is an URI, create an URIref
-                if "http://" in resource_dict.get('format', '') or \
-                   "https://" in resource_dict.get('format', ''):
+            mimetype = resource_dict.get('mimetype')
+            fmt = resource_dict.get('format')
+
+            # IANA media types (either URI or Literal) should be mapped as mediaType.
+            # In case format is available and mimetype is not set or identical to format,
+            # check which type is appropriate.
+            if fmt and (not mimetype or mimetype == fmt):
+                if ('iana.org/assignments/media-types' in fmt
+                        or not fmt.startswith('http') and '/' in fmt):
+                    # output format value as dcat:mediaType instead of dct:format
+                    mimetype = fmt
+                    fmt = None
+                else:
+                    # Use dct:format
+                    mimetype = None
+
+            if mimetype:
+                if mimetype.startswith('http'):
                     g.add((distribution, DCAT.mediaType,
-                           URIRef(self._removeWhitespaces(resource_dict['format']))))
+                           URIRef(self._removeWhitespaces(mimetype))))
                 else:
                     g.add((distribution, DCAT.mediaType,
-                           Literal(resource_dict['format'])))
-            else:
-                if resource_dict.get('format'):
+                           Literal(mimetype)))
+
+            if fmt:
+                if fmt.startswith('http'):
                     g.add((distribution, DCT['format'],
-                           Literal(resource_dict['format'])))
+                           URIRef(self._removeWhitespaces(fmt))))
+                else:
+                    g.add((distribution, DCT['format'],
+                           Literal(fmt)))
 
-                if resource_dict.get('mimetype'):
-                    g.add((distribution, DCAT.mediaType,
-                           Literal(resource_dict['mimetype'])))
-
-            # URL
+            # URL fallback and old behavior
             url = resource_dict.get('url')
             download_url = resource_dict.get('download_url')
-            if download_url:
-                self._add_triple_from_dict(resource_dict, distribution, DCAT.downloadURL, 'download_url',
-                                           _type=URIRef)
-            if (url and not download_url) or (url and url != download_url):
+            access_url = resource_dict.get('access_url')
+            # Use url as fallback for access_url if access_url is not set and download_url is not equal
+            if (url and ((not (access_url or download_url)) or
+                         ((not access_url) and (download_url and url != download_url)))):
                 self._add_triple_from_dict(resource_dict, distribution, DCAT.accessURL, 'url', _type=URIRef)
 
             # Dates

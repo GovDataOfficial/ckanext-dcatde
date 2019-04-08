@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '3.1.2'
+VERSION = '3.2.0'
 
 setup(
     name='ckanext-dcatde',

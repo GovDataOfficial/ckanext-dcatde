@@ -6,7 +6,6 @@ import ckanext.dcatde.dataset_utils as ds_utils
 from rdflib import URIRef, BNode, Literal
 from rdflib.namespace import Namespace, RDF, SKOS
 
-
 # copied from ckanext.dcat.profiles
 DCT = Namespace("http://purl.org/dc/terms/")
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
@@ -21,7 +20,8 @@ OWL = Namespace('http://www.w3.org/2002/07/owl#')
 SPDX = Namespace('http://spdx.org/rdf/terms#')
 
 # own namespace
-DCATDE = Namespace("http://dcat-ap.de/def/dcatde/1_0/")
+DCATDE_1_0 = Namespace("http://dcat-ap.de/def/dcatde/1_0/")
+DCATDE = Namespace("http://dcat-ap.de/def/dcatde/1.0.1/")
 
 dcat_theme_prefix = "http://publications.europa.eu/resource/authority/data-theme/"
 
@@ -95,6 +95,23 @@ class DCATdeProfile(RDFProfile):
                 ds_utils.insert(dataset_dict, prefix + "_url", url, True)
                 ds_utils.insert(dataset_dict, prefix + "_contacttype", ctype_string, True)
 
+    def _get_or_create_contact_point(self, dataset_dict, dataset_ref):
+        contact_point_objects = self.g.objects(dataset_ref, DCAT.contactPoint)
+        contact_object_list = list(contact_point_objects)
+
+        if len(contact_object_list) == 0:
+            contact_uri = self._get_dataset_value(dataset_dict, 'contact_uri')
+            if contact_uri:
+                contact_details = URIRef(self._removeWhitespaces(contact_uri))
+            else:
+                contact_details = BNode()
+
+            self.g.add((contact_details, RDF.type, VCARD.Organization))
+            self.g.add((dataset_ref, DCAT.contactPoint, contact_details))
+            return contact_details
+
+        return next(iter(contact_object_list))
+
     def _add_maintainer_field(self, dataset_dict, contact, field, _type):
         contact_item = self._object_value(contact, _type)
         ds_utils.insert(dataset_dict, 'maintainer_' + field, contact_item, True)
@@ -120,32 +137,70 @@ class DCATdeProfile(RDFProfile):
 
     def parse_dataset(self, dataset_dict, dataset_ref):
         """ Transforms DCAT-AP.de-Data to CKAN-Dictionary """
+        # Manage different versions of DCATDE namespaces first.
+        # Ensure that they are ordered from oldest to newest version, such that older values get overwritten
+        # in case of multiple definitions
+        dcatde_versions = [
+            DCATDE_1_0,
+            DCATDE
+        ]
 
-        # Simple additional fields
-        for key, predicate in (
-               ('qualityProcessURI', DCATDE.qualityProcessURI),
-               ('metadata_original_html', DCAT.landingPage),
-               ('politicalGeocodingLevelURI', DCATDE.politicalGeocodingLevelURI),
-               ):
-            value = self._object_value(dataset_ref, predicate)
-            if value:
-                ds_utils.insert_new_extras_field(dataset_dict, key, value)
-
-        # List fields
+        # geocodingText and legalbasisText got renamed, so handle them separately
         for key, predicate, in (
-               ('contributorID', DCATDE.contributorID),
-               ('politicalGeocodingURI', DCATDE.politicalGeocodingURI),
-               ('legalbasisText', DCATDE.legalbasisText),
-               ('geocodingText', DCATDE.geocodingText),
-               ):
+                ('legalbasisText', DCATDE_1_0.legalbasisText),
+                ('geocodingText', DCATDE_1_0.geocodingText),
+                ('legalbasisText', DCATDE.legalBasis),
+                ('geocodingText', DCATDE.geocodingDescription),
+        ):
             values = self._object_value_list(dataset_ref, predicate)
             if values:
-                ds_utils.insert_new_extras_field(dataset_dict, key, json.dumps(values))
+                ds_utils.set_extras_field(dataset_dict, key, json.dumps(values))
 
-        self._parse_contact(dataset_dict, dataset_ref, DCATDE.originator, 'originator', True)
-        self._parse_contact(dataset_dict, dataset_ref, DCATDE.maintainer, 'maintainer', False)
+        # iterate over all namespaces to import as much as possible
+        for dcatde_namespace in dcatde_versions:
+            # Simple additional fields
+            for key, predicate in (
+                   ('qualityProcessURI', dcatde_namespace.qualityProcessURI),
+                   ('politicalGeocodingLevelURI', dcatde_namespace.politicalGeocodingLevelURI),
+                   ):
+                value = self._object_value(dataset_ref, predicate)
+                if value:
+                    ds_utils.set_extras_field(dataset_dict, key, value)
+
+            # List fields
+            for key, predicate, in (
+                   ('contributorID', dcatde_namespace.contributorID),
+                   ('politicalGeocodingURI', dcatde_namespace.politicalGeocodingURI),
+                   ):
+                values = self._object_value_list(dataset_ref, predicate)
+                if values:
+                    ds_utils.set_extras_field(dataset_dict, key, json.dumps(values))
+
+            self._parse_contact(dataset_dict, dataset_ref, dcatde_namespace.originator, 'originator', True)
+            self._parse_contact(dataset_dict, dataset_ref, dcatde_namespace.maintainer, 'maintainer', False)
+
+            # Add additional distribution fields
+            for distribution in self.g.objects(dataset_ref, DCAT.distribution):
+                for resource_dict in dataset_dict.get('resources', []):
+                    # Match distribution in graph and distribution in ckan-dict
+                    if unicode(distribution) == resource_uri(resource_dict):
+                        for key, predicate in (
+                                ('licenseAttributionByText', dcatde_namespace.licenseAttributionByText),
+                                ('plannedAvailability', dcatde_namespace.plannedAvailability)
+                        ):
+                            value = self._object_value(distribution, predicate)
+                            if value:
+                                ds_utils.insert_resource_extra(resource_dict, key, value)
+        # -- end loop over dcatde namespaces --
+
+        # additions in other namespaces than DCATDE
         self._parse_contact(dataset_dict, dataset_ref, DCT.contributor, 'contributor', True)
         self._parse_contact(dataset_dict, dataset_ref, DCT.creator, 'author', False)
+
+        # dcat:landingPage
+        landing_page = self._object_value(dataset_ref, DCAT.landingPage)
+        if landing_page:
+            ds_utils.set_extras_field(dataset_dict, 'metadata_original_html', landing_page)
 
         # dcat:contactPoint
         # TODO: dcat-ap adds the values to extras.contact_... . Maybe better than maintainer?
@@ -176,18 +231,6 @@ class DCATdeProfile(RDFProfile):
 
         dataset_dict['groups'] = groups
 
-        # Add additional distribution fields
-        for distribution in self.g.objects(dataset_ref, DCAT.distribution):
-            for resource_dict in dataset_dict.get('resources', []):
-                # Match distribution in graph and distribution in ckan-dict
-                if unicode(distribution) == resource_uri(resource_dict):
-                    for key, predicate in (
-                            ('licenseAttributionByText', DCATDE.licenseAttributionByText),
-                            ('plannedAvailability', DCATDE.plannedAvailability)
-                    ):
-                        value = self._object_value(distribution, predicate)
-                        if value:
-                            ds_utils.insert_resource_extra(resource_dict, key, value)
 
         return dataset_dict
 
@@ -211,8 +254,8 @@ class DCATdeProfile(RDFProfile):
         items = [
             ('contributorID', DCATDE.contributorID, None, Literal),
             ('politicalGeocodingURI', DCATDE.politicalGeocodingURI, None, URIRef),
-            ('legalbasisText', DCATDE.legalbasisText, None, Literal),
-            ('geocodingText', DCATDE.geocodingText, None, Literal)
+            ('legalbasisText', DCATDE.legalBasis, None, Literal),
+            ('geocodingText', DCATDE.geocodingDescription, None, Literal)
         ]
         self._add_list_triples_from_dict(dataset_dict, dataset_ref, items)
 
@@ -236,14 +279,14 @@ class DCATdeProfile(RDFProfile):
         # Add maintainer_url to contact_point
         maintainer_url = self._get_dataset_value(dataset_dict, 'maintainer_url')
         if maintainer_url:
-            contact_point = next(g.objects(dataset_ref, DCAT.contactPoint))
+            contact_point = self._get_or_create_contact_point(dataset_dict, dataset_ref)
             self._add_triple_from_dict(dataset_dict, contact_point, VCARD.hasURL, 'maintainer_url',
                                        _type=URIRef)
 
         # add maintainer_tel to contact_point
         maintainer_tel = self._get_dataset_value(dataset_dict, 'maintainer_tel')
         if maintainer_tel:
-            contact_point = next(g.objects(dataset_ref, DCAT.contactPoint))
+            contact_point = self._get_or_create_contact_point(dataset_dict, dataset_ref)
             self._add_triple_from_dict(dataset_dict, contact_point, VCARD.hasTelephone, 'maintainer_tel',
                                        _type=URIRef, value_modifier=self._add_tel)
 
@@ -257,7 +300,7 @@ class DCATdeProfile(RDFProfile):
         for vc_name in vcard_mapping:
             vcard_fld = self._get_dataset_value(dataset_dict, 'maintainer_' + vc_name)
             if vcard_fld:
-                contact_point = next(g.objects(dataset_ref, DCAT.contactPoint))
+                contact_point = self._get_or_create_contact_point(dataset_dict, dataset_ref)
                 g.add((contact_point, vcard_mapping[vc_name], Literal(vcard_fld)))
 
         # Groups

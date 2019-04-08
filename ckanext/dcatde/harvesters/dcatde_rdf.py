@@ -1,16 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
-import json
-import logging
+import time
 
 from ckan import model
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcatde.dataset_utils import set_extras_field
 from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
-from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
 from ckanext.harvest.harvesters import HarvesterBase
-
-
+from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
+import json
+import logging
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,23 +39,38 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
         portal = self._get_portal_from_config(harvest_job.source.config)
 
+        starttime = time.time()
         # Get all previous current guids and dataset ids for this harvested portal independent of
         # the harvest objects. This allows cleaning the harvest data without loosing the
         # dataset mappings.
-        # Build a subquery to get all the packages of the current portal first
-        portal_packages = model.Session.query(model.PackageExtra.package_id.label('id')) \
-            .filter(model.PackageExtra.key == EXTRA_KEY_HARVESTED_PORTAL) \
-            .filter(model.PackageExtra.value == portal) \
-            .subquery()
-
-        # then get the extras.guid for those packages
-        query = model.Session.query(model.PackageExtra.value, portal_packages.c.id) \
+        # Build a subquery to get all active packages having a GUID first
+        subquery = model.Session.query(model.PackageExtra.value, model.Package.id) \
+            .join(model.Package, model.Package.id == model.PackageExtra.package_id)\
+            .filter(model.Package.state == model.State.ACTIVE) \
+            .filter(model.PackageExtra.state == model.State.ACTIVE) \
             .filter(model.PackageExtra.key == 'guid') \
-            .filter(model.PackageExtra.package_id == portal_packages.c.id)
+            .subquery()
+        # then get all active packages of the current portal and join with their GUIDs if
+        # available (outer join)
+        query = model.Session.query(model.Package.id, subquery.c.value) \
+            .join(model.PackageExtra, model.PackageExtra.package_id == model.Package.id)\
+            .outerjoin(subquery, subquery.c.id == model.Package.id)\
+            .filter(model.Package.state == model.State.ACTIVE) \
+            .filter(model.PackageExtra.state == model.State.ACTIVE) \
+            .filter(model.PackageExtra.key == EXTRA_KEY_HARVESTED_PORTAL) \
+            .filter(model.PackageExtra.value == portal)
 
+        checkpoint_start = time.time()
         guid_to_package_id = {}
-        for guid, package_id in query:
-            guid_to_package_id[guid] = package_id
+        for package_id, guid in query:
+            if guid:
+                guid_to_package_id[guid] = package_id
+            # Also remove all packages without a GUID, use ID as GUID to share logic below
+            else:
+                guid_to_package_id[package_id] = package_id
+        checkpoint_end = time.time()
+        LOGGER.debug('Time for query harvest source related datasets : %s',
+                     str(checkpoint_end - checkpoint_start))
 
         guids_in_db = guid_to_package_id.keys()
 
@@ -76,6 +90,10 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                 .update({'current': False}, False)
             obj.save()
             object_ids.append(obj.id)
+
+        endtime = time.time()
+        LOGGER.debug('Found %s packages for deletion. Time total: %s', len(guids_to_delete),
+                     str(endtime - starttime))
 
         return object_ids
 

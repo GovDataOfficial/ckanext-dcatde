@@ -10,8 +10,10 @@
   xmlns:dct="http://purl.org/dc/terms/"
   xmlns:adms="http://www.w3.org/ns/adms#"
   xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
+  xmlns:olddcatde="http://dcat-ap.de/def/dcatde/1_0/"
   xmlns:dcatde="http://dcat-ap.de/def/dcatde/1.0.1/"
 >
+  <!-- This contains multiple namespaces to test that the newest versions are imported -->
   <dcat:Dataset rdf:about="http://mtest6.gd.swe.seitenbau.net:5000/dataset/bd2d4fa6-e9ad-470d-888b-5eb1378d39e9">
     <dct:relation rdf:resource="http://www.hamburg.de/grundwasser/;jsessionid=2955D422DF427EF0F3DBCA0E67239DC7.liveWorker2"/>
     <adms:versionNotes>Teilweise geänderte Fassung</adms:versionNotes>
@@ -51,8 +53,10 @@
         </spdx:checksum>
       </dcat:Distribution>
     </dcat:distribution>
+    <olddcatde:geocodingText>Kein Import des alten Werts</olddcatde:geocodingText>
     <dcatde:geocodingDescription>Hamburg</dcatde:geocodingDescription>
     <dcatde:politicalGeocodingURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/regionalKey/020000000000"/>
+    <olddcatde:legalbasisText>Dieser Wert soll nicht importiert werden</olddcatde:legalbasisText>
     <dcatde:legalBasis>Umweltinformationsgesetz (UIG)</dcatde:legalBasis>
     <dcatde:politicalGeocodingURI rdf:resource="http://dcat-ap.de/def/politicalGeocoding/stateKey/02"/>
     <owl:versionInfo>2.0</owl:versionInfo>
@@ -143,7 +147,7 @@
     </dct:temporal>
     <dcat:keyword>Umwelt und Klima</dcat:keyword>
     <adms:identifier>4635D337-4805-4C32-A211-13F8C038BF27</adms:identifier>
-    <dcatde:contributorID>http://dcat-ap.de/def/contributors/transparenzportalHamburg</dcatde:contributorID>
+    <olddcatde:contributorID>http://dcat-ap.de/def/contributors/transparenzportalHamburg</olddcatde:contributorID>
     <dct:description>Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. Die Karte ist auch als Hilfskarte für den Kontext -Einbau Ersatzbaustoffe- zu verstehen. Hier gibt es unterschiedliche Richtlinien je nachdem, ob ein Bauvorhaben in bzw. auf Geest- oder Marsch-Boden geplant ist. Die Daten werden als WMS-Darstellungsdienst und als WFS-Downloaddienst bereitgestellt.</dct:description>
     <dcat:keyword>hmbtg</dcat:keyword>
     <dcat:keyword>opendata</dcat:keyword>
