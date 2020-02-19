@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.5.4 2019-10-14
+
+* Improve comparing dates with and without time zone information used by the duplicate detection
+
+## 3.5.2 2019-09-05
+
+* Add different implementation for cleaning tags/keywords
+* Add harvest source configuration `resources_required`, which logs and skips all datasets without distributions (CKAN resources)
+
+## 3.5.1 2019-07-23
+
+* Fix possible error in logging message when setting default license
+
+## 3.5.0 2019-07-18
+
+* Add support for class FOAF.Agent as rdf:type in dcatde:originator, dcatde:maintainer, dct:contributor and
+  dct:creator
+* Set default license (`http://dcat-ap.de/def/licenses/other-closed`) in the resources of a
+  dataset if no license is provided and write a log entry with additional information about the harvest
+  source, dataset and resource in the info level. Introduce configuration parameter
+  `ckanext.dcatde.harvest.default_license` for defining the default license.
+* Serialize dcatde:contributorID as type UriRef if the value is an URI, otherwise as Literal
+* Rename environment names for internal ci/cd pipeline
+
 ## v3.3.0 2019-03-12
 
 * Update ckanext-dcat to v0.0.9

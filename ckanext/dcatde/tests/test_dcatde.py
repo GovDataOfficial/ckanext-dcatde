@@ -9,14 +9,14 @@ import json
 import pprint
 import pkg_resources
 
+from ckantoolkit.tests import helpers
 from rdflib import Graph, URIRef, Literal
 from rdflib.namespace import Namespace, RDF
 
 from ckanext.dcat.profiles import EuropeanDCATAPProfile
 from ckanext.dcat.processors import RDFParser
+from ckanext.dcat.utils import DCAT_CLEAN_TAGS
 from ckanext.dcatde.profiles import DCATdeProfile
-
-from ckantoolkit.tests import helpers
 
 class TestDCATde(unittest.TestCase):
     """ Test CKAN -> DCAT-AP.de export """
@@ -35,7 +35,10 @@ class TestDCATde(unittest.TestCase):
     SPDX = Namespace('http://spdx.org/rdf/terms#')
 
     # own namespace
-    DCATDE = Namespace("http://dcat-ap.de/def/dcatde/1.0.1/")
+    DCATDE = Namespace("http://dcat-ap.de/def/dcatde/")
+
+    INVALID_TAG = u'Som`E:-in.valid tagäß!;'
+    VALID_TAG = {'name': u'some-in.valid-tagäß'}
 
     dcat_theme_prefix = "http://publications.europa.eu/resource/authority/data-theme/"
 
@@ -59,7 +62,7 @@ class TestDCATde(unittest.TestCase):
 
     predicate_pattern = re.compile("[a-zA-Z]:[a-zA-Z]")
 
-    def addLanguages(self, rdf_parser, dataset_ref, subject, predicate, text):
+    def _addLanguages(self, rdf_parser, dataset_ref, subject, predicate, text):
         object_refs = [d for d in rdf_parser.g.objects(dataset_ref, subject)]
         self.assertEqual(len(object_refs), 1)
         object_ref = object_refs[0]
@@ -80,9 +83,9 @@ class TestDCATde(unittest.TestCase):
                           self.DCT.description,
                           Literal(u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. (EN)', lang='en')))
         # Publisher
-        self.addLanguages(rdf_parser, dataset_ref, self.DCT.publisher, self.FOAF.name, u'Behörde für Umwelt und Energie (BUE), Amt für Umweltschutz')
+        self._addLanguages(rdf_parser, dataset_ref, self.DCT.publisher, self.FOAF.name, u'Behörde für Umwelt und Energie (BUE), Amt für Umweltschutz')
         # ContactPoint
-        self.addLanguages(rdf_parser, dataset_ref, self.DCAT.contactPoint, self.VCARD.fn, u'Herr Dr. Michael Schröder')
+        self._addLanguages(rdf_parser, dataset_ref, self.DCAT.contactPoint, self.VCARD.fn, u'Herr Dr. Michael Schröder')
         # Distributions
         distribution_refs = [d for d in rdf_parser.g.objects(dataset_ref, self.DCAT.distribution)]
         self.assertEqual(len(distribution_refs), 2)
@@ -112,12 +115,16 @@ class TestDCATde(unittest.TestCase):
 
     def _assert_list(self, ref, predicate, values):
         """ check for every item of a predicate to exist in the graph """
+        if not isinstance(values, list):
+            raise TypeError('values must be type of list')
+        values_found = []
         for obj in self.graph.objects(ref, predicate):
             if unicode(obj) in values:
-                values.remove(unicode(obj))
+                values_found.append(unicode(obj))
 
-        self.assertTrue(len(values) == 0, "Not all expected values were found in graph. remaining: "
-                        + ", ".join(values))
+        self.assertTrue(len(values_found) == len(values),
+                        "Not all expected values were found in graph. remaining: {}".format(
+                            str.join(', ', list(set(values) - set(values_found)))))
 
     def _assert_extras_list_serialized(self, extras, key, expected):
         """ check if the extras list value matches with the expected content.
@@ -256,6 +263,7 @@ class TestDCATde(unittest.TestCase):
                 "frequency": "dct:accrualPeriodicity",
                 "version_notes": "adms:versionNotes",
                 "dcat_type": "dct:type",
+                "granularity": "dcat:granularity",
 
                 "author_url": "nocheck",
                 "author_type": "nocheck",
@@ -383,6 +391,31 @@ class TestDCATde(unittest.TestCase):
         dcat_mediatype = list(self.graph.objects(resource_ref, self.DCAT.mediaType))
         self.assertEqual(expected_format, dct_format)
         self.assertEqual(expected_mediatype, dcat_mediatype)
+
+    def _create_contact_node(self, g, contact_type):
+        contact_ref = URIRef("http://example.org/datasets/1/" + contact_type)
+        g.add((contact_ref, RDF.type, self.FOAF.Agent))
+        g.add((contact_ref, self.FOAF.name, Literal(contact_type + u' name')))
+        g.add((contact_ref, self.DCT.type, URIRef("http://purl.org/adms/publishertype/LocalAuthority")))
+        return contact_ref
+
+    def _assert_contact_dict(self, dataset, graph_property_name, dict_property_prefix, extras_only=False):
+        extras_dict = dataset.get('extras')
+        self.assertIsNotNone(extras_dict)
+        if extras_only:
+            self._assert_extras_string(
+                extras_dict,
+                dict_property_prefix + '_name', graph_property_name + u' name')
+        else:
+            self.assertEqual(graph_property_name + u' name', dataset.get(dict_property_prefix))
+
+        self._assert_extras_string(
+            extras_dict,
+            dict_property_prefix + '_type', u'http://purl.org/adms/publishertype/LocalAuthority')
+        if graph_property_name != 'publisher':
+            self._assert_extras_string(
+                extras_dict,
+                dict_property_prefix + '_contacttype', u'Organization')
 
     def test_graph_from_dataset(self):
         """ test dcat and dcatde profiles """
@@ -588,8 +621,85 @@ class TestDCATde(unittest.TestCase):
             [Literal('application/json')]
         )
 
+    def test_graph_from_dataset_contributorID_uriref_or_literal(self):
+        ### prepare ###
+        values_in_dataset_dict = ['contributorID', 'http://dcat-ap.de/def/contributors/contributorID']
+        dataset_dict = {
+            "id": "dct:identifier",
+            "notes": "dct:description",
+            "title": "dct:title",
+            "extras": self._transform_to_key_value({
+                "contributorID": values_in_dataset_dict}),
+            "groups": [],
+            "tags": []
+            }
+
+        # execute
+        self.graph = rdflib.Graph()
+        dataset_ref = URIRef("http://testuri/")
+
+        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat.graph_from_dataset(dataset_dict, dataset_ref)
+
+        dcatde = DCATdeProfile(self.graph, False)
+        dcatde.graph_from_dataset(dataset_dict, dataset_ref)
+
+        # assert
+        values = self._get_value_from_extras(dataset_dict["extras"], 'contributorID')
+        self.assertEqual(len(values), len(values_in_dataset_dict))
+        for item in [
+            ('contributorID', self.DCATDE.contributorID, [Literal, URIRef])
+        ]:
+            for num, value in enumerate(values):
+                _type = item[2]
+                if isinstance(item[2], list):
+                    self.assertEqual(len(item[2]), len(values))
+                    _type = item[2][num]
+                obj = _type(value)
+                self.assertIn(obj, self.graph.objects(dataset_ref, item[1]),
+                              '{!r} not found in {}'.format(
+                                  obj, [x for x in self.graph.objects(dataset_ref, item[1])]))
+
+    def test_graph_from_dataset_granularity_literal(self):
+        self._run_graph_from_dataset_granularity(Literal, 'MONTHLY')
+
+    def test_graph_from_dataset_granularity_uriref(self):
+        self._run_graph_from_dataset_granularity(
+            URIRef, 'http://publications.europa.eu/resource/authority/frequency/MONTHLY')
+
+    def _run_graph_from_dataset_granularity(self, _type, value):
+        ### prepare ###
+        dataset_dict = {
+            "id": "dct:identifier",
+            "notes": "dct:description",
+            "title": "dct:title",
+            "extras": self._transform_to_key_value({
+                "granularity": value}),
+            "groups": [],
+            "tags": []
+            }
+
+        # execute
+        self.graph = rdflib.Graph()
+        dataset_ref = URIRef("http://testuri/")
+
+        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat.graph_from_dataset(dataset_dict, dataset_ref)
+
+        dcatde = DCATdeProfile(self.graph, False)
+        dcatde.graph_from_dataset(dataset_dict, dataset_ref)
+
+        # assert
+        object_list = [x for x in self.graph.objects(dataset_ref, self.DCAT.granularity)]
+        self.assertEqual(len(object_list), 1)
+        obj = _type(value)
+        self.assertEqual(obj, object_list[0], '{!r} not found in {}'.format(obj, object_list))
+
+    def test_parse_dataset_generic(self):
+        self._run_parse_dataset('metadata_max', latest_version=True)
+
     def test_parse_dataset_v1_0_1(self):
-        self._run_parse_dataset('metadata_max')
+        self._run_parse_dataset('metadata_max_1_0_1')
 
     def test_parse_dataset_v1_0(self):
         self._run_parse_dataset('metadata_max_1_0')
@@ -597,7 +707,7 @@ class TestDCATde(unittest.TestCase):
     def test_parse_dataset_multi_namespaces(self):
         self._run_parse_dataset('metadata_max_multi_namespaces')
 
-    def _run_parse_dataset(self, max_rdf_file):
+    def _run_parse_dataset(self, max_rdf_file, latest_version=False):
         maxrdf = self._get_max_rdf(max_rdf_file)
 
         p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
@@ -639,6 +749,13 @@ class TestDCATde(unittest.TestCase):
 
         # dct:contributor
         self._assert_contact_info_in_dict(extras, 'contributor')
+
+        if latest_version:
+            # dcat:granularity
+            self._assert_extras_string(extras, 'granularity',
+                                      'http://publications.europa.eu/resource/authority/frequency/MONTHLY')
+        else:
+            self.assertEqual(len([x for x in extras if x["key"] == 'granularity']), 0)
 
         # dcatde:politicalGeocodingURI
         self._assert_extras_list_serialized(
@@ -845,3 +962,68 @@ class TestDCATde(unittest.TestCase):
         self.assertIn(u'json', resources[0].get('format').lower())
         self.assertEqual(u'test-mediatype',
                          resources[0].get('mimetype'))
+
+    def test_parse_contacts_graph_type_foaf_agent(self):
+        # prepare
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        # author/creator, maintainer, originator, contributor, publisher
+        originator = self._create_contact_node(g, 'originator')
+        g.add((dataset_ref, self.DCATDE.originator, originator))
+        maintainer = self._create_contact_node(g, 'maintainer')
+        g.add((dataset_ref, self.DCATDE.maintainer, maintainer))
+        contributor = self._create_contact_node(g, 'contributor')
+        g.add((dataset_ref, self.DCT.contributor, contributor))
+        creator = self._create_contact_node(g, 'creator')
+        g.add((dataset_ref, self.DCT.creator, creator))
+        publisher = self._create_contact_node(g, 'publisher')
+        g.add((dataset_ref, self.DCT.publisher, publisher))
+
+        # execute
+        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p.g = g
+        dataset = [d for d in p.datasets()][0]
+
+        # assert
+        self.assertIsNotNone(dataset)
+        self._assert_contact_dict(dataset, 'originator', 'originator', True)
+        self._assert_contact_dict(dataset, 'maintainer', 'maintainer')
+        self._assert_contact_dict(dataset, 'contributor', 'contributor', True)
+        self._assert_contact_dict(dataset, 'creator', 'author')
+        self._assert_contact_dict(dataset, 'publisher', 'publisher', True)
+
+    @helpers.change_config(DCAT_CLEAN_TAGS, 'true')
+    def test_tags_clean_tags_on(self):
+        g = Graph()
+
+        dataset = URIRef('http://example.org/datasets/1')
+        g.add((dataset, RDF.type, self.DCAT.Dataset))
+        g.add((dataset, self.DCAT.keyword, Literal(self.INVALID_TAG)))
+        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+
+        p.g = g
+
+        datasets = [d for d in p.datasets()]
+
+        self.assertIn(self.VALID_TAG, datasets[0]['tags'])
+        self.assertNotIn(self.INVALID_TAG, datasets[0]['tags'])
+
+    @helpers.change_config(DCAT_CLEAN_TAGS, 'false')
+    def test_tags_clean_tags_off(self):
+        g = Graph()
+
+        dataset = URIRef('http://example.org/datasets/1')
+        g.add((dataset, RDF.type, self.DCAT.Dataset))
+        g.add((dataset, self.DCAT.keyword, Literal(self.INVALID_TAG)))
+        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+
+        p.g = g
+
+        # when config flag is set to false, bad tags can happen
+
+        datasets = [d for d in p.datasets()]
+        self.assertNotIn(self.VALID_TAG, datasets[0]['tags'])
+        self.assertIn({'name': self.INVALID_TAG}, datasets[0]['tags'])

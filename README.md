@@ -12,7 +12,7 @@ For the RDF harvester, [ckanext-harvest](https://github.com/ckan/ckanext-harvest
 
 1. If you are using Python virtual environment (virtualenv), activate it.
 
-2. Install a specific version of the CKAN extension ckanext-dcat. It is tested that ckanext-dcatde is working well with the release `v0.0.9` of ckanext-dcat.
+2. Install a specific version of the CKAN extension ckanext-dcat. The ckanext-dcatde requires a release greater than `v0.0.9` of ckanext-dcat.
 
 3. Install the extension on your virtualenv:
 
@@ -44,10 +44,38 @@ It is tested that ckanext-dcatde is working well with the release `v1.1.4` of ck
        
    The plugins `harvest` and `dcat_rdf_harvester` are only needed if you want to use the RDF harvester.
 
+   In case you like the datasets to be indexed via [Google Dataset Search](https://toolbox.google.com/datasetsearch), activate the `structured_data` plugin in addition. See [ckanext-dcat README](https://github.com/ckan/ckanext-dcat/blob/master/README.md#structured-data-and-google-dataset-search-indexing) for details.
+
 
 6. Add the following parameter to your CKAN configuration file to activate the additional profile for DCAT-AP.de:
 
        ckanext.dcat.rdf.profiles = euro_dcat_ap dcatap_de
+
+## RDF DCAT-AP.de Harvester
+If the plugin `dcat_rdf_harvester` is activated an additional source type `DCAT-AP.de RDF Harvester` is selectable.
+The harvester supports the additional fields specified in DCAT-AP.de.
+
+### Default license
+By default the harvester will set a default license in the resource if in the resource of a dataset is no license
+provided. In this case additional information about the harvest source, dataset and resource will be written
+as log entry in the info level.
+
+The value which will be used as default license can be defined by the
+configuration parameter `ckanext.dcatde.harvest.default_license`. Add the following parameter to your CKAN configuration file, e.g.:
+
+    ckanext.dcatde.harvest.default_license = http://dcat-ap.de/def/licenses/other-closed
+
+### Skipping datasets which does not contain any resources
+Skipping datasets which does not contain any resources can be activated by setting the optional
+configuration parameter `resources_required` in the harvest source configuration.
+Already existent datasets will not be skipped. Add the following parameter into the harvest source
+configuration:
+
+    {"resources_required": true}
+
+### Cleaning Tags/Keywords
+The DCAT-AP.de profile implements a different logic for cleaning tags/keywords as implemented in ckanext-dcat,
+e.g. not replacing/removing German umlauts and 'ß'.
 
 
 ## Creating dcat-ap categories as groups

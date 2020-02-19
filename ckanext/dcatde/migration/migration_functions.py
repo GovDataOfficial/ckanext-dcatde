@@ -66,8 +66,8 @@ class MigrationFunctions(object):
     '''Holder for functions which are to be applied to a dataset.
     All of them only take the dataset as argument.
 
-    license_mapping: JSON dict containing OGD <-> DCAT license names
-    category_mapping: JSON dict containing OGD groups <-> DCAT themes'''
+    license_mapping: JSON dict containing OGD license (key) <-> DCAT license URIs (value)
+    category_mapping: JSON dict containing OGD groups (key) <-> DCAT themes (value)'''
 
     def __init__(self, license_mapping, category_mapping):
         self.license_mapping = license_mapping
@@ -267,20 +267,24 @@ class MigrationFunctions(object):
             util.log_error(dataset, "No license_id")
             return
 
-        if license_id_data not in self.license_mapping.keys():
-            if license_id_data not in self.license_mapping.values():
-                util.log_error(dataset, u"license_id '" + unicode(license_id_data) + u"' not part of the mapping")
+        # key == OGD value and value == DCAT URI
+        if license_id_data in self.license_mapping.keys():
+             # OGD value is present. Map it accordingly.
+            license_id_dcat = self.license_mapping[license_id_data]
+            dataset['license_id'] = license_id_dcat
+        elif license_id_data not in self.license_mapping.values():
+            # Invalid value, neither OGD nor DCAT
+            util.log_error(dataset, u"license_id '" + unicode(license_id_data) + u"' not part of the mapping")
             return
 
-        license_id_dcat = self.license_mapping[license_id_data]
-        dataset[u'license_id'] = license_id_dcat
+        # At this point, a valid DCAT license is present in dataset['license_id'].
 
         if resources is not None:
             for resource in resources:
                 if '__extras' not in resource:
                     resource['__extras'] = dict()
 
-                resource['__extras'][u'license'] = license_id_dcat
+                resource['__extras'][u'license'] = dataset['license_id']
 
     def terms_of_use_attribution_text(self, dataset):
         '''

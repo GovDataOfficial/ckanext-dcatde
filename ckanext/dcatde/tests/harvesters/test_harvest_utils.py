@@ -128,7 +128,7 @@ class TestHarvestUtils(unittest.TestCase):
     @patch('ckan.plugins.toolkit.get_action')
     def test_handle_duplicates(self, mock_get_action):
         local_modified = '2017-08-14T10:00:00.000'
-        remote_modified = '2017-08-15T10:00:00.000'
+        remote_modified = '2017-08-15T10:00:00+02:00'
         local_newer_modified = '2017-08-17T10:00:00.000'
 
         # Return local dataset
@@ -137,7 +137,8 @@ class TestHarvestUtils(unittest.TestCase):
                 return {
                            'count': 1,
                            'results': [{
-                               'extras': [{'key': 'modified', 'value': local_modified}]
+                               'extras': [{'key': 'modified', 'value': local_modified},
+                                          {'key': 'metadata_harvested_portal', 'value': 'harvest1'}]
                            }]
                        }
             elif data_dict["q"] == 'identifier:"nodata"':
@@ -231,6 +232,18 @@ class TestHarvestUtils(unittest.TestCase):
         self.assertFalse(result, "Dataset should not be accepted as update.")
         self.assertEqual(mock_get_action.call_count, 4)
 
+        # Prepare remote dataset without timestamp, but same harvester - accept
+        remote_dataset = json.dumps({
+                'extras': {
+                    'identifier': 'hasone',
+                    'metadata_harvested_portal': 'harvest1'
+                }
+            })
+
+        result = HarvestUtils.handle_duplicates(remote_dataset)
+        self.assertTrue(result, "Dataset was not accepted as update.")
+        self.assertEqual(mock_get_action.call_count, 5)
+
         # Prepare remote dataset - and local dataset is newer, so reject this
         remote_dataset = json.dumps({
                 'extras': {
@@ -241,7 +254,7 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 5)
+        self.assertEqual(mock_get_action.call_count, 6)
 
         # Prepare remote dataset has guid and remote dataset is newer, so accept it
         remote_dataset = json.dumps({
@@ -254,7 +267,7 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 6)
+        self.assertEqual(mock_get_action.call_count, 7)
 
         # Prepare remote dataset has an empty field identifier, so accept it
         remote_dataset = json.dumps({
@@ -266,4 +279,41 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 6)
+        self.assertEqual(mock_get_action.call_count, 7)
+
+    def test_compare_metadata_modified(self):
+        # Remote date is newer than local date
+        date_string_local = '2017-08-14T10:00:00.000'
+        date_string_remote = '2017-08-15T10:00:00.000'
+        result = HarvestUtils.compare_metadata_modified(date_string_remote, date_string_local)
+        self.assertTrue(result, "Expected remote date is newer!")
+
+        # Remote date is equal to local date
+        date_string_local = '2017-08-14T10:00:00.000'
+        date_string_remote = '2017-08-14T10:00:00.000'
+        result = HarvestUtils.compare_metadata_modified(date_string_remote, date_string_local)
+        self.assertFalse(result, "Expected remote date is equal!")
+
+        # Remote date is older than local date
+        date_string_local = '2017-08-15T10:00:00.000'
+        date_string_remote = '2017-08-14T10:00:00.000'
+        result = HarvestUtils.compare_metadata_modified(date_string_remote, date_string_local)
+        self.assertFalse(result, "Expected remote date is older!")
+
+        # Remote date with time zone and local date without time zone
+        date_string_local = '2017-08-14T10:00:00.000'
+        date_string_remote = '2017-08-15T10:00:00+01:00'
+        result = HarvestUtils.compare_metadata_modified(date_string_remote, date_string_local)
+        self.assertTrue(result, "Expected remote date is newer!")
+
+        # Both, remote date and local date with time zone
+        date_string_local = '2017-08-14T10:00:00+02:00'
+        date_string_remote = '2017-08-14T10:00:00+01:00'
+        result = HarvestUtils.compare_metadata_modified(date_string_remote, date_string_local)
+        self.assertTrue(result, "Expected remote date is newer!")
+
+        # Remote date is equal to local date (both with time zone)
+        date_string_local = '2017-08-14T10:00:00+01:00'
+        date_string_remote = '2017-08-14T10:00:00+01:00'
+        result = HarvestUtils.compare_metadata_modified(date_string_remote, date_string_local)
+        self.assertFalse(result, "Expected remote date is equal!")

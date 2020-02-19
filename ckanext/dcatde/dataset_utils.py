@@ -48,6 +48,10 @@ def rename_extras_field(dataset, name_old, name_new, as_list):
 
 
 def insert_resource_extra(resource_dict, key, value):
+    """
+    Insert not from the resource (default) schema known fields into undocumented __extras dict.
+    """
+
     if '__extras' not in resource_dict:
         resource_dict['__extras'] = dict()
 

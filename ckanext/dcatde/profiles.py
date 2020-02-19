@@ -1,10 +1,17 @@
+#!/usr/bin/python
+# -*- coding: utf8 -*-
 import json
+import re
 
-from ckanext.dcat.profiles import RDFProfile, CleanedURIRef
-from ckanext.dcat.utils import resource_uri
-import ckanext.dcatde.dataset_utils as ds_utils
+from ckan import model
+from ckan.lib.munge import _munge_to_length
+from ckan.plugins import toolkit
+from ckantoolkit import config
 from rdflib import URIRef, BNode, Literal
 from rdflib.namespace import Namespace, RDF, SKOS
+from ckanext.dcat.profiles import RDFProfile, CleanedURIRef, URIRefOrLiteral
+from ckanext.dcat.utils import resource_uri, DCAT_CLEAN_TAGS
+import ckanext.dcatde.dataset_utils as ds_utils
 
 # copied from ckanext.dcat.profiles
 DCT = Namespace("http://purl.org/dc/terms/")
@@ -21,7 +28,8 @@ SPDX = Namespace('http://spdx.org/rdf/terms#')
 
 # own namespace
 DCATDE_1_0 = Namespace("http://dcat-ap.de/def/dcatde/1_0/")
-DCATDE = Namespace("http://dcat-ap.de/def/dcatde/1.0.1/")
+DCATDE_1_0_1 = Namespace("http://dcat-ap.de/def/dcatde/1.0.1/")
+DCATDE = Namespace("http://dcat-ap.de/def/dcatde/")
 
 dcat_theme_prefix = "http://publications.europa.eu/resource/authority/data-theme/"
 
@@ -82,7 +90,7 @@ class DCATdeProfile(RDFProfile):
 
         if node:
             contacttype = self._object(node, RDF.type)
-            if contacttype in [FOAF.Person, FOAF.Organization]:
+            if contacttype in [FOAF.Agent, FOAF.Person, FOAF.Organization]:
                 name = self._object_value(node, FOAF.name)
                 email = self._object_value(node, FOAF.mbox)
                 url = self._object_value(node, FOAF.homepage)
@@ -140,24 +148,22 @@ class DCATdeProfile(RDFProfile):
 
     def parse_dataset(self, dataset_dict, dataset_ref):
         """ Transforms DCAT-AP.de-Data to CKAN-Dictionary """
+
+        # Different implementation of clean tags for keywords
+        do_clean_tags = toolkit.asbool(config.get(DCAT_CLEAN_TAGS, False))
+        if do_clean_tags:
+            cleaned_tags = [_munge_tag(tag) for tag in self._keywords(dataset_ref)]
+            tags = [{'name': tag} for tag in cleaned_tags]
+            dataset_dict['tags'] = tags
+
         # Manage different versions of DCATDE namespaces first.
         # Ensure that they are ordered from oldest to newest version, such that older values get overwritten
         # in case of multiple definitions
         dcatde_versions = [
             DCATDE_1_0,
+            DCATDE_1_0_1,
             DCATDE
         ]
-
-        # geocodingText and legalbasisText got renamed, so handle them separately
-        for key, predicate, in (
-                ('legalbasisText', DCATDE_1_0.legalbasisText),
-                ('geocodingText', DCATDE_1_0.geocodingText),
-                ('legalbasisText', DCATDE.legalBasis),
-                ('geocodingText', DCATDE.geocodingDescription),
-        ):
-            values = self._object_value_list(dataset_ref, predicate)
-            if values:
-                ds_utils.set_extras_field(dataset_dict, key, json.dumps(values))
 
         # iterate over all namespaces to import as much as possible
         for dcatde_namespace in dcatde_versions:
@@ -170,10 +176,20 @@ class DCATdeProfile(RDFProfile):
                 if value:
                     ds_utils.set_extras_field(dataset_dict, key, value)
 
+            # geocodingText and legalbasisText got renamed after 1.0, so assign the respective names
+            legalbasisTextProperty = dcatde_namespace.legalBasis
+            geocodingTextProperty = dcatde_namespace.geocodingDescription
+
+            if (dcatde_namespace == DCATDE_1_0):
+                legalbasisTextProperty = DCATDE_1_0.legalbasisText
+                geocodingTextProperty = DCATDE_1_0.geocodingText
+
             # List fields
             for key, predicate, in (
                    ('contributorID', dcatde_namespace.contributorID),
                    ('politicalGeocodingURI', dcatde_namespace.politicalGeocodingURI),
+                   ('legalbasisText', legalbasisTextProperty),
+                   ('geocodingText', geocodingTextProperty),
                    ):
                 values = self._object_value_list(dataset_ref, predicate)
                 if values:
@@ -200,10 +216,14 @@ class DCATdeProfile(RDFProfile):
         self._parse_contact(dataset_dict, dataset_ref, DCT.contributor, 'contributor', True)
         self._parse_contact(dataset_dict, dataset_ref, DCT.creator, 'author', False)
 
-        # dcat:landingPage
-        landing_page = self._object_value(dataset_ref, DCAT.landingPage)
-        if landing_page:
-            ds_utils.set_extras_field(dataset_dict, 'metadata_original_html', landing_page)
+        # Simple additional fields to DCAT-AP 1.1
+        for key, predicate in (
+                ('metadata_original_html', DCAT.landingPage),
+                ('granularity', DCAT.granularity)
+                ):
+            value = self._object_value(dataset_ref, predicate)
+            if value:
+                ds_utils.set_extras_field(dataset_dict, key, value)
 
         # dcat:contactPoint
         # TODO: dcat-ap adds the values to extras.contact_... . Maybe better than maintainer?
@@ -249,13 +269,14 @@ class DCATdeProfile(RDFProfile):
         items = [
             ('qualityProcessURI', DCATDE.qualityProcessURI, None, URIRef),
             ('metadata_original_html', DCAT.landingPage, None, URIRef),
-            ('politicalGeocodingLevelURI', DCATDE.politicalGeocodingLevelURI, None, URIRef)
+            ('politicalGeocodingLevelURI', DCATDE.politicalGeocodingLevelURI, None, URIRef),
+            ('granularity', DCAT.granularity, None, URIRefOrLiteral)
         ]
         self._add_triples_from_dict(dataset_dict, dataset_ref, items)
 
         # Additional Lists
         items = [
-            ('contributorID', DCATDE.contributorID, None, Literal),
+            ('contributorID', DCATDE.contributorID, None, URIRefOrLiteral),
             ('politicalGeocodingURI', DCATDE.politicalGeocodingURI, None, URIRef),
             ('legalbasisText', DCATDE.legalBasis, None, Literal),
             ('geocodingText', DCATDE.geocodingDescription, None, Literal)
@@ -334,3 +355,10 @@ class DCATdeProfile(RDFProfile):
     def graph_from_catalog(self, catalog_dict, catalog_ref):
         """ Creates a Catalog representation, will not be used for now """
         pass
+
+
+def _munge_tag(tag):
+    '''Cleans a given tag from special characters.'''
+    tag = tag.lower().strip()
+    tag = _munge_to_length(tag, model.MIN_TAG_LENGTH, model.MAX_TAG_LENGTH)
+    return re.sub(ur'[^a-zA-ZÄÖÜäöüß0-9 \-_\.]', '', tag).replace(' ', '-')

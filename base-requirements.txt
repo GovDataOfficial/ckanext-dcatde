@@ -1,8 +1,9 @@
 ckan==2.5.2
 ckanapi>=3,<4
-ckanext-dcat==0.0.9
+ckanext-dcat==1.0.0
 ckanext-harvest==1.1.4
 rdflib==4.2.1
 rdflib-jsonld==0.4.0
+ckantoolkit==0.0.3
 pycountry>=17
 python-dateutil>=2.7,<3.0

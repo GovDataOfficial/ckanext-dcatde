@@ -409,28 +409,64 @@ class TestMigrationFunctions(unittest.TestCase):
                                          self.migrations.contacts_role_veroeffentlichende_stelle)
 
     def test_license_id(self):
+        test_datasets = [
+            {
+                u'license_id': u'ogd-license-key',
+                u'resources': [
+                    {u'id': u'res1'},
+                    {u'id': u'res2'},
+                    {u'id': u'res3'}
+                ]
+            },
+            {
+                u'license_id': u'dcatde-license-key',
+                u'resources': [
+                    {u'id': u'res1'},
+                    {u'id': u'res2'},
+                    {u'id': u'res3'}
+                ]
+            },
+        ]
+
+        # ensure that the correct DCAT license key is added to dataset and resources
+        # in both cases
+        for test_ds in test_datasets:
+            self.migrations.license_id(test_ds)
+
+            self._assert_dataset_len(test_ds, 2)
+            self.assertDictContainsSubset({u'license_id': u'dcatde-license-key'},
+                                          test_ds)
+            self.assertIn(u'resources', test_ds)
+
+            for res in test_ds[u'resources']:
+                self._assert_dataset_len(res, 2)
+                self.assertIn(u'id', res)
+                self.assertDictContainsSubset({
+                    u'__extras': {u'license': u'dcatde-license-key'}
+                }, res)
+
+    def test_license_id_skip_unknown(self):
         test_ds = {
-            u'license_id': u'ogd-license-key',
+            u'license_id': u'other-license-key',
             u'resources': [
                 {u'id': u'res1'},
                 {u'id': u'res2'},
                 {u'id': u'res3'}
-                ]
-            }
+            ]
+        }
 
         self.migrations.license_id(test_ds)
 
         self._assert_dataset_len(test_ds, 2)
-        self.assertDictContainsSubset({u'license_id': u'dcatde-license-key'},
+        # ID should remain unchanged
+        self.assertDictContainsSubset({u'license_id': u'other-license-key'},
                                       test_ds)
         self.assertIn(u'resources', test_ds)
 
+        # no license should have been added for unknown value
         for res in test_ds[u'resources']:
-            self._assert_dataset_len(res, 2)
+            self._assert_dataset_len(res, 1)
             self.assertIn(u'id', res)
-            self.assertDictContainsSubset({
-                u'__extras': {u'license': u'dcatde-license-key'}
-                }, res)
 
     def test_terms_of_use_attribution_text(self):
         test_ds = self._build_dataset_extras(
