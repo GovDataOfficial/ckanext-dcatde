@@ -28,13 +28,15 @@ def log_error(dataset, message):
     get_migrator_log().error(log_dataset_prefix(dataset) + message)
 
 
-def load_json_mapping(url, errorhint):
+def load_json_mapping(url, errorhint, logger=None):
     '''Loads the Mapping from the given file URL'''
+    if logger is None:
+        logger = get_migrator_log()
     try:
-        get_migrator_log().debug("Trying to open: " + url)
+        logger.debug("Trying to open: " + url)
         return json.loads(urllib2.urlopen(url).read())
     except Exception:
-        get_migrator_log().error('Could not load ' + errorhint + ' mapping')
+        logger.error('Could not load ' + errorhint + ' mapping')
         return {}
 
 

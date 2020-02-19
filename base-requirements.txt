@@ -6,4 +6,4 @@ rdflib==4.2.1
 rdflib-jsonld==0.4.0
 ckantoolkit==0.0.3
 pycountry>=17
-python-dateutil>=2.7,<3.0
+python-dateutil>=2.7,<2.8.1

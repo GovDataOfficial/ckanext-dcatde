@@ -11,6 +11,7 @@ from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
 from ckanext.dcatde.dataset_utils import set_extras_field
 from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
+from ckanext.dcatde.migration.util import load_json_mapping
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
 
 LOGGER = logging.getLogger(__name__)
@@ -49,6 +50,17 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
     def after_create(self, harvest_object, dataset_dict, temp_dict):
         return None
     # -- end IDCATRDFHarvester implementation --
+
+    def __init__(self, name='dcatde_rdf'):
+        '''
+        Set global parameters from config
+        '''
+        DCATRDFHarvester.__init__(self)
+
+        self.licenses_upgrade = {}
+        license_file = pylons.config.get('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping')
+        if license_file:
+            self.licenses_upgrade = load_json_mapping(license_file, "DCAT License upgrade mapping", LOGGER)
 
     def info(self):
         return {
@@ -144,29 +156,45 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
         return object_ids
 
-    def _amend_package(self, package, pkg_guid, portal, harvester_name):
+    def _amend_package(self, harvest_object):
         '''
         Amend package information.
         '''
+        package = json.loads(harvest_object.content)
         if 'extras' not in package:
             package['extras'] = []
 
+        portal = self._get_portal_from_config(harvest_object.source.config)
         set_extras_field(package, EXTRA_KEY_HARVESTED_PORTAL, portal)
 
-        # ensure all resources have a license
+        # ensure all resources have a (recent) license
         for resource in package.get('resources', []):
-            if RES_EXTRA_KEY_LICENSE not in resource:
-                # pkg_guid is needed because GUID is not set in package dict
-                LOGGER.info(u'{3}: No license for resource {0} of package {1} (GUID {2}). '\
-                            u'Adding default value.'.format(
-                                resource.get('uri', ''), package.get('name', ''), pkg_guid, harvester_name)
-                           )
-                resource[RES_EXTRA_KEY_LICENSE] = self._get_fallback_license()
+            log_prefix = u'{0}: Resource {1} of package {2} (GUID {3})'.format(
+                harvest_object.source.title, resource.get('uri', ''), package.get('name', ''),
+                harvest_object.guid
+            )
 
-    def _skip_datasets_without_resource(self, harvest_object, package):
+            if resource.get(RES_EXTRA_KEY_LICENSE, '') == '':
+                LOGGER.info(log_prefix + u' has no license. Adding default value.')
+                resource[RES_EXTRA_KEY_LICENSE] = self._get_fallback_license()
+            elif self.licenses_upgrade:
+                current_license = resource.get(RES_EXTRA_KEY_LICENSE)
+                new_license = self.licenses_upgrade.get(current_license, '')
+                if new_license == '':
+                    LOGGER.info(log_prefix + u' has a deprecated or unknown license {0}. '\
+                        u'Keeping old value.'.format(current_license))
+                elif current_license != new_license:
+                    LOGGER.info(log_prefix + u' had old license {0}. '\
+                        u'Updated value to recent DCAT list.'.format(current_license))
+                    resource[RES_EXTRA_KEY_LICENSE] = new_license
+        # write changes back to harvest object content
+        harvest_object.content = json.dumps(package)
+
+    def _skip_datasets_without_resource(self, harvest_object):
         '''
         Checks if resources are present when configured and the dataset not already exists.
         '''
+        package = json.loads(harvest_object.content)
         if (self._get_resources_required_config(harvest_object.source.config)\
              and not package.get('resources')):
             skip_notice = ''
@@ -194,10 +222,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                                                                     harvest_object.guid))
             return True
 
-        package = json.loads(harvest_object.content)
-
         # skip if resources are not present when configured
-        if self._skip_datasets_without_resource(harvest_object, package):
+        if self._skip_datasets_without_resource(harvest_object):
             # do not include details in error such that they get summarized in the UI
             self._save_object_error(
                 'Dataset has no resources, but they are required by config. Skipping.',
@@ -206,9 +232,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             return False
 
         # set custom field and perform other fixes on the data
-        portal = self._get_portal_from_config(harvest_object.source.config)
-        self._amend_package(package, harvest_object.guid, portal, harvest_object.source.title)
-        harvest_object.content = json.dumps(package)
+        self._amend_package(harvest_object)
 
         import_dataset = HarvestUtils.handle_duplicates(harvest_object.content)
         if import_dataset:

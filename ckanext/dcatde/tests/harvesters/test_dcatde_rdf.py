@@ -38,24 +38,32 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         return harvest_obj
 
     @staticmethod
-    def _prepare_license_obj():
-        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', 'license-fallback')
-        obj_content = json.dumps({
-            'id': 'test-id',
-            'name': 'test-name',
-            'resources': [
-                {'uri': 'http://example.com/no-license-ä'},
-                {'uri': 'http://example.com/license', 'license': 'foo'},
-            ]
-        })
-        harvest_obj.content = obj_content
+    def _prepare_obj_with_resources(resources):
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', 'test-status')
+        obj_content = json.loads(harvest_obj.content)
+        obj_content['resources'] = resources
+        harvest_obj.content = json.dumps(obj_content)
         return harvest_obj
 
-    def _assert_resource_license(self, harvest_obj, expected_license):
+    @staticmethod
+    def _prepare_license_fallback_obj():
+        return TestDCATdeRDFHarvester._prepare_obj_with_resources([
+            {'uri': 'http://example.com/no-license'},
+            {'uri': 'http://example.com/license', 'license': 'foo'},
+        ])
+
+    @staticmethod
+    def _pepare_license_migration_obj(license1, license2):
+        return TestDCATdeRDFHarvester._prepare_obj_with_resources([
+            {'uri': 'http://example.com/1', 'license': license1},
+            {'uri': 'http://example.com/2', 'license': license2}
+        ])
+
+    def _assert_resource_licenses(self, harvest_obj, expected_first, expected_second):
         updated_content = json.loads(harvest_obj.content)
         updated_resources = updated_content.get('resources')
-        self.assertEquals(updated_resources[0]['license'], expected_license)
-        self.assertEquals(updated_resources[1]['license'], u'foo')
+        self.assertEquals(updated_resources[0]['license'], expected_first)
+        self.assertEquals(updated_resources[1]['license'], expected_second)
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_metadata_on_import(self, mock_super_import):
@@ -86,26 +94,97 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     def test_license_fallback_without_cfg(self, mock_super_import):
         # prepare
         harvester = DCATdeRDFHarvester()
-        harvest_obj = TestDCATdeRDFHarvester._prepare_license_obj()
+        harvest_obj = TestDCATdeRDFHarvester._prepare_license_fallback_obj()
 
         # run
         harvester.import_stage(harvest_obj)
 
         # check
-        self._assert_resource_license(harvest_obj, u'http://dcat-ap.de/def/licenses/other-closed')
+        self._assert_resource_licenses(harvest_obj,u'http://dcat-ap.de/def/licenses/other-closed', u'foo')
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     @helpers.change_config('ckanext.dcatde.harvest.default_license', 'test-license')
     def test_license_fallback_with_cfg(self, mock_super_import):
         # prepare
         harvester = DCATdeRDFHarvester()
-        harvest_obj = TestDCATdeRDFHarvester._prepare_license_obj()
+        harvest_obj = TestDCATdeRDFHarvester._prepare_license_fallback_obj()
 
         # run
         harvester.import_stage(harvest_obj)
 
         # check
-        self._assert_resource_license(harvest_obj, u'test-license')
+        self._assert_resource_licenses(harvest_obj, u'test-license', u'foo')
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.load_json_mapping')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
+    @helpers.change_config('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping', 'test-file')
+    def test_license_migration(self, mock_super_import, mock_load_mapping):
+        # prepare
+        mock_load_mapping.return_value = {
+            'foo': 'foo_new',
+            'bar': 'bar'
+        }
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._pepare_license_migration_obj('foo', 'bar')
+
+        # run
+        harvester.import_stage(harvest_obj)
+
+        # check
+        self._assert_resource_licenses(harvest_obj, u'foo_new', u'bar')
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.load_json_mapping')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
+    @helpers.change_config('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping', 'test-file')
+    def test_license_migration_unknown(self, mock_super_import, mock_load_mapping):
+        # unknown licenses should remain unchanged
+        # prepare
+        mock_load_mapping.return_value = {
+            'foo': 'foo_new',
+            'bar': 'bar'
+        }
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._pepare_license_migration_obj('foo', 'other')
+
+        # run
+        harvester.import_stage(harvest_obj)
+
+        # check
+        self._assert_resource_licenses(harvest_obj, u'foo_new', u'other')
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.load_json_mapping')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
+    @helpers.change_config('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping', 'test-file')
+    def test_license_migration_empty_mapping(self, mock_super_import, mock_load_mapping):
+        # Nothing should be changed if mapping is empty
+        # prepare
+        mock_load_mapping.return_value = { }
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._pepare_license_migration_obj('foo', 'other')
+
+        # run
+        harvester.import_stage(harvest_obj)
+
+        # check
+        self._assert_resource_licenses(harvest_obj, u'foo', u'other')
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.load_json_mapping')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
+    def test_license_migration_no_config(self, mock_super_import, mock_load_mapping):
+        # If the config parameter isn't set, also nothing should be changed
+        # prepare
+        mock_load_mapping.return_value = {
+            'foo': 'foo_new'
+         }
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._pepare_license_migration_obj('foo', 'other')
+
+        # run
+        harvester.import_stage(harvest_obj)
+
+        # check
+        mock_load_mapping.assert_not_called()
+        self._assert_resource_licenses(harvest_obj, u'foo', u'other')
 
     @patch('ckanext.dcatde.harvesters.harvest_utils.HarvestUtils.rename_delete_dataset_with_id')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')

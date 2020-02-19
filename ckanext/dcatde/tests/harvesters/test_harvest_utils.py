@@ -131,12 +131,22 @@ class TestHarvestUtils(unittest.TestCase):
         remote_modified = '2017-08-15T10:00:00+02:00'
         local_newer_modified = '2017-08-17T10:00:00.000'
 
+        mock_package_delete_action = Mock("package_delete")
+
+        def mock_action_methods(action):
+            if action == 'package_search':
+                return package_search_action
+            if action == 'package_delete':
+                return mock_package_delete_action
+
         # Return local dataset
-        def mock_get_action_function(context, data_dict):
+        def package_search_action(context, data_dict):
             if data_dict["q"] == 'identifier:"hasone"':
                 return {
                            'count': 1,
                            'results': [{
+                               'id': 'hasone-local',
+                               'name': 'hasone-name',
                                'extras': [{'key': 'modified', 'value': local_modified},
                                           {'key': 'metadata_harvested_portal', 'value': 'harvest1'}]
                            }]
@@ -149,8 +159,12 @@ class TestHarvestUtils(unittest.TestCase):
                 return {
                            'count': 2,
                            'results': [{
+                               'id': 'one-local',
+                               'name': 'one-name',
                                'extras': [{'key': 'modified', 'value': local_modified}]
                            }, {
+                               'id': 'two-local',
+                               'name': 'two-name',
                                'extras': [{'key': 'modified', 'value': local_modified}]
                            }]
                        }
@@ -158,6 +172,8 @@ class TestHarvestUtils(unittest.TestCase):
                 return {
                            'count': 1,
                            'results': [{
+                               'id': 'newer-local',
+                               'name': 'newer-name',
                                'extras': [{'key': 'modified', 'value': local_newer_modified}]
                            }]
                        }
@@ -165,14 +181,44 @@ class TestHarvestUtils(unittest.TestCase):
                 return {
                             'count': 1,
                             'results': [{
+                                'id': 'with-guid-local',
+                                'name': 'with-guid-name',
                                 'identifier': 'with-guid',
                                 'extras': [{'key': 'modified', 'value': local_modified}]
                             }]
                        }
+            elif data_dict["q"] == 'identifier:"multiple-local-newer"':
+                return {
+                           'count': 2,
+                           'results': [{
+                               'id': 'one-local',
+                               'name': 'one-name',
+                               'extras': [{'key': 'modified', 'value': local_newer_modified}]
+                           }, {
+                               'id': 'two-local',
+                               'name': 'two-name',
+                               'extras': [{'key': 'modified', 'value': local_modified}]
+                           }]
+                       }
+            elif data_dict["q"] == 'identifier:"multiple-without-modified-date"':
+                return {
+                           'count': 2,
+                           'results': [{
+                               'id': 'one-local',
+                               'name': 'one-name',
+                               'metadata_modified': local_newer_modified,
+                               'extras': []
+                           }, {
+                               'id': 'two-local',
+                               'name': 'two-name',
+                               'metadata_modified': local_modified,
+                               'extras': []
+                           }]
+                       }
             else:
                 raise AssertionError('Unexpected query!')
 
-        mock_get_action.return_value = mock_get_action_function
+        mock_get_action.side_effect = mock_action_methods
 
         # Prepare remote dataset, which is newer
         remote_dataset = json.dumps({
@@ -184,9 +230,15 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 1)
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertEqual(mock_package_delete_action.call_count, 1)
+        mock_package_delete_action.assert_called_with(
+            TestHarvestUtils._mock_api_context(), {'id': 'hasone-local'})
 
         # Prepare remote dataset, which has multiple duplicates
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
         remote_dataset = json.dumps({
                 'extras': {
                     'modified': remote_modified,
@@ -195,10 +247,18 @@ class TestHarvestUtils(unittest.TestCase):
             })
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
-        self.assertFalse(result, "Dataset was accepted as update.")
+        self.assertTrue(result, "Dataset was not accepted as update.")
         self.assertEqual(mock_get_action.call_count, 2)
+        mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertEqual(mock_package_delete_action.call_count, 2)
+        mock_package_delete_action.assert_has_calls([
+            call(TestHarvestUtils._mock_api_context(), {'id': 'one-local'}),
+            call(TestHarvestUtils._mock_api_context(), {'id': 'two-local'})],
+            any_order=True)
 
         # Prepare remote dataset, which is newer - and no local dataset, so it is to be accepted
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
         remote_dataset = json.dumps({
                 'extras': {
                     'modified': remote_modified,
@@ -208,9 +268,13 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 3)
+        self.assertEqual(mock_get_action.call_count, 1)
+        mock_get_action.assert_has_calls([call("package_search")])
+        mock_package_delete_action.assert_not_called()
 
-        # Prepare remote dataset without ID - acccept
+        # Prepare remote dataset without ID - accept
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
         remote_dataset = json.dumps({
                 'extras': {
                     'modified': remote_modified,
@@ -219,9 +283,12 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 3)
+        mock_get_action.assert_not_called()
+        mock_package_delete_action.assert_not_called()
 
-        # Prepare remote dataset without timestamp - reject
+        # Prepare remote dataset without timestamp, but local has older one - reject
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
         remote_dataset = json.dumps({
                 'extras': {
                     'identifier': 'hasone'
@@ -230,9 +297,13 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 4)
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        mock_package_delete_action.assert_not_called()
 
-        # Prepare remote dataset without timestamp, but same harvester - accept
+        # Prepare remote dataset without timestamp, but same harvester - reject, because accepted no more
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
         remote_dataset = json.dumps({
                 'extras': {
                     'identifier': 'hasone',
@@ -241,10 +312,14 @@ class TestHarvestUtils(unittest.TestCase):
             })
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
-        self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 5)
+        self.assertFalse(result, "Dataset was not accepted as update.")
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        mock_package_delete_action.assert_not_called()
 
         # Prepare remote dataset - and local dataset is newer, so reject this
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
         remote_dataset = json.dumps({
                 'extras': {
                     'modified': remote_modified,
@@ -254,9 +329,13 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 6)
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        mock_package_delete_action.assert_not_called()
 
         # Prepare remote dataset has guid and remote dataset is newer, so accept it
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
         remote_dataset = json.dumps({
                 'extras': {
                     'modified': remote_modified,
@@ -267,9 +346,15 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 7)
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertEqual(mock_package_delete_action.call_count, 1)
+        mock_package_delete_action.assert_called_with(
+            TestHarvestUtils._mock_api_context(), {'id': 'with-guid-local'})
 
         # Prepare remote dataset has an empty field identifier, so accept it
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
         remote_dataset = json.dumps({
                 'extras': {
                     'modified': remote_modified,
@@ -279,7 +364,41 @@ class TestHarvestUtils(unittest.TestCase):
 
         result = HarvestUtils.handle_duplicates(remote_dataset)
         self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(mock_get_action.call_count, 7)
+        mock_get_action.assert_not_called()
+        mock_package_delete_action.assert_not_called()
+
+        # Prepare remote dataset, which has multiple duplicates. One local is newer - reject
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
+        remote_dataset = json.dumps({
+                'extras': {
+                    'modified': remote_modified,
+                    'identifier': 'multiple-local-newer'
+                }
+            })
+
+        result = HarvestUtils.handle_duplicates(remote_dataset)
+        self.assertFalse(result, "Dataset should not be accepted as update.")
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        mock_package_delete_action.assert_called_once_with(
+            TestHarvestUtils._mock_api_context(), {'id': 'two-local'})
+
+        # Prepare remote dataset without timestamp and local has none - reject - keep last modified local
+        mock_get_action.reset_mock()
+        mock_package_delete_action.reset_mock()
+        remote_dataset = json.dumps({
+                'extras': {
+                    'identifier': 'multiple-without-modified-date'
+                }
+            })
+
+        result = HarvestUtils.handle_duplicates(remote_dataset)
+        self.assertFalse(result, "Dataset should not be accepted as update.")
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        mock_package_delete_action.assert_called_once_with(
+            TestHarvestUtils._mock_api_context(), {'id': 'two-local'})
 
     def test_compare_metadata_modified(self):
         # Remote date is newer than local date

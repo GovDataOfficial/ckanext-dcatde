@@ -1,19 +1,24 @@
 # Changelog
 
-## 3.5.4 2019-10-14
+## v3.6.0 2019-11-05
+
+* Improve logic of the duplicate detection and add deletion of older duplicates within the duplicate detection
+* Map older licenses in resources from DCAT-AP.de version v1.0 to the latest version v1.0.2
+
+## v3.5.4 2019-10-14
 
 * Improve comparing dates with and without time zone information used by the duplicate detection
 
-## 3.5.2 2019-09-05
+## v3.5.2 2019-09-05
 
 * Add different implementation for cleaning tags/keywords
 * Add harvest source configuration `resources_required`, which logs and skips all datasets without distributions (CKAN resources)
 
-## 3.5.1 2019-07-23
+## v3.5.1 2019-07-23
 
 * Fix possible error in logging message when setting default license
 
-## 3.5.0 2019-07-18
+## v3.5.0 2019-07-18
 
 * Add support for class FOAF.Agent as rdf:type in dcatde:originator, dcatde:maintainer, dct:contributor and
   dct:creator
