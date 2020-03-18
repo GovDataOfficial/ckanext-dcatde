@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.7.0 2019-12-19
+
+* Update version for requirements ckanext-harvest and ckanext-dcat
+* Remove the restriction to a specific version of CKAN
+* Fix in RDF profile: Remove prefix "mailto:" from values in fields containing an email address in method parse_dataset
+* Change in DCAT-AP.de RDF harvester: Remove validator 'email-validator' from create/update package schema
+
 ## v3.6.0 2019-11-05
 
 * Improve logic of the duplicate detection and add deletion of older duplicates within the duplicate detection

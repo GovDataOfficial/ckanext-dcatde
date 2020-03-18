@@ -101,7 +101,7 @@ class DCATdeProfile(RDFProfile):
                 name_key = prefix + "_name" if extras_only else prefix
 
                 ds_utils.insert(dataset_dict, name_key, name, extras_only)
-                ds_utils.insert(dataset_dict, prefix + "_email", email, extras_only)
+                ds_utils.insert(dataset_dict, prefix + "_email", self._without_mailto(email), extras_only)
                 ds_utils.insert(dataset_dict, prefix + "_url", url, True)
                 ds_utils.insert(dataset_dict, prefix + "_type", dct_type, True)
                 ds_utils.insert(dataset_dict, prefix + "_contacttype", ctype_string, True)

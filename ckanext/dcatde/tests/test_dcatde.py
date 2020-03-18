@@ -10,7 +10,7 @@ import pprint
 import pkg_resources
 
 from ckantoolkit.tests import helpers
-from rdflib import Graph, URIRef, Literal
+from rdflib import Graph, URIRef, Literal, BNode
 from rdflib.namespace import Namespace, RDF
 
 from ckanext.dcat.profiles import EuropeanDCATAPProfile
@@ -994,6 +994,31 @@ class TestDCATde(unittest.TestCase):
         self._assert_contact_dict(dataset, 'contributor', 'contributor', True)
         self._assert_contact_dict(dataset, 'creator', 'author')
         self._assert_contact_dict(dataset, 'publisher', 'publisher', True)
+
+    def test_pare_dataset_remove_mailto_from_email(self):
+        g = Graph()
+
+        maintainer_email = 'demo.maintainer@org.de'
+        maintainer = BNode()
+        g.add((maintainer, RDF.type, self.FOAF.Organization))
+        g.add((maintainer, self.FOAF.mbox, Literal('mailto:' + maintainer_email)))
+        creator_email = 'demo.creator@org.de'
+        creator = BNode()
+        g.add((creator, RDF.type, self.FOAF.Organization))
+        g.add((creator, self.FOAF.mbox, Literal('mailto:' + creator_email)))
+
+        dataset_ref = URIRef('http://example.org/datasets/1')
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+        g.add((dataset_ref, self.DCATDE.maintainer, maintainer))
+        g.add((dataset_ref, self.DCT.creator, creator))
+        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+
+        p.g = g
+
+        datasets = [d for d in p.datasets()]
+
+        self.assertEqual(maintainer_email, datasets[0]['maintainer_email'])
+        self.assertEqual(creator_email, datasets[0]['author_email'])
 
     @helpers.change_config(DCAT_CLEAN_TAGS, 'true')
     def test_tags_clean_tags_on(self):

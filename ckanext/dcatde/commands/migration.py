@@ -7,6 +7,7 @@ import socket
 import sys
 
 from ckan.lib.base import model
+import ckan.logic.schema as schema_
 import ckan.plugins.toolkit as tk
 from ckanext.dcatde.migration import migration_functions, util
 from ckanext.dcatde import dataset_utils
@@ -44,9 +45,17 @@ class DCATdeMigrateCommand(tk.CkanCommand):
     dry_run = False
     migration_mode = MODE_OGD
 
+    PACKAGE_UPDATE_SCHEMA = schema_.default_update_package_schema()
+
     def __init__(self, name):
         super(DCATdeMigrateCommand, self).__init__(name)
         self.executor = None  # initialized after config load
+        try:
+            email_validator = tk.get_validator('email_validator')
+            self.PACKAGE_UPDATE_SCHEMA['maintainer_email'].remove(email_validator)
+            self.PACKAGE_UPDATE_SCHEMA['author_email'].remove(email_validator)
+        except ValueError:
+            pass
 
     def create_context(self):
         '''
@@ -200,6 +209,7 @@ class DCATdeMigrateCommand(tk.CkanCommand):
             try:
                 package_update = tk.get_action('package_update')
                 ctx = self.create_context()
+                ctx['schema'] = self.PACKAGE_UPDATE_SCHEMA
                 ctx['return_id_only'] = True
                 package_update(ctx, dataset)
             except Exception:

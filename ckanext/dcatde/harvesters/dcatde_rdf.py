@@ -7,6 +7,8 @@ import pylons
 
 from ckan import plugins as p
 from ckan import model
+import ckan.logic.schema as schema_
+from ckan.plugins import toolkit
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
 from ckanext.dcatde.dataset_utils import set_extras_field
@@ -51,6 +53,9 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         return None
     # -- end IDCATRDFHarvester implementation --
 
+    PACKAGE_CREATE_SCHEMA = schema_.default_create_package_schema()
+    PACKAGE_UPDATE_SCHEMA = schema_.default_update_package_schema()
+
     def __init__(self, name='dcatde_rdf'):
         '''
         Set global parameters from config
@@ -61,6 +66,14 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         license_file = pylons.config.get('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping')
         if license_file:
             self.licenses_upgrade = load_json_mapping(license_file, "DCAT License upgrade mapping", LOGGER)
+        try:
+            email_validator = toolkit.get_validator('email_validator')
+            self.PACKAGE_UPDATE_SCHEMA['maintainer_email'].remove(email_validator)
+            self.PACKAGE_UPDATE_SCHEMA['author_email'].remove(email_validator)
+            self.PACKAGE_CREATE_SCHEMA['maintainer_email'].remove(email_validator)
+            self.PACKAGE_CREATE_SCHEMA['author_email'].remove(email_validator)
+        except ValueError:
+            pass
 
     def info(self):
         return {
@@ -155,6 +168,12 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                      str(endtime - starttime))
 
         return object_ids
+
+    def _get_create_package_schema(self, package_type):
+        return self.PACKAGE_CREATE_SCHEMA
+
+    def _get_update_package_schema(self, package_type):
+        return self.PACKAGE_UPDATE_SCHEMA
 
     def _amend_package(self, harvest_object):
         '''
