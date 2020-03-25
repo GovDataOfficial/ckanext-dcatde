@@ -1,0 +1,16 @@
+* text=auto
+
+.editorconfig   text eol=lf
+.gitattributes  text eol=lf
+.gitconfig      text eol=lf
+.gitignore      text eol=lf
+
+# Scripts
+*.sh            text eol=lf
+*.bat           text eol=crlf
+
+/.travis.yml export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/.pipignore export-ignore
+/README.md export-ignore

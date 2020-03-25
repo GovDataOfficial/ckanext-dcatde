@@ -12,7 +12,7 @@ For the RDF harvester, [ckanext-harvest](https://github.com/ckan/ckanext-harvest
 
 1. If you are using Python virtual environment (virtualenv), activate it.
 
-2. Install a specific version of the CKAN extension ckanext-dcat. The ckanext-dcatde requires a release greater than `v0.0.9` of ckanext-dcat.
+2. Install a specific version of the CKAN extension ckanext-dcat. The ckanext-dcatde requires a release greater than `v1.0.0` of ckanext-dcat.
 
 3. Install the extension on your virtualenv:
 

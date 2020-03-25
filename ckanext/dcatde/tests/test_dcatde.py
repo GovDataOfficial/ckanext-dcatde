@@ -62,6 +62,9 @@ class TestDCATde(unittest.TestCase):
 
     predicate_pattern = re.compile("[a-zA-Z]:[a-zA-Z]")
 
+    def _default_parser_dcatde(self):
+        return RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+
     def _addLanguages(self, rdf_parser, dataset_ref, subject, predicate, text):
         object_refs = [d for d in rdf_parser.g.objects(dataset_ref, subject)]
         self.assertEqual(len(object_refs), 1)
@@ -357,7 +360,7 @@ class TestDCATde(unittest.TestCase):
         if format_item is None and mediatype_item is None:
             raise AssertionError('At least one of format or mediaType is required!')
 
-        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p = self._default_parser_dcatde()
 
         p.g = g
 
@@ -416,6 +419,11 @@ class TestDCATde(unittest.TestCase):
             self._assert_extras_string(
                 extras_dict,
                 dict_property_prefix + '_contacttype', u'Organization')
+
+    def _add_vcard_property_with_hasvalue(self, g, contact_point, predicate, value):
+        obj = BNode()
+        g.add((obj, self.VCARD.hasValue, value))
+        g.add((contact_point, predicate, obj))
 
     def test_graph_from_dataset(self):
         """ test dcat and dcatde profiles """
@@ -710,7 +718,7 @@ class TestDCATde(unittest.TestCase):
     def _run_parse_dataset(self, max_rdf_file, latest_version=False):
         maxrdf = self._get_max_rdf(max_rdf_file)
 
-        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p = self._default_parser_dcatde()
 
         p.parse(maxrdf)
 
@@ -836,7 +844,7 @@ class TestDCATde(unittest.TestCase):
     def test_parse_dataset_default_lang_en(self):
         maxrdf = self._get_max_rdf()
 
-        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p = self._default_parser_dcatde()
 
         p.parse(maxrdf)
         self._add_basic_fields_with_languages(p)
@@ -862,7 +870,7 @@ class TestDCATde(unittest.TestCase):
     def test_parse_dataset_default_lang_de(self):
         maxrdf = self._get_max_rdf()
 
-        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p = self._default_parser_dcatde()
 
         p.parse(maxrdf)
         self._add_basic_fields_with_languages(p)
@@ -888,7 +896,7 @@ class TestDCATde(unittest.TestCase):
     def test_parse_dataset_default_lang_not_in_graph(self):
         maxrdf = self._get_max_rdf()
 
-        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p = self._default_parser_dcatde()
 
         p.parse(maxrdf)
         self._add_basic_fields_with_languages(p)
@@ -983,7 +991,7 @@ class TestDCATde(unittest.TestCase):
         g.add((dataset_ref, self.DCT.publisher, publisher))
 
         # execute
-        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p = self._default_parser_dcatde()
         p.g = g
         dataset = [d for d in p.datasets()][0]
 
@@ -995,7 +1003,209 @@ class TestDCATde(unittest.TestCase):
         self._assert_contact_dict(dataset, 'creator', 'author')
         self._assert_contact_dict(dataset, 'publisher', 'publisher', True)
 
-    def test_pare_dataset_remove_mailto_from_email(self):
+    def test_dataset_contact_point_vcard_hasURL_hasTelephone_literal(self):
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contact_point = BNode()
+        g.add((contact_point, RDF.type, self.VCARD.Organization))
+        g.add((contact_point, self.VCARD.hasURL, Literal('http://contact-point-url.de')))
+        g.add((contact_point, self.VCARD.hasTelephone, Literal('+490531-24262-10')))
+        g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+        extras = dataset.get('extras')
+        self._assert_extras_string(extras, 'maintainer_url', u'http://contact-point-url.de')
+        self._assert_extras_string(extras, 'maintainer_tel', u'+490531-24262-10')
+
+    def test_dataset_contact_point_vcard_hasURL_hasTelephone_uriref(self):
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contact_point = BNode()
+        g.add((contact_point, RDF.type, self.VCARD.Organization))
+        g.add((contact_point, self.VCARD.hasURL, URIRef('http://contact-point-url.de')))
+        g.add((contact_point, self.VCARD.hasTelephone, URIRef('tel:+490531-24262-10')))
+        g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+        extras = dataset.get('extras')
+        self._assert_extras_string(extras, 'maintainer_url', u'http://contact-point-url.de')
+        self._assert_extras_string(extras, 'maintainer_tel', u'+490531-24262-10')
+
+    def test_dataset_contact_point_vcard_hasURL_hasTelephone_hasValue_literal(self):
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contact_point = BNode()
+        g.add((contact_point, RDF.type, self.VCARD.Organization))
+        self._add_vcard_property_with_hasvalue(
+            g, contact_point, self.VCARD.hasURL, Literal('http://contact-point-url.de'))
+        self._add_vcard_property_with_hasvalue(
+            g, contact_point, self.VCARD.hasTelephone, Literal('+490531-24262-10'))
+        g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+        extras = dataset.get('extras')
+        self._assert_extras_string(extras, 'maintainer_url', u'http://contact-point-url.de')
+        self._assert_extras_string(extras, 'maintainer_tel', u'+490531-24262-10')
+
+    def test_dataset_contact_point_vcard_hasURL_hasTelephone_hasValue_uriref(self):
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contact_point = BNode()
+        g.add((contact_point, RDF.type, self.VCARD.Organization))
+        self._add_vcard_property_with_hasvalue(
+            g, contact_point, self.VCARD.hasURL, URIRef('http://contact-point-url.de'))
+        self._add_vcard_property_with_hasvalue(
+            g, contact_point, self.VCARD.hasTelephone, URIRef('tel:+490531-24262-10'))
+        g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+        extras = dataset.get('extras')
+        self._assert_extras_string(extras, 'maintainer_url', u'http://contact-point-url.de')
+        self._assert_extras_string(extras, 'maintainer_tel', u'+490531-24262-10')
+
+    def test_dataset_contact_point_vcard_address_has_fields_direct(self):
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contact_point = BNode()
+        g.add((contact_point, RDF.type, self.VCARD.Organization))
+        g.add((contact_point, self.VCARD.hasLocality, Literal('Berlin')))
+        g.add((contact_point, self.VCARD.hasStreetAddress, Literal('Hauptstraße 1')))
+        g.add((contact_point, self.VCARD.hasPostalCode, Literal('12345')))
+        g.add((contact_point, self.VCARD.hasCountryName, Literal('Deutschland')))
+        g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+        extras = dataset.get('extras')
+        self._assert_extras_string(extras, 'maintainer_city', u'Berlin')
+        self._assert_extras_string(extras, 'maintainer_street', u'Hauptstraße 1')
+        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
+        self._assert_extras_string(extras, 'maintainer_country', u'Deutschland')
+
+    def test_dataset_contact_point_vcard_address_has_fields_direct_with_hasvalue(self):
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contact_point = BNode()
+        g.add((contact_point, RDF.type, self.VCARD.Organization))
+        self._add_vcard_property_with_hasvalue(
+            g, contact_point, self.VCARD.hasLocality, Literal('Berlin'))
+        self._add_vcard_property_with_hasvalue(
+            g, contact_point, self.VCARD.hasStreetAddress, Literal('Hauptstraße 1'))
+        self._add_vcard_property_with_hasvalue(
+            g, contact_point, self.VCARD.hasPostalCode, Literal('12345'))
+        self._add_vcard_property_with_hasvalue(
+            g, contact_point, self.VCARD.hasCountryName, Literal('Deutschland'))
+        g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+        extras = dataset.get('extras')
+        self._assert_extras_string(extras, 'maintainer_city', u'Berlin')
+        self._assert_extras_string(extras, 'maintainer_street', u'Hauptstraße 1')
+        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
+        self._assert_extras_string(extras, 'maintainer_country', u'Deutschland')
+
+    def test_dataset_contact_point_vcard_address_has_fields_within_address_object(self):
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contact_point = BNode()
+        g.add((contact_point, RDF.type, self.VCARD.Organization))
+        address = BNode()
+        g.add((address, RDF.type, self.VCARD.Address))
+        g.add((address, self.VCARD.hasLocality, Literal('Berlin')))
+        g.add((address, self.VCARD.hasStreetAddress, Literal('Hauptstraße 1')))
+        g.add((address, self.VCARD.hasPostalCode, Literal('12345')))
+        g.add((address, self.VCARD.hasCountryName, Literal('Deutschland')))
+        g.add((contact_point, self.VCARD.hasAddress, address))
+        g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+        extras = dataset.get('extras')
+        self._assert_extras_string(extras, 'maintainer_city', u'Berlin')
+        self._assert_extras_string(extras, 'maintainer_street', u'Hauptstraße 1')
+        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
+        self._assert_extras_string(extras, 'maintainer_country', u'Deutschland')
+
+    def test_dataset_contact_point_vcard_address_has_fields_within_address_object_with_hasvalue(self):
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contact_point = BNode()
+        g.add((contact_point, RDF.type, self.VCARD.Organization))
+        address = BNode()
+        g.add((address, RDF.type, self.VCARD.Address))
+        self._add_vcard_property_with_hasvalue(
+            g, address, self.VCARD.hasLocality, Literal('Berlin'))
+        self._add_vcard_property_with_hasvalue(
+            g, address, self.VCARD.hasStreetAddress, Literal('Hauptstraße 1'))
+        self._add_vcard_property_with_hasvalue(
+            g, address, self.VCARD.hasPostalCode, Literal('12345'))
+        self._add_vcard_property_with_hasvalue(
+            g, address, self.VCARD.hasCountryName, Literal('Deutschland'))
+        g.add((contact_point, self.VCARD.hasAddress, address))
+        g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+        extras = dataset.get('extras')
+        self._assert_extras_string(extras, 'maintainer_city', u'Berlin')
+        self._assert_extras_string(extras, 'maintainer_street', u'Hauptstraße 1')
+        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
+        self._assert_extras_string(extras, 'maintainer_country', u'Deutschland')
+
+    def test_parse_dataset_remove_mailto_from_email(self):
         g = Graph()
 
         maintainer_email = 'demo.maintainer@org.de'
@@ -1011,7 +1221,7 @@ class TestDCATde(unittest.TestCase):
         g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
         g.add((dataset_ref, self.DCATDE.maintainer, maintainer))
         g.add((dataset_ref, self.DCT.creator, creator))
-        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p = self._default_parser_dcatde()
 
         p.g = g
 
@@ -1027,7 +1237,7 @@ class TestDCATde(unittest.TestCase):
         dataset = URIRef('http://example.org/datasets/1')
         g.add((dataset, RDF.type, self.DCAT.Dataset))
         g.add((dataset, self.DCAT.keyword, Literal(self.INVALID_TAG)))
-        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p = self._default_parser_dcatde()
 
         p.g = g
 
@@ -1043,7 +1253,7 @@ class TestDCATde(unittest.TestCase):
         dataset = URIRef('http://example.org/datasets/1')
         g.add((dataset, RDF.type, self.DCAT.Dataset))
         g.add((dataset, self.DCAT.keyword, Literal(self.INVALID_TAG)))
-        p = RDFParser(profiles=['euro_dcat_ap', 'dcatap_de'])
+        p = self._default_parser_dcatde()
 
         p.g = g
 

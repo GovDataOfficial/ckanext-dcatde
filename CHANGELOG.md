@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.8.0 2020-02-17
+
+* Update requirement ckanext-dcat to version 1.1.0
+* Catch exception if 'email-validator' is not available in older CKAN versions
+* Remove patch disabling SSL verification for older Python 2.7 versions
+* Adds support for the different VCARD representations for DCAT.contactPoint
+
 ## v3.7.0 2019-12-19
 
 * Update version for requirements ckanext-harvest and ckanext-dcat

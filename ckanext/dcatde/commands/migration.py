@@ -8,6 +8,7 @@ import sys
 
 from ckan.lib.base import model
 import ckan.logic.schema as schema_
+from ckan.logic import UnknownValidator
 import ckan.plugins.toolkit as tk
 from ckanext.dcatde.migration import migration_functions, util
 from ckanext.dcatde import dataset_utils
@@ -54,7 +55,7 @@ class DCATdeMigrateCommand(tk.CkanCommand):
             email_validator = tk.get_validator('email_validator')
             self.PACKAGE_UPDATE_SCHEMA['maintainer_email'].remove(email_validator)
             self.PACKAGE_UPDATE_SCHEMA['author_email'].remove(email_validator)
-        except ValueError:
+        except (ValueError, UnknownValidator):
             pass
 
     def create_context(self):

@@ -1,5 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
+'''
+DCAT-AP.de RDF Harvester module.
+'''
 import time
 import json
 import logging
@@ -7,7 +10,7 @@ import pylons
 
 from ckan import plugins as p
 from ckan import model
-import ckan.logic.schema as schema_
+from ckan.logic import UnknownValidator
 from ckan.plugins import toolkit
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
@@ -25,6 +28,7 @@ RES_EXTRA_KEY_LICENSE = 'license'
 
 
 class DCATdeRDFHarvester(DCATRDFHarvester):
+    """ DCAT-AP.de RDF Harvester """
 
     p.implements(IDCATRDFHarvester)
 
@@ -33,8 +37,6 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         return url, []
 
     def update_session(self, session):
-        # FIXME: use verify=False to allow harvesting with Python < 2.7.9. Remove after Python was upgraded.
-        session.verify = False
         return session
 
     def after_download(self, content, harvest_job):
@@ -51,10 +53,23 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
     def after_create(self, harvest_object, dataset_dict, temp_dict):
         return None
-    # -- end IDCATRDFHarvester implementation --
 
-    PACKAGE_CREATE_SCHEMA = schema_.default_create_package_schema()
-    PACKAGE_UPDATE_SCHEMA = schema_.default_update_package_schema()
+    def update_package_schema_for_create(self, package_schema):
+        try:
+            package_schema['maintainer_email'].remove(self.email_validator)
+            package_schema['author_email'].remove(self.email_validator)
+        except ValueError:
+            pass
+        return package_schema
+
+    def update_package_schema_for_update(self, package_schema):
+        try:
+            package_schema['maintainer_email'].remove(self.email_validator)
+            package_schema['author_email'].remove(self.email_validator)
+        except ValueError:
+            pass
+        return package_schema
+    # -- end IDCATRDFHarvester implementation --
 
     def __init__(self, name='dcatde_rdf'):
         '''
@@ -67,12 +82,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         if license_file:
             self.licenses_upgrade = load_json_mapping(license_file, "DCAT License upgrade mapping", LOGGER)
         try:
-            email_validator = toolkit.get_validator('email_validator')
-            self.PACKAGE_UPDATE_SCHEMA['maintainer_email'].remove(email_validator)
-            self.PACKAGE_UPDATE_SCHEMA['author_email'].remove(email_validator)
-            self.PACKAGE_CREATE_SCHEMA['maintainer_email'].remove(email_validator)
-            self.PACKAGE_CREATE_SCHEMA['author_email'].remove(email_validator)
-        except ValueError:
+            self.email_validator = toolkit.get_validator('email_validator')
+        except UnknownValidator:
             pass
 
     def info(self):
@@ -168,12 +179,6 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                      str(endtime - starttime))
 
         return object_ids
-
-    def _get_create_package_schema(self, package_type):
-        return self.PACKAGE_CREATE_SCHEMA
-
-    def _get_update_package_schema(self, package_type):
-        return self.PACKAGE_UPDATE_SCHEMA
 
     def _amend_package(self, harvest_object):
         '''

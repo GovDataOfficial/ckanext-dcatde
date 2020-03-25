@@ -106,7 +106,40 @@ class DCATdeProfile(RDFProfile):
                 ds_utils.insert(dataset_dict, prefix + "_type", dct_type, True)
                 ds_utils.insert(dataset_dict, prefix + "_contacttype", ctype_string, True)
 
+    def _parse_contact_vcard(self, dataset_dict, dataset_ref, predicate, prefix):
+        """ Adds a Contact of type VCARD from the graph to the dataset dict.
+        All items are stored in the extras dict of the dataset with the given prefix."""
+
+        contact = self._object(dataset_ref, predicate)
+        contact_url = self._get_vcard_property_value(contact, VCARD.hasURL)
+        ds_utils.insert(dataset_dict, prefix + '_url', contact_url, True)
+
+        contact_tel = self._get_vcard_property_value(contact, VCARD.hasTelephone)
+        ds_utils.insert(dataset_dict, prefix + '_tel', self._without_tel(contact_tel), True)
+
+        # If hasAddress object contains, use it to read address values from there
+        obj_with_address_values = contact
+        address = self._object(contact, VCARD.hasAddress)
+        if address:
+            obj_with_address_values = address
+        contact_street = self._get_vcard_property_value(
+            obj_with_address_values, VCARD.hasStreetAddress, VCARD['street-address'])
+        ds_utils.insert(dataset_dict, prefix + '_street', contact_street, True)
+        contact_city = self._get_vcard_property_value(
+            obj_with_address_values, VCARD.hasLocality, VCARD.locality)
+        ds_utils.insert(dataset_dict, prefix + '_city', contact_city, True)
+        contact_zip = self._get_vcard_property_value(
+            obj_with_address_values, VCARD.hasPostalCode, VCARD['postal-code'])
+        ds_utils.insert(dataset_dict, prefix + '_zip', contact_zip, True)
+        contact_country = self._get_vcard_property_value(
+            obj_with_address_values, VCARD.hasCountryName, VCARD['country-name'])
+        ds_utils.insert(dataset_dict, prefix + '_country', contact_country, True)
+
     def _get_or_create_contact_point(self, dataset_dict, dataset_ref):
+        """
+        Returns the contact point object in the graph or a newly created object
+        if no one is found in the given graph.
+        """
         contact_point_objects = self.g.objects(dataset_ref, DCAT.contactPoint)
         contact_object_list = list(contact_point_objects)
 
@@ -122,10 +155,6 @@ class DCATdeProfile(RDFProfile):
             return contact_details
 
         return next(iter(contact_object_list))
-
-    def _add_maintainer_field(self, dataset_dict, contact, field, _type):
-        contact_item = self._object_value(contact, _type)
-        ds_utils.insert(dataset_dict, 'maintainer_' + field, contact_item, True)
 
     def _add_tel(self, value):
         '''
@@ -227,17 +256,7 @@ class DCATdeProfile(RDFProfile):
 
         # dcat:contactPoint
         # TODO: dcat-ap adds the values to extras.contact_... . Maybe better than maintainer?
-        contact = self._object(dataset_ref, DCAT.contactPoint)
-        self._add_maintainer_field(dataset_dict, contact, 'url', VCARD.hasURL)
-
-        contact_tel = self._object_value(contact, VCARD.hasTelephone)
-        if contact_tel:
-            ds_utils.insert(dataset_dict, 'maintainer_tel', self._without_tel(contact_tel), True)
-
-        self._add_maintainer_field(dataset_dict, contact, 'street', VCARD.hasStreetAddress)
-        self._add_maintainer_field(dataset_dict, contact, 'city', VCARD.hasLocality)
-        self._add_maintainer_field(dataset_dict, contact, 'zip', VCARD.hasPostalCode)
-        self._add_maintainer_field(dataset_dict, contact, 'country', VCARD.hasCountryName)
+        self._parse_contact_vcard(dataset_dict, dataset_ref, DCAT.contactPoint, 'maintainer')
 
         # Groups
         groups = self._get_dataset_value(dataset_dict, 'groups')
@@ -253,7 +272,6 @@ class DCATdeProfile(RDFProfile):
                 groups.append({'id': group, 'name': group})
 
         dataset_dict['groups'] = groups
-
 
         return dataset_dict
 
