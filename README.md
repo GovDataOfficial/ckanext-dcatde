@@ -40,9 +40,9 @@ It is tested that ckanext-dcatde is working well with the release `v1.1.4` of ck
 
 5. Enable the required plugins by adding to your CKAN configuration file:
 
-       ckan.plugins = dcat dcatde harvest dcat_rdf_harvester
+       ckan.plugins = dcat dcatde harvest dcatde_rdf_harvester
        
-   The plugins `harvest` and `dcat_rdf_harvester` are only needed if you want to use the RDF harvester.
+   The plugins `harvest` and `dcatde_rdf_harvester` are only needed if you want to use the RDF harvester.
 
    In case you like the datasets to be indexed via [Google Dataset Search](https://toolbox.google.com/datasetsearch), activate the `structured_data` plugin in addition. See [ckanext-dcat README](https://github.com/ckan/ckanext-dcat/blob/master/README.md#structured-data-and-google-dataset-search-indexing) for details.
 
@@ -52,7 +52,7 @@ It is tested that ckanext-dcatde is working well with the release `v1.1.4` of ck
        ckanext.dcat.rdf.profiles = euro_dcat_ap dcatap_de
 
 ## RDF DCAT-AP.de Harvester
-If the plugin `dcat_rdf_harvester` is activated an additional source type `DCAT-AP.de RDF Harvester` is selectable.
+If the plugin `dcatde_rdf_harvester` is activated an additional source type `DCAT-AP.de RDF Harvester` is selectable.
 The harvester supports the additional fields specified in DCAT-AP.de.
 
 ### Default license
