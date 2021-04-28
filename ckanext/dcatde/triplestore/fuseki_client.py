@@ -40,9 +40,9 @@ class FusekiTriplestoreClient(object):
         if status_code == 200:
             LOGGER.debug(u'Dataset in triple store successfully deleted')
         else:
-            LOGGER.warn(u'Error! Deleting dataset response status != 200: %s', str(status_code))
+            LOGGER.warn(u'Error! Deleting dataset URI %s response status != 200: %s', uri, str(status_code))
 
-    def create_dataset_in_triplestore(self, graph):
+    def create_dataset_in_triplestore(self, graph, uri):
         """
         Create a new dataset in the triplestore
         :param graph: the dataset as rdf graph
@@ -53,7 +53,7 @@ class FusekiTriplestoreClient(object):
         if status_code == 200:
             LOGGER.debug(u'Dataset in triple store successfully created')
         else:
-            LOGGER.warn(u'Error! Creating dataset response status != 200: %s', str(status_code))
+            LOGGER.warn(u'Error! Creating dataset URI %s response status != 200: %s', uri, str(status_code))
 
     def is_available(self):
         """

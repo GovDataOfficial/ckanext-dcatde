@@ -69,7 +69,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                             graph.add(triple)
                         rdf_graph = graph.serialize(format="xml")
 
-                        self.triplestore_client.create_dataset_in_triplestore(rdf_graph)
+                        self.triplestore_client.create_dataset_in_triplestore(rdf_graph, uri)
                     else:
                         LOGGER.warn(u'Could not find triples to URI %s. Updating is not possible.', uri)
                 except SPARQLWrapperException as exception:

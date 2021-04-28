@@ -104,15 +104,16 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
                                        mock_fuseki_is_available):
         """ Tests create is called with correct parameters """
 
+        uri = "http://example.org/datasets/1"
         g = Graph()
-        g.add((URIRef("http://example.org/datasets/1"), RDF.type, self.DCAT.Dataset))
+        g.add((URIRef(uri), RDF.type, self.DCAT.Dataset))
 
         mock_requests_post.return_value.status_code = 200
         mock_fuseki_get_urls.return_value = FUSEKI_ENDPOINT_URL, FUSEKI_BASE_URL
         mock_fuseki_is_available.return_value = True
 
         client = FusekiTriplestoreClient()
-        client.create_dataset_in_triplestore(g)
+        client.create_dataset_in_triplestore(g, uri)
 
         mock_requests_post.assert_called_once_with('{}/data'.format(FUSEKI_ENDPOINT_URL),
                                                    data=g, headers=client.headers)
@@ -124,15 +125,16 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
                                          mock_fuseki_is_available):
         """ Tests create is called with correct parameters """
 
+        uri = "http://example.org/datasets/1"
         g = Graph()
-        g.add((URIRef("http://example.org/datasets/1"), RDF.type, self.DCAT.Dataset))
+        g.add((URIRef(uri), RDF.type, self.DCAT.Dataset))
 
         mock_requests_post.return_value.status_code = 404
         mock_fuseki_get_urls.return_value = FUSEKI_ENDPOINT_URL, FUSEKI_BASE_URL
         mock_fuseki_is_available.return_value = True
 
         client = FusekiTriplestoreClient()
-        client.create_dataset_in_triplestore(g)
+        client.create_dataset_in_triplestore(g, uri)
 
         mock_requests_post.assert_called_once_with('{}/data'.format(FUSEKI_ENDPOINT_URL),
                                                    data=g, headers=client.headers)

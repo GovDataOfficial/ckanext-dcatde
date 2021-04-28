@@ -4,4 +4,3 @@ ckanext-harvest==1.2.0
 ckantoolkit==0.0.3
 pycountry>=17,<20
 python-dateutil>=2.7,<2.8.1
-cryptography>=3.2.1,<3.3 # pin version avoiding build errors with version 3.3

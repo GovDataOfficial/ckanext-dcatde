@@ -150,13 +150,14 @@ class HarvestUtils(object):
                     local_search_result = p.toolkit.get_action("package_search")(context, data_dict)
                     if local_search_result['count'] == 0:
                         # no other dataset with the same identifier was found, import accepted
-                        LOGGER.debug(u'%sDid not find any existing dataset in the database. ' \
-                            u'Import accepted for dataset %s.', method_prefix, remote_dataset_name)
+                        LOGGER.debug(u'%sDid not find any existing dataset in the database with ' \
+                                     u'Identifier %s. Import accepted for dataset %s.', method_prefix,
+                                     orig_id, remote_dataset_name)
                         return True
                     else:
                         # other dataset with the same identifier was found
-                        LOGGER.debug(u'%sFound duplicate entries for dataset %s.', method_prefix,
-                                     remote_dataset_name)
+                        LOGGER.debug(u'%sFound duplicate entries with Identifier %s for dataset %s.',
+                                     method_prefix, orig_id, remote_dataset_name)
                         remote_is_latest = True
                         local_dataset_has_modified = False
                         latest_local_dataset = {}
@@ -184,17 +185,23 @@ class HarvestUtils(object):
 
                         if remote_is_latest:
                             # Import accepted. Delete all local datasets with the same identifier.
-                            LOGGER.debug(u'%sRemote dataset is the latest. Import accepted for dataset %s.',
-                                         method_prefix, remote_dataset_name)
+                            LOGGER.debug(u'%sRemote dataset with Identifier %s is the latest. '\
+                                         u'Modified date: %s. Import accepted for dataset %s.',
+                                         method_prefix, orig_id,
+                                         remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED),
+                                         remote_dataset_name)
                             packages_deleted = _delete_packages_keep(local_search_result['results'])
                             LOGGER.debug(u'%sDeleted packages: %s', method_prefix, ','.join(packages_deleted))
                             return True
                         elif local_dataset_has_modified:
                             # Skip import. Delete local datasets, but keep the dataset with latest date in
                             # the field "modified".
-                            LOGGER.info(u'%sRemote dataset is NOT the latest. Keep local dataset with ' \
+                            LOGGER.info(u'%sRemote dataset with Identifier %s is NOT the latest. '\
+                                        u'Modified date: %s. Keep local dataset with ' \
                                         u'latest date in field "modified". Skipping import for dataset %s!',
-                                        method_prefix, remote_dataset_name)
+                                        method_prefix, orig_id,
+                                        remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED, 'n/a'),
+                                        remote_dataset_name)
                             packages_deleted = _delete_packages_keep(
                                 local_search_result['results'], latest_local_dataset)
                             LOGGER.debug(u'%sDeleted packages: %s', method_prefix, ','.join(packages_deleted))

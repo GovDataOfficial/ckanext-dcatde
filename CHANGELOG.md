@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.2.3 2020-12-17
+
+* Improve logging messages in duplicate detection
+* Improve logging when updating data in the triplestore
+* Remove pinning version for cryptography dependency. Version >=3.3.1 is working again.
+
 ## v4.2.2 2020-12-13
 
 * Improve exception handling when updating data in the triplestore

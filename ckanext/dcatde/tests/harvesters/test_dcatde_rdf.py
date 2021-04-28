@@ -455,10 +455,11 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEquals(rdf_parser_return, rdf_parser)
         # check if no errors are returned
         self.assertEquals(len(error_msgs), 0)
+        uri = rdf_parser._datasets().next()
         # check if delete dataset was called. Testdata has only one dataset
-        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().next())
+        mock_fuseki_delete_data.assert_called_once_with(uri)
         # check if create dataset was called
-        mock_fuseki_create_data.assert_called_once_with(ANY)
+        mock_fuseki_create_data.assert_called_once_with(ANY, uri)
 
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore')
@@ -606,7 +607,8 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEquals(rdf_parser_return, rdf_parser)
         # check that one error is returned
         self.assertEquals(len(error_msgs), 1)
+        uri = rdf_parser._datasets().next()
         # check if delete dataset was called. Testdata has only one dataset.
-        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().next())
+        mock_fuseki_delete_data.assert_called_once_with(uri)
         # check if create dataset was called
-        mock_fuseki_create_data.assert_called_once_with(ANY)
+        mock_fuseki_create_data.assert_called_once_with(ANY, uri)
