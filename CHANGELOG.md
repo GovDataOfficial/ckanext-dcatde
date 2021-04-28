@@ -1,6 +1,10 @@
 # Changelog
 
-## 4.4.0 2021-03-26
+## v4.4.1 2021-04-28
+
+* Make requirement for ckanext-harvest optional (#10)
+
+## v4.4.0 2021-03-26
 
 * Adds new migration script option `contributor-id-migrate` to add the contributorID to existing manually
   maintained datasets

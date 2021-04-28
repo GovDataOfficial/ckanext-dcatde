@@ -1,0 +1,1 @@
+ckanext-harvest==1.2.0

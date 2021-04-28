@@ -21,22 +21,8 @@ For the RDF harvester, [ckanext-harvest](https://github.com/ckan/ckanext-harvest
        (pyenv) $ pip install -r base-requirements.txt -f requirements
        (pyenv) $ python setup.py develop
 
-4. Install a specific version of the CKAN extension ckanext-harvest. (Only if you want to use the RDF harvester)<br>
-It is tested that ckanext-dcatde is working well with the release `v1.1.4` of ckanext-harvest.<br>
-   1. Init the harvest tables in the database:
-
-          (pyenv) $ paster --plugin=ckanext-harvest harvester initdb --config=mysite.ini
-
-   2. Create the harvest user
-
-      - create ckan harvest user
-
-            (pyenv) $ paster --plugin=ckan user add harvest password=harvest email=harvest@example.com --config=/etc/ckan/default/production.ini
-
-      - give sysadmin privileges to ckan harvest user
-
-            (pyenv) $ paster --plugin=ckan sysadmin add harvest --config=/etc/ckan/default/production.ini
-
+4. [Install](https://github.com/ckan/ckanext-harvest#installation) a specific version of the CKAN extension ckanext-harvest. (Only if you want to use the RDF harvester)<br>
+It is tested that ckanext-dcatde is working well with the release `v1.2.0` of ckanext-harvest.<br>
 
 5. Enable the required plugins by adding to your CKAN configuration file:
 
