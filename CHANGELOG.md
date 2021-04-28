@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.0.0 2020-10-30
+
+* Avoid crashes of the fetch consumer in case deletion harvest objects are corrupted
+* Fixed problem with python dependency 'pycountry' that caused the build to fail.
+
 ## v3.9.0 2020-03-26
 
 * When remote datasets without resources/distributions are rejected (`resources_required`), any local version of

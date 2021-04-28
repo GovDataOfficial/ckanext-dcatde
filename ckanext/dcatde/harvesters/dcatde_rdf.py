@@ -239,6 +239,12 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         # override delete logic
         status = self._get_object_extra(harvest_object, 'status')
         if status == 'delete':
+            if not harvest_object.package_id:
+                LOGGER.warn(
+                    u'Harvest object with status delete contains no package id for '\
+                        u'guid {0}'.format(harvest_object.guid)
+                )
+                return False
             HarvestUtils.rename_delete_dataset_with_id(harvest_object.package_id)
             LOGGER.info(u'Deleted package {0} with guid {1}'.format(harvest_object.package_id,
                                                                     harvest_object.guid))
