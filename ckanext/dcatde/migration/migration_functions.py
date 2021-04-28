@@ -6,6 +6,7 @@ import json
 
 import ckanext.dcatde.migration.util as util
 import ckanext.dcatde.dataset_utils as ds_utils
+from ckanext.dcatde.dataset_utils import EXTRA_KEY_HARVESTED_PORTAL
 
 
 class MigrationFunctionExecutor(object):
@@ -87,13 +88,13 @@ class MigrationFunctions(object):
     def metadata_original_portal(self, dataset):
         '''metadata_original_portal -> contributorID'''
         orig_field = ds_utils.get_extras_field(dataset, u'metadata_original_portal')
-        target_field = ds_utils.get_extras_field(dataset, u'metadata_harvested_portal')
+        target_field = ds_utils.get_extras_field(dataset, EXTRA_KEY_HARVESTED_PORTAL)
 
         if orig_field:
             util.rename_extras_field_migration(dataset, u'metadata_original_portal',
                                                u'contributorID', True, False)
             if target_field is None:
-                ds_utils.insert_new_extras_field(dataset, u'metadata_harvested_portal',
+                ds_utils.insert_new_extras_field(dataset, EXTRA_KEY_HARVESTED_PORTAL,
                                                  orig_field['value'], False)
 
     def metadata_original_id(self, dataset):

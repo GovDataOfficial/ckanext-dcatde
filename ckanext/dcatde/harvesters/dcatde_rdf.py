@@ -8,7 +8,6 @@ import logging
 import time
 
 import pylons
-import requests
 from ckan import model
 from ckan import plugins as p
 from ckan.logic import UnknownValidator
@@ -19,7 +18,7 @@ from ckanext.dcat.exceptions import RDFParserException
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
 from ckanext.dcat.processors import RDFParser
-from ckanext.dcatde.dataset_utils import set_extras_field
+from ckanext.dcatde.dataset_utils import set_extras_field, EXTRA_KEY_HARVESTED_PORTAL
 from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
 from ckanext.dcatde.migration.util import load_json_mapping
 from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient
@@ -30,7 +29,6 @@ LOGGER = logging.getLogger(__name__)
 
 CONFIG_PARAM_HARVESTED_PORTAL = 'harvested_portal'
 CONFIG_PARAM_RESOURCES_REQUIRED = 'resources_required'
-EXTRA_KEY_HARVESTED_PORTAL = 'metadata_harvested_portal'
 RES_EXTRA_KEY_LICENSE = 'license'
 
 
@@ -162,6 +160,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         # the harvest objects. This allows cleaning the harvest data without loosing the
         # dataset mappings.
         # Build a subquery to get all active packages having a GUID first
+        # pylint: disable=E1101
         subquery = model.Session.query(model.PackageExtra.value, model.Package.id) \
             .join(model.Package, model.Package.id == model.PackageExtra.package_id)\
             .filter(model.Package.state == model.State.ACTIVE) \
@@ -177,6 +176,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             .filter(model.PackageExtra.state == model.State.ACTIVE) \
             .filter(model.PackageExtra.key == EXTRA_KEY_HARVESTED_PORTAL) \
             .filter(model.PackageExtra.value == portal)
+        # pylint: enable=E1101
 
         checkpoint_start = time.time()
         guid_to_package_id = {}
@@ -262,8 +262,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         if (self._get_resources_required_config(harvest_object.source.config)\
              and not package.get('resources')):
             # write details to log
-            LOGGER.info(u'{0}: Resources are required, but dataset {1} (GUID {2}) has none. Skipping dataset.'
-                        .format(harvest_object.source.title, package.get('name', ''), harvest_object.guid))
+            LOGGER.info(u'%s: Resources are required, but dataset %s (GUID %s) has none. Skipping dataset.',
+                        harvest_object.source.title, package.get('name', ''), harvest_object.guid)
             return True
         return False
 
@@ -278,14 +278,12 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         status = self._get_object_extra(harvest_object, 'status')
         if status == 'delete':
             if not harvest_object.package_id:
-                LOGGER.warn(
-                    u'Harvest object with status delete contains no package id for '\
-                        u'guid {0}'.format(harvest_object.guid)
-                )
+                LOGGER.warn(u'Harvest object with status delete contains no package id for guid %s',
+                            harvest_object.guid)
                 return False
             HarvestUtils.rename_delete_dataset_with_id(harvest_object.package_id)
-            LOGGER.info(u'Deleted package {0} with guid {1}'.format(harvest_object.package_id,
-                                                                    harvest_object.guid))
+            self._delete_dataset_in_triplestore(harvest_object.package_id)
+            LOGGER.info(u'Deleted package %s with guid %s', harvest_object.package_id, harvest_object.guid)
             return True
 
         # skip if resources are not present when configured
@@ -295,13 +293,13 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             if datasets_from_db:
                 if len(datasets_from_db) == 1:
                     HarvestUtils.rename_delete_dataset_with_id(datasets_from_db[0][0])
-                    LOGGER.info(u'Deleted local dataset with GUID {0} as harvest object has '\
-                                u'no resources.'.format(harvest_object.guid))
+                    LOGGER.info(u'Deleted local dataset with GUID %s as harvest object has '\
+                                u'no resources.', harvest_object.guid)
                     info_deleted_local_dataset = ' Local dataset without resources deleted.'
                 else:
                     LOGGER.warn(
-                        u'Not deleting package with GUID {0}, because more than one dataset was found!'\
-                            .format(harvest_object.guid)
+                        u'Not deleting package with GUID %s, because more than one dataset was found!',
+                        harvest_object.guid
                     )
                     info_deleted_local_dataset = ' More than one local dataset with the same GUID!'
             # do not include details in error such that they get summarized in the UI
@@ -318,10 +316,10 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         import_dataset = HarvestUtils.handle_duplicates(harvest_object.content)
         if import_dataset:
             return super(DCATdeRDFHarvester, self).import_stage(harvest_object)
-        else:
-            self._save_object_error('Skipping importing dataset, because of duplicate detection!',
-                                    harvest_object, 'Import')
-            return False
+
+        self._save_object_error('Skipping importing dataset, because of duplicate detection!',
+                                harvest_object, 'Import')
+        return False
 
     def validate_config(self, source_config):
         '''
@@ -342,3 +340,28 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                              CONFIG_PARAM_HARVESTED_PORTAL)
 
         return cfg
+
+    def _delete_dataset_in_triplestore(self, package_id):
+        '''
+        Deletes the package with the given package ID in the triple store.
+        '''
+        try:
+            if self.triplestore_client.is_available():
+                LOGGER.debug(u'Start deleting dataset with ID %s from triplestore.', package_id)
+                context = {'user': self._get_user_name()}
+                rdf = toolkit.get_action('dcat_dataset_show')(context, {'id': package_id})
+                rdf_parser = RDFParser()
+                rdf_parser.parse(rdf)
+                # Should be only one dataset
+                uri = next(rdf_parser._datasets(), None)
+                if uri:
+                    self.triplestore_client.delete_dataset_in_triplestore(uri)
+                    LOGGER.debug(u'Successfully deleted dataset with ID %s and URI %s from triplestore.',
+                                 package_id, uri)
+                else:
+                    LOGGER.debug(u'URI could not determined. Skip deleting.')
+        except RDFParserException as ex:
+            LOGGER.warn(u'Error while parsing the RDF file for dataset with ID %s: %s',
+                        package_id, ex)
+        except SPARQLWrapperException as ex:
+            LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s', uri, ex)

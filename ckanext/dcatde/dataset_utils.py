@@ -3,6 +3,8 @@ Commoun utils for dataset dicts
 """
 import json
 
+EXTRA_KEY_HARVESTED_PORTAL = 'metadata_harvested_portal'
+
 
 def get_extras_field(dataset, name):
     for field in dataset['extras']:

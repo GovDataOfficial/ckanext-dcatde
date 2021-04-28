@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '4.2.3'
+VERSION = '4.3.0'
 
 with open('base-requirements.txt') as f:
     required = [line.strip() for line in f]
@@ -34,6 +34,7 @@ setup(
     [paste.paster_command]
     dcatde_migrate = ckanext.dcatde.commands.migration:DCATdeMigrateCommand
     dcatde_themeadder = ckanext.dcatde.commands.themeadder:ThemeAdder
+    triplestore = ckanext.dcatde.commands.triplestore:Triplestore
     ''',
     message_extractors={
         'ckanext': [

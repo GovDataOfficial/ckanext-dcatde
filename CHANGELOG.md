@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.3.0 2021-01-19
+
+* Also deletes data in triplestore when dataset is deleted in CKAN
+* Adds the triplestore ckan command
+
 ## v4.2.3 2020-12-17
 
 * Improve logging messages in duplicate detection

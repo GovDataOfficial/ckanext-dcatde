@@ -66,8 +66,8 @@ class FusekiTriplestoreClient(object):
                 LOGGER.debug(u'Fuseki is available.')
                 return True
             else:
-                LOGGER.warn(u'Fuseki responded to ping with HTTP-Status %s! Skip inserting data into ' \
-                            u'Triplestore, but fuseki is not available!', str(response.status_code))
+                LOGGER.warn(u'Fuseki responded to ping with HTTP-Status %s! Skip updating data in ' \
+                            u'Triplestore, because fuseki is not available!', str(response.status_code))
         return False
 
     def _get_update_endpoint(self):
@@ -82,7 +82,8 @@ class FusekiTriplestoreClient(object):
         """ Returns the URL for the $/ping endpoint"""
         return os.path.join(self.fuseki_base_url, '') + PING_ENDPOINT
 
-    def _get_fuseki_urls(self):
+    @staticmethod
+    def _get_fuseki_urls():
         """ Read URLs for Fuseki from the config """
         fuseki_endpoint_base_url = None
         fuseki_base_url = None
