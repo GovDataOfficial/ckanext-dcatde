@@ -9,15 +9,11 @@ import time
 from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from ckan.lib.base import model
 from ckan.lib.cli import CkanCommand
-import ckan.plugins.toolkit as tk
-from rdflib import Graph
-from sqlalchemy.orm import aliased
-from sqlalchemy.sql.expression import or_, and_, not_
+from ckan.plugins import toolkit as tk
 from ckanext.dcat.processors import RDFParserException, RDFParser
-from ckanext.dcatde.dataset_utils import EXTRA_KEY_HARVESTED_PORTAL
 from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient
-import ckanext.harvest.model as harvest_model
-
+from ckanext.dcatde.validation.shacl_validation import ShaclValidator
+from ckanext.dcatde.dataset_utils import gather_dataset_ids
 
 class Triplestore(CkanCommand):
     '''Interacts with the triple store, e.g. reindex data.
@@ -41,6 +37,7 @@ class Triplestore(CkanCommand):
 
         self.admin_user = None
         self.triplestore_client = None
+        self.shacl_validation_client = None
         self.dry_run = True
 
     def command(self):
@@ -60,6 +57,7 @@ class Triplestore(CkanCommand):
             self._check_options()
             # Initialize triple store client
             self.triplestore_client = FusekiTriplestoreClient()
+            self.shacl_validation_client = ShaclValidator()
             self._reindex()
         else:
             print u'Command {0} not recognized'.format(cmd)
@@ -76,25 +74,25 @@ class Triplestore(CkanCommand):
     def _reindex(self):
         '''Deletes all datasets matching package search filter query.'''
         starttime = time.time()
-        package_ids_to_reindex = self._gather_dataset_ids()
+        package_obj_to_reindex = gather_dataset_ids()
         endtime = time.time()
         print "INFO: %s datasets found to reindex. Total time: %s." % \
-                (len(package_ids_to_reindex), str(endtime - starttime))
+                (len(package_obj_to_reindex), str(endtime - starttime))
 
         if self.dry_run:
             print "INFO: DRY-RUN: The dataset reindex is disabled."
             print "DEBUG: Package IDs:"
-            print package_ids_to_reindex
-        elif package_ids_to_reindex:
+            print package_obj_to_reindex.keys()
+        elif package_obj_to_reindex:
             print 'INFO: Start updating triplestore...'
             success_count = error_count = 0
             starttime = time.time()
             if self.triplestore_client.is_available():
-                for package_id in package_ids_to_reindex:
+                for package_id, package_org in package_obj_to_reindex.iteritems():
                     try:
                         # Reindex package
                         checkpoint_start = time.time()
-                        uri = self._update_package_in_triplestore(package_id)
+                        uri = self._update_package_in_triplestore(package_id, package_org)
                         checkpoint_end = time.time()
                         print "DEBUG: Reindexed dataset with id %s. Time taken for reindex: %s." % \
                                  (package_id, str(checkpoint_end - checkpoint_start))
@@ -116,48 +114,12 @@ class Triplestore(CkanCommand):
             print "INFO: %s datasets successfully reindexed. %s datasets couldn't reindexed. "\
             "Total time: %s." % (success_count, error_count, str(endtime - starttime))
 
-    @staticmethod
-    def _gather_dataset_ids():
-        '''Collects all dataset ids to reindex.'''
-        package_ids_found = []
-        # pylint: disable=E1101
-        # read orgs related to a harvest source
-        subquery_harvest_orgs = model.Session.query(model.Group.id).distinct() \
-            .join(model.Package, model.Package.owner_org == model.Group.id) \
-            .join(harvest_model.HarvestSource, harvest_model.HarvestSource.id == model.Package.id)\
-            .filter(model.Package.state == model.State.ACTIVE) \
-            .filter(harvest_model.HarvestSource.active.is_(True)) \
-            .filter(model.Group.state == model.State.ACTIVE) \
-            .filter(model.Group.is_organization.is_(True)) \
-            .subquery()
-
-        # read all package IDs to reindex
-        package_extra_alias = aliased(model.PackageExtra)
-
-        query = model.Session.query(model.Package.id).distinct() \
-            .outerjoin(model.PackageExtra, model.PackageExtra.package_id == model.Package.id)\
-            .filter(model.Package.type != 'harvest')\
-            .filter(model.Package.state == model.State.ACTIVE) \
-            .filter(or_(model.Package.owner_org.notin_(subquery_harvest_orgs),
-                        and_(model.Package.owner_org.in_(subquery_harvest_orgs),
-                             not_(model.Session.query(model.Package.id)
-                                  .filter(and_(model.Package.id == package_extra_alias.package_id,
-                                               package_extra_alias.state == model.State.ACTIVE,
-                                               package_extra_alias.key == EXTRA_KEY_HARVESTED_PORTAL))
-                                  .exists()))))
-        # pylint: enable=E1101
-
-        for row in query:
-            package_ids_found.append(row[0])
-
-        return set(package_ids_found)
-
     def _get_rdf(self, dataset_ref):
         '''Reads the RDF presentation of the dataset with the given ID.'''
         context = {'user': self.admin_user['name']}
         return tk.get_action('dcat_dataset_show')(context, {'id': dataset_ref})
 
-    def _update_package_in_triplestore(self, package_id):
+    def _update_package_in_triplestore(self, package_id, package_org):
         '''Updates the package with the given package ID in the triple store.'''
         uri = 'n/a'
         # Get uri of dataset
@@ -167,12 +129,13 @@ class Triplestore(CkanCommand):
         # Should be only one dataset
         for uri in rdf_parser._datasets():
             self.triplestore_client.delete_dataset_in_triplestore(uri)
-            # Get rdf graph from rdf serialization
-            graph = Graph()
-            for triple in rdf_parser.g.triples((None, None, None)):
-                graph.add(triple)
+            self.triplestore_client.create_dataset_in_triplestore(rdf, uri)
 
-            rdf_graph = graph.serialize(format="xml")
-            self.triplestore_client.create_dataset_in_triplestore(rdf_graph, uri)
+            # shacl-validate the graph
+            validation_rdf = self.shacl_validation_client.validate(rdf, uri, package_org)
+            if validation_rdf:
+                # update in mqa-triplestore
+                self.triplestore_client.delete_dataset_in_triplestore_mqa(uri, package_org)
+                self.triplestore_client.create_dataset_in_triplestore_mqa(validation_rdf, uri)
 
         return uri

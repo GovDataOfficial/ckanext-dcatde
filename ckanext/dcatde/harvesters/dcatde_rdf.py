@@ -8,12 +8,13 @@ import logging
 import time
 
 import pylons
+from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
+from rdflib import Graph, Literal, URIRef
+from rdflib.namespace import FOAF
 from ckan import model
 from ckan import plugins as p
 from ckan.logic import UnknownValidator
 from ckan.plugins import toolkit
-from rdflib import Graph
-from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from ckanext.dcat.exceptions import RDFParserException
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
@@ -22,8 +23,11 @@ from ckanext.dcatde.dataset_utils import set_extras_field, EXTRA_KEY_HARVESTED_P
 from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
 from ckanext.dcatde.migration.util import load_json_mapping
 from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient
-from ckanext.dcatde.triplestore.sparql_query_templates import GET_DATASET_BY_URI_SPARQL_QUERY
+from ckanext.dcatde.triplestore.sparql_query_templates import GET_DATASET_BY_URI_SPARQL_QUERY, \
+    GET_URIS_FROM_HARVEST_INFO_QUERY
+from ckanext.dcatde.validation.shacl_validation import ShaclValidator
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -49,11 +53,19 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         return content, []
 
     def after_parsing(self, rdf_parser, harvest_job):
-        """ Insert harvested data into triplestore """
+        """ Insert harvested data into triplestore and validate the data """
 
         error_messages = []
         if rdf_parser and self.triplestore_client.is_available():
             LOGGER.debug(u'Start updating triplestore...')
+
+            source_dataset = model.Package.get(harvest_job.source.id)
+            org_available = True
+            if not source_dataset or not hasattr(source_dataset, 'owner_org'):
+                org_available = False
+                LOGGER.warn(u'There is no organization specified in the harvest source. SHACL validation ' \
+                            u'will be deactivated!')
+
             for uri in rdf_parser._datasets():
                 LOGGER.debug(u'Process URI: %s', uri)
                 try:
@@ -68,11 +80,27 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                         rdf_graph = graph.serialize(format="xml")
 
                         self.triplestore_client.create_dataset_in_triplestore(rdf_graph, uri)
+
+                        if org_available:
+                            # save harvesting info
+                            harvest_graph = Graph()
+                            harvest_graph.bind("foaf", FOAF)
+                            harvest_graph.add((URIRef(uri), FOAF.knows, Literal(source_dataset.owner_org)))
+                            rdf_harvest_graph = harvest_graph.serialize(format="xml")
+                            self.triplestore_client.create_dataset_in_triplestore_harvest_info(
+                                rdf_harvest_graph, uri)
+
+                        if org_available:
+                            # SHACL Validation
+                            validation_errors = self._validate_dataset_rdf_graph(
+                                uri, rdf_graph, source_dataset)
+                            error_messages.extend(validation_errors)
                     else:
                         LOGGER.warn(u'Could not find triples to URI %s. Updating is not possible.', uri)
                 except SPARQLWrapperException as exception:
-                    LOGGER.error(u'Unexpected error while updating dataset with URI %s: %s', uri, exception)
-                    error_messages.extend(exception)
+                    LOGGER.error(u'Unexpected error while deleting dataset with URI %s in TripleStore: %s',
+                                 uri, exception)
+                    error_messages.append(u'Error while deleting dataset from TripleStore: %s' % exception)
             LOGGER.debug(u'Finished updating triplestore.')
 
         return rdf_parser, error_messages
@@ -114,6 +142,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         DCATRDFHarvester.__init__(self)
 
         self.triplestore_client = FusekiTriplestoreClient()
+        self.shacl_validator_client = ShaclValidator()
 
         self.licenses_upgrade = {}
         license_file = pylons.config.get('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping')
@@ -131,19 +160,22 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             'description': 'Harvester for DCAT-AP.de datasets from an RDF graph'
         }
 
-    def _get_portal_from_config(self, source_config):
+    @staticmethod
+    def _get_portal_from_config(source_config):
         if source_config:
             return json.loads(source_config).get(CONFIG_PARAM_HARVESTED_PORTAL)
 
         return ''
 
-    def _get_resources_required_config(self, source_config):
+    @staticmethod
+    def _get_resources_required_config(source_config):
         if source_config:
             return json.loads(source_config).get(CONFIG_PARAM_RESOURCES_REQUIRED, False)
 
         return False
 
-    def _get_fallback_license(self):
+    @staticmethod
+    def _get_fallback_license():
         fallback = pylons.config.get('ckanext.dcatde.harvest.default_license',
                                      'http://dcat-ap.de/def/licenses/other-closed')
         return fallback
@@ -218,6 +250,9 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         LOGGER.debug('Found %s packages for deletion. Time total: %s', len(guids_to_delete),
                      str(endtime - starttime))
 
+        self._delete_deprecated_datasets_from_triplestore(
+            guids_in_source_unique, guids_to_delete, harvest_job)
+
         return object_ids
 
     def _amend_package(self, harvest_object):
@@ -282,7 +317,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                             harvest_object.guid)
                 return False
             HarvestUtils.rename_delete_dataset_with_id(harvest_object.package_id)
-            self._delete_dataset_in_triplestore(harvest_object.package_id)
+            self._delete_dataset_in_triplestore(harvest_object)
             LOGGER.info(u'Deleted package %s with guid %s', harvest_object.package_id, harvest_object.guid)
             return True
 
@@ -341,12 +376,13 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
         return cfg
 
-    def _delete_dataset_in_triplestore(self, package_id):
+    def _delete_dataset_in_triplestore(self, harvest_object):
         '''
         Deletes the package with the given package ID in the triple store.
         '''
         try:
             if self.triplestore_client.is_available():
+                package_id = harvest_object.package_id
                 LOGGER.debug(u'Start deleting dataset with ID %s from triplestore.', package_id)
                 context = {'user': self._get_user_name()}
                 rdf = toolkit.get_action('dcat_dataset_show')(context, {'id': package_id})
@@ -354,14 +390,88 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                 rdf_parser.parse(rdf)
                 # Should be only one dataset
                 uri = next(rdf_parser._datasets(), None)
-                if uri:
-                    self.triplestore_client.delete_dataset_in_triplestore(uri)
-                    LOGGER.debug(u'Successfully deleted dataset with ID %s and URI %s from triplestore.',
-                                 package_id, uri)
-                else:
-                    LOGGER.debug(u'URI could not determined. Skip deleting.')
+                source_dataset = model.Package.get(harvest_object.source.id)
+                self._delete_dataset_in_triplestore_by_uri(uri, source_dataset)
         except RDFParserException as ex:
             LOGGER.warn(u'Error while parsing the RDF file for dataset with ID %s: %s',
                         package_id, ex)
+
+    def _delete_dataset_in_triplestore_by_uri(self, uri, source_dataset):
+        '''
+        Deletes the package with the given URI in the triple store.
+        '''
+        try:
+            if self.triplestore_client.is_available():
+                LOGGER.debug(u'Start deleting dataset with URI %s from triplestore.', uri)
+                if uri:
+                    self.triplestore_client.delete_dataset_in_triplestore(uri)
+                    if source_dataset and hasattr(source_dataset, 'owner_org'):
+                        self.triplestore_client.delete_dataset_in_triplestore_mqa(
+                            uri, source_dataset.owner_org)
+                        self.triplestore_client.delete_dataset_in_triplestore_harvest_info(
+                            uri, source_dataset.owner_org)
+                    LOGGER.debug(u'Successfully deleted dataset with URI %s from triplestore.', uri)
+                else:
+                    LOGGER.debug(u'URI could not determined. Skip deleting.')
         except SPARQLWrapperException as ex:
             LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s', uri, ex)
+
+    def _validate_dataset_rdf_graph(self, uri, rdf_graph, source_dataset):
+        '''
+        Validates the package rdf graph with the given URI and saves the validation report in the
+        triple store.
+        '''
+        error_messages = []
+        try:
+            result = self.shacl_validator_client.validate(
+                rdf_graph, uri, source_dataset.owner_org)
+            self.triplestore_client.delete_dataset_in_triplestore_mqa(uri, source_dataset.owner_org)
+            self.triplestore_client.create_dataset_in_triplestore_mqa(result, uri)
+        except SPARQLWrapperException as exception:
+            LOGGER.error(u'Unexpected error while deleting SHACL validation report for ' \
+                         u'dataset with URI %s: %s', uri, exception)
+            error_messages.append(u'Error while deleting SHACL report: %s' % exception)
+        return error_messages
+
+    def _delete_deprecated_datasets_from_triplestore(self, harvested_uris, uris_db_marked_deleted,
+                                                     harvest_job):
+        '''
+        Check for deprecated datasets (not stored in CKAN) in the triplestore and delete them from all
+        datastores.
+        '''
+
+        # get owner org
+        source_dataset = model.Package.get(harvest_job.source.id)
+        if source_dataset and hasattr(source_dataset, 'owner_org'):
+            # Read URIs from harvest_info datastore
+            existing_uris = self._get_existing_dataset_uris_from_triplestore(source_dataset.owner_org)
+
+            # compare existing with harvested URIs to see which URIs were not updated
+            existing_uris_unique = set(existing_uris)
+            harvested_uris_unique = set(harvested_uris)
+            uris_to_be_deleted = (existing_uris_unique - harvested_uris_unique) - set(uris_db_marked_deleted)
+            LOGGER.info(u'Found %s harvesting URIs in the triplestore that are no longer provided.',
+                        len(uris_to_be_deleted))
+
+            # delete deprecated datasets from triplestore
+            for dataset_uri in uris_to_be_deleted:
+                LOGGER.info(u'Delete <%s> from all triplestore datastores.', dataset_uri)
+                self._delete_dataset_in_triplestore_by_uri(dataset_uri, source_dataset)
+        else:
+            LOGGER.info(u'Harvest source %s, harvest job %s: "owner_org" NOT found. Cannot retrieve the ' \
+                        u'harvested URIs to the harvest source. Deprecated datasets which are not ' \
+                        u'stored in CKAN will not be deleted properly from the triplestore.',
+                        harvest_job.source.id, harvest_job.id)
+
+    def _get_existing_dataset_uris_from_triplestore(self, owner_org):
+        '''
+        Requests all URIs from the harvest_info datastore and returns them as a list.
+        '''
+        existing_uris = []
+        query = GET_URIS_FROM_HARVEST_INFO_QUERY % {'owner_org': owner_org}
+        raw_response = self.triplestore_client.select_datasets_in_triplestore_harvest_info(query)
+        response = raw_response.convert()
+        for res in response["results"]["bindings"]:
+            if "s" in res:
+                existing_uris.append(res["s"]["value"])
+        return existing_uris

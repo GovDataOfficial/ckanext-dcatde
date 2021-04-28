@@ -7,7 +7,6 @@ from ckanext.dcatde.commands.migration import DCATdeMigrateCommand
 import ckanext.dcatde.tests.commands.common_helpers as helpers
 from mock import patch, call, Mock, MagicMock
 
-
 PYLONS_TEST_CFG = {
     'ckanext.dcatde.urls.license_mapping': 'licenses.json',
     'ckanext.dcatde.urls.category_mapping': 'categories.json'
@@ -38,7 +37,8 @@ class GetActionHelperMigration(helpers.GetActionHelper):
 
         self.return_val_actions = {
             'group_list': {'new': ''},
-            'package_list': ['pkg1', 'pkg2']
+            'package_list': ['pkg1', 'pkg2'],
+            'organization_list': [{'id': '123'}]
         }
 
         self.side_effect_actions = {
@@ -53,7 +53,7 @@ class GetActionHelperMigration(helpers.GetActionHelper):
             return None
 
         ds_id = data['id']
-        dataset = {'id': ds_id, 'type': 'datensatz'}
+        dataset = {'id': ds_id, 'type': 'datensatz', 'title': 'titel', 'organization': {'id': '123'}}
         self.shown_ids.append(ds_id)
 
         if ds_id == 'pkg1':
@@ -67,6 +67,14 @@ class GetActionHelperMigration(helpers.GetActionHelper):
         elif ds_id == 'pkg4':
             dataset['extras'] = [{'key': 'alternate_identifier', 'value': 'adms-id'},
                                  {'key': 'identifier', 'value': 'existing-id'}]
+        elif ds_id == 'pkg5':
+            dataset['extras'] = [{'value': '["test_ds_contrib_id"]', 'key': 'contributorID'}]
+        elif ds_id == 'pkg6':
+            dataset['extras'] = []
+        elif ds_id == 'pkg7':
+            dataset['extras'] = [{'value': '["test_org_contrib_id"]', 'key': 'contributorID'}]
+        elif ds_id == 'pkg8':
+            dataset['extras'] = [{'value': 'test_ds_contrib_id', 'key': 'contributorID'}]
 
         return dataset
 
@@ -74,6 +82,7 @@ class GetActionHelperMigration(helpers.GetActionHelper):
         self.updated_datasets[dataset['id']] = dataset
 
 
+@patch("ckanext.dcatde.commands.migration.gather_dataset_ids")
 @patch("ckanext.dcatde.commands.migration.or_", autospec=True)
 @patch("ckanext.dcatde.commands.migration.model", autospec=True)
 @patch("ckan.plugins.toolkit.get_action")
@@ -147,7 +156,7 @@ class TestMigration(unittest.TestCase):
         mock_model.Session.query = mock_query
 
     def test_without_groups(self, mock_super_load_config,
-                            mock_get_action, mock_model, mock_sa_or):
+                            mock_get_action, mock_model, mock_sa_or, _):
         '''Calls the migration command assuming no new groups were added.'''
         action_hlp = GetActionHelperMigration()
         # override the group mock
@@ -170,7 +179,7 @@ class TestMigration(unittest.TestCase):
         self._assert_db_not_called(mock_model)
 
     def test_with_groups(self, mock_super_load_config,
-                         mock_get_action, mock_model, mock_sa_or):
+                         mock_get_action, mock_model, mock_sa_or, _):
         '''Calls the migration command assuming new groups were added.'''
         action_hlp = GetActionHelperMigration()
         mock_get_action.side_effect = action_hlp.mock_get_action
@@ -210,7 +219,7 @@ class TestMigration(unittest.TestCase):
         self._assert_db_updated(mock_model, mock_sa_or)
 
     def test_dry_run(self, mock_super_load_config,
-                     mock_get_action, mock_model, mock_sa_or):
+                     mock_get_action, mock_model, mock_sa_or, __):
         '''Calls the migration command with the dry-run flag.'''
         action_hlp = GetActionHelperMigration()
         mock_get_action.side_effect = action_hlp.mock_get_action
@@ -237,7 +246,7 @@ class TestMigration(unittest.TestCase):
         self._assert_db_not_updated(mock_model, mock_sa_or)
 
     def test_adms_id(self, mock_super_load_config,
-                         mock_get_action, mock_model, _):
+                     mock_get_action, mock_model, _, __):
         """
         Calls the migration command with adms-id-migrate flag.
         """
@@ -278,7 +287,7 @@ class TestMigration(unittest.TestCase):
         self.assertEqual(mock_get_action.call_count, 1)
 
     def test_adms_id_dry(self, mock_super_load_config,
-                         mock_get_action, mock_model, _):
+                         mock_get_action, mock_model, _, __):
         """
         Calls the migration command with adms-id-migrate and dry-run flags.
         """
@@ -299,7 +308,7 @@ class TestMigration(unittest.TestCase):
         self._check_adms_id_no_save(mock_super_load_config, mock_get_action)
 
     def test_adms_id_with_dct_id(self, mock_super_load_config,
-                                 mock_get_action, mock_model, _):
+                                 mock_get_action, mock_model, _, __):
         """
         Calls the migration command with adms-id-migrate. Assumes there is a dataset which
         already has an extras.identifier.
@@ -313,3 +322,146 @@ class TestMigration(unittest.TestCase):
         # run the command and assert nothing was saved
         self.cmd.args = ['adms-id-migrate']
         self._check_adms_id_no_save(mock_super_load_config, mock_get_action)
+
+    def test_contributor_id_add_id_to_existing_field(self, mock_super_load_config, mock_get_action,
+                                                     mock_model, mock_sa_or, mock_gather_ids):
+        """ Tests if the organization contributor-id has been added to the existing contributor-ids """
+        pkg_id = 'pkg5'
+        organization_id = '123'
+
+        mock_update_dataset = Mock('update_dataset')
+        self.cmd.update_dataset = mock_update_dataset
+        mock_gather_ids.return_value = {pkg_id: organization_id}
+
+        action_hlp = GetActionHelperMigration()
+        action_hlp.return_val_actions['organization_list'] = [{'id': organization_id,
+                                                               'extras': [{'value': '["test_org_contrib_id"]',
+                                                                           'key': 'contributorID'}]}]
+        action_hlp.build_mocks()
+        mock_get_action.side_effect = action_hlp.mock_get_action
+
+        self.cmd.args = ['contributor-id-migrate']
+        self.cmd.command()
+
+        mock_super_load_config.assert_called_once_with()
+        mock_get_action.assert_has_calls([call('package_show')])
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_super_load_config.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with()
+        mock_update_dataset.assert_called_once_with({'organization': {'id': organization_id}, 'extras': [{
+            'key': 'contributorID', 'value': '["test_ds_contrib_id", "test_org_contrib_id"]'}],
+            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'})
+
+    def test_contributor_id_create_id_field(self, mock_super_load_config, mock_get_action, mock_model,
+                                            mock_sa_or, mock_gather_ids):
+        """ Tests if a new contributor-id-field has been created in the dataset"""
+        pkg_id = 'pkg6'
+        organization_id = '123'
+
+        mock_update_dataset = Mock('update_dataset')
+        self.cmd.update_dataset = mock_update_dataset
+        mock_gather_ids.return_value = {pkg_id: organization_id}
+
+        action_hlp = GetActionHelperMigration()
+        action_hlp.return_val_actions['organization_list'] = [{'id': organization_id,
+                                                               'extras': [{'value': '["test_org_contrib_id"]',
+                                                                           'key': 'contributorID'}]}]
+        action_hlp.build_mocks()
+        mock_get_action.side_effect = action_hlp.mock_get_action
+
+        self.cmd.args = ['contributor-id-migrate']
+        self.cmd.command()
+
+        mock_super_load_config.assert_called_once_with()
+        mock_get_action.assert_has_calls([call('package_show')])
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_super_load_config.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with()
+        mock_update_dataset.assert_called_once_with({'organization': {'id': organization_id}, 'extras': [{
+            'key': 'contributorID', 'value': '["test_org_contrib_id"]'}],
+            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'})
+
+    def test_contributor_id_already_exists(self, mock_super_load_config, mock_get_action, mock_model,
+                                           mock_sa_or, mock_gather_ids):
+        """
+        Tests if the organization contributor-id will not be added if it already exists for the dataset
+        """
+        pkg_id = 'pkg7'
+        organization_id = '123'
+
+        mock_update_dataset = Mock('update_dataset')
+        self.cmd.update_dataset = mock_update_dataset
+        mock_gather_ids.return_value = {pkg_id: organization_id}
+
+        action_hlp = GetActionHelperMigration()
+        action_hlp.return_val_actions['organization_list'] = [{
+            'id': organization_id, 'extras': [{'value': '["test_org_contrib_id"]', 'key': 'contributorID'}]}]
+        action_hlp.build_mocks()
+        mock_get_action.side_effect = action_hlp.mock_get_action
+
+        self.cmd.args = ['contributor-id-migrate']
+        self.cmd.command()
+
+        mock_super_load_config.assert_called_once_with()
+        mock_get_action.assert_has_calls([call('package_show')])
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_super_load_config.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with()
+        mock_update_dataset.assert_not_called()
+
+    def test_contributor_id_single_values_add_to_field(self, mock_super_load_config, mock_get_action,
+                                                     mock_model, mock_sa_or, mock_gather_ids):
+        """ Tests if the organization contributor-id has been added to the existing contributor-ids.
+         The contributor-IDs are not lists but Strings """
+        pkg_id = 'pkg8'
+        organization_id = '123'
+
+        mock_update_dataset = Mock('update_dataset')
+        self.cmd.update_dataset = mock_update_dataset
+        mock_gather_ids.return_value = {pkg_id: organization_id}
+
+        action_hlp = GetActionHelperMigration()
+        action_hlp.return_val_actions['organization_list'] = [{'id': organization_id,
+                                                               'extras': [{'value': 'test_org_contrib_id',
+                                                                           'key': 'contributorID'}]}]
+        action_hlp.build_mocks()
+        mock_get_action.side_effect = action_hlp.mock_get_action
+
+        self.cmd.args = ['contributor-id-migrate']
+        self.cmd.command()
+
+        mock_super_load_config.assert_called_once_with()
+        mock_get_action.assert_has_calls([call('package_show')])
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_super_load_config.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with()
+        mock_update_dataset.assert_called_once_with({'organization': {'id': organization_id}, 'extras': [{
+            'key': 'contributorID', 'value': '["test_ds_contrib_id", "test_org_contrib_id"]'}],
+            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'})
+
+    def test_contributor_id_no_contributorid_in_org(self, mock_super_load_config, mock_get_action,
+                                                    mock_model, mock_sa_or, mock_gather_ids):
+        """ Tests if the organization has no contributor-id defined that migration is skipped for the
+        datasets of the org """
+        pkg_id = 'pkg5'
+        organization_id = '123'
+
+        mock_update_dataset = Mock('update_dataset')
+        self.cmd.update_dataset = mock_update_dataset
+        mock_gather_ids.return_value = {pkg_id: organization_id}
+
+        action_hlp = GetActionHelperMigration()
+        # empty extras
+        action_hlp.return_val_actions['organization_list'] = [{'id': organization_id, 'extras': []}]
+        action_hlp.build_mocks()
+        mock_get_action.side_effect = action_hlp.mock_get_action
+
+        self.cmd.args = ['contributor-id-migrate']
+        self.cmd.command()
+
+        mock_super_load_config.assert_called_once_with()
+        mock_get_action.assert_has_calls([call('package_show')])
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_super_load_config.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with()
+        mock_update_dataset.assert_not_called()

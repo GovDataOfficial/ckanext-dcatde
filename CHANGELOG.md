@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.4.0 2021-03-26
+
+* Adds new migration script option `contributor-id-migrate` to add the contributorID to existing manually
+  maintained datasets
+* Adds SHACL validation support to the triplestore ckan command
+* Introduce the possiblity to validate the dataset graph by SHACL when updating the dataset and save the
+  validation result in a triplestore
+* Handle requests exceptions if the triplestore endpoint is not reachable
+
 ## v4.3.0 2021-01-19
 
 * Also deletes data in triplestore when dataset is deleted in CKAN

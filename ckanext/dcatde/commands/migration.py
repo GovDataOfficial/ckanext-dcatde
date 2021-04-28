@@ -3,20 +3,24 @@
 '''
 Paster command for migrating CKAN datasets from OGD to DCAT-AP.de.
 '''
+import json
 import socket
 import sys
+import time
 
-from ckan.lib.base import model
-import ckan.logic.schema as schema_
-from ckan.logic import UnknownValidator
-import ckan.plugins.toolkit as tk
-from ckanext.dcatde.migration import migration_functions, util
-from ckanext.dcatde import dataset_utils
 import pylons
+from ckan.lib.base import model
+from ckan.logic import UnknownValidator, schema as schema_
+from ckan.plugins import toolkit as tk
 from sqlalchemy import or_
+from ckanext.dcatde import dataset_utils
+from ckanext.dcatde.dataset_utils import gather_dataset_ids, set_extras_field, get_extras_field
+from ckanext.dcatde.migration import migration_functions, util
 
 EXTRA_KEY_ADMS_IDENTIFIER = 'alternate_identifier'
 EXTRA_KEY_DCT_IDENTIFIER = 'identifier'
+EXTRA_KEY_CONTRIBUTOR_ID = 'contributorID'
+
 
 class DCATdeMigrateCommand(tk.CkanCommand):
     '''
@@ -30,6 +34,8 @@ class DCATdeMigrateCommand(tk.CkanCommand):
         adms-id-migrate     If given, only migrate adms:identifier to dct:identifier for all affected
                             datasets.
 
+        contributor-id-migrate If given, set a contributor-ID for all datasets without an ID.
+
     Connect with "nc -ul 5005" on the same machine to receive status updates.
     '''
 
@@ -42,6 +48,7 @@ class DCATdeMigrateCommand(tk.CkanCommand):
     # constants for different migration modes
     MODE_OGD = 0
     MODE_ADMS_ID = 1
+    MODE_CONTRIBUTOR_ID = 2
 
     dry_run = False
     migration_mode = MODE_OGD
@@ -73,6 +80,8 @@ class DCATdeMigrateCommand(tk.CkanCommand):
                 self.dry_run = True
             elif cmd == 'adms-id-migrate':
                 self.migration_mode = self.MODE_ADMS_ID
+            elif cmd == 'contributor-id-migrate':
+                self.migration_mode = self.MODE_CONTRIBUTOR_ID
             else:
                 print 'Command %s not recognized' % cmd
                 self.parser.print_usage()
@@ -81,6 +90,8 @@ class DCATdeMigrateCommand(tk.CkanCommand):
         self._load_config()
         if self.migration_mode == self.MODE_ADMS_ID:
             self.migrate_adms_identifier()
+        elif self.migration_mode == self.MODE_CONTRIBUTOR_ID:
+            self.migrate_contributor_identifier()
         else:
             self.executor = migration_functions.MigrationFunctionExecutor(
                 pylons.config.get('ckanext.dcatde.urls.license_mapping'),
@@ -138,6 +149,76 @@ class DCATdeMigrateCommand(tk.CkanCommand):
 
         util.get_migrator_log().info(
             'Finished migration of adms:identifier to dct:identifier' +
+            (' [dry run without saving]' if self.dry_run else ''))
+
+    def migrate_contributor_identifier(self):
+        ''' Add govdata-contributor-IDs to datasets that are missing one '''
+        util.get_migrator_log().info(
+            'Migrating dcatde:contributorID' + (' [dry run without saving]' if self.dry_run else ''))
+
+        starttime = time.time()
+        package_obj_to_update = gather_dataset_ids()
+        endtime = time.time()
+        print "INFO: %s datasets found to check for contributor-ID. Total time: %s." % \
+              (len(package_obj_to_update), str(endtime - starttime))
+
+        organization_list = tk.get_action('organization_list')(self.create_context(),
+                                                               {'all_fields': True, 'include_extras': True})
+        updated_count = created_count = 0
+        starttime = time.time()
+
+        for dataset in self.iterate_datasets(package_obj_to_update.keys()):
+            print u'Updating dataset: {}'.format(dataset['title'])
+
+            dataset_org_id = dataset['organization']['id']
+            dataset_org = next((item for item in organization_list if item['id'] == dataset_org_id), None)
+            if not dataset_org:
+                print u'Did not find a Organization for ID: ' + dataset_org_id
+                continue
+
+            org_contributor_field = get_extras_field(dataset_org, EXTRA_KEY_CONTRIBUTOR_ID)
+            if not org_contributor_field:
+                print u'Did not find a contributor ID for Organization: ' + dataset_org_id
+                continue
+
+            try:
+                org_contributor_id_list = json.loads(org_contributor_field['value'])
+            except ValueError:
+                # json.loads failed -> value is not an array but a single string
+                org_contributor_id_list = [org_contributor_field['value']]
+
+            dataset_contributor_field = get_extras_field(dataset, EXTRA_KEY_CONTRIBUTOR_ID)
+            requires_update = False
+            if not dataset_contributor_field:
+                # Contributor-id field does not exist yet
+                set_extras_field(dataset, EXTRA_KEY_CONTRIBUTOR_ID, json.dumps(org_contributor_id_list))
+                created_count = created_count + 1
+                requires_update = True
+            else:
+                try:
+                    current_ids_list = json.loads(dataset_contributor_field['value'])
+                except ValueError:
+                    # json.loads failed -> value is not an array but a single string
+                    current_ids_list = [dataset_contributor_field['value']]
+
+                for contributor_id in org_contributor_id_list:
+                    if contributor_id not in current_ids_list:
+                        current_ids_list.append(contributor_id)
+                        requires_update = True
+                if requires_update:
+                    updated_count = updated_count + 1
+                    set_extras_field(dataset, EXTRA_KEY_CONTRIBUTOR_ID, json.dumps(current_ids_list))
+
+            if requires_update:
+                self.update_dataset(dataset)
+
+        endtime = time.time()
+        print "INFO: A Contributor-ID was created for %s datasets that did not have one before." % \
+              created_count
+        print "INFO: %s datasets were updated. Total time: %s." % (updated_count, str(endtime - starttime))
+
+        util.get_migrator_log().info(
+            'Finished migration of dcatde:contributorID' +
             (' [dry run without saving]' if self.dry_run else ''))
 
     def iterate_datasets(self, package_ids):

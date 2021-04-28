@@ -3,6 +3,12 @@ Commoun utils for dataset dicts
 """
 import json
 
+from ckan.lib.base import model
+from sqlalchemy.orm import aliased
+from sqlalchemy.sql.expression import or_, and_, not_
+import ckanext.harvest.model as harvest_model
+
+
 EXTRA_KEY_HARVESTED_PORTAL = 'metadata_harvested_portal'
 
 
@@ -71,3 +77,39 @@ def insert(dataset_dict, key, value, isextra):
             set_extras_field(dataset_dict, key, value)
         else:
             dataset_dict[key] = value
+
+
+def gather_dataset_ids():
+    '''Collects all dataset ids to reindex.'''
+    package_obj_found = {}
+    # pylint: disable=E1101
+    # read orgs related to a harvest source
+    subquery_harvest_orgs = model.Session.query(model.Group.id).distinct() \
+        .join(model.Package, model.Package.owner_org == model.Group.id) \
+        .join(harvest_model.HarvestSource, harvest_model.HarvestSource.id == model.Package.id) \
+        .filter(model.Package.state == model.State.ACTIVE) \
+        .filter(harvest_model.HarvestSource.active.is_(True)) \
+        .filter(model.Group.state == model.State.ACTIVE) \
+        .filter(model.Group.is_organization.is_(True)) \
+        .subquery()
+
+    # read all package IDs to reindex
+    package_extra_alias = aliased(model.PackageExtra)
+
+    query = model.Session.query(model.Package.id, model.Package.owner_org).distinct() \
+        .outerjoin(model.PackageExtra, model.PackageExtra.package_id == model.Package.id) \
+        .filter(model.Package.type != 'harvest') \
+        .filter(model.Package.state == model.State.ACTIVE) \
+        .filter(or_(model.Package.owner_org.notin_(subquery_harvest_orgs),
+                    and_(model.Package.owner_org.in_(subquery_harvest_orgs),
+                         not_(model.Session.query(model.Package.id)
+                              .filter(and_(model.Package.id == package_extra_alias.package_id,
+                                           package_extra_alias.state == model.State.ACTIVE,
+                                           package_extra_alias.key == EXTRA_KEY_HARVESTED_PORTAL))
+                              .exists()))))
+    # pylint: enable=E1101
+
+    for row in query:
+        package_obj_found[row[0]] = row[1]
+
+    return package_obj_found
