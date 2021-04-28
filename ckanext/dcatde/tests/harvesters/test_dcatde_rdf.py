@@ -3,15 +3,20 @@
 import json
 import unittest
 
+import pkg_resources
+from ckanext.dcat.processors import RDFParser
 from ckanext.dcatde.harvesters.dcatde_rdf import DCATdeRDFHarvester
-from mock import patch, Mock, ANY
-
 from ckantoolkit.tests import helpers
+from mock import patch, Mock, ANY
+from rdflib import Graph, URIRef
+from rdflib.namespace import RDF, Namespace
+
 
 class TestDCATdeRDFHarvester(unittest.TestCase):
     """
     Test class for the DCATdeRDFHarvester
     """
+    DCAT = Namespace("http://www.w3.org/ns/dcat#")
 
     @staticmethod
     def _get_harvest_obj_dummy(portal, status):
@@ -65,6 +70,16 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEquals(updated_resources[0]['license'], expected_first)
         self.assertEquals(updated_resources[1]['license'], expected_second)
 
+    @staticmethod
+    def _get_max_rdf(self, item_name="metadata_max"):
+        data = pkg_resources.resource_string(__name__,
+                                             "../resources/%s.rdf" % item_name)
+        return data
+
+    @staticmethod
+    def _get_uris_from_rdf(rdf_parser):
+        return rdf_parser._datasets()
+
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_metadata_on_import(self, mock_super_import):
         """
@@ -100,7 +115,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         harvester.import_stage(harvest_obj)
 
         # check
-        self._assert_resource_licenses(harvest_obj,u'http://dcat-ap.de/def/licenses/other-closed', u'foo')
+        self._assert_resource_licenses(harvest_obj, u'http://dcat-ap.de/def/licenses/other-closed', u'foo')
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     @helpers.change_config('ckanext.dcatde.harvest.default_license', 'test-license')
@@ -158,7 +173,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     def test_license_migration_empty_mapping(self, mock_super_import, mock_load_mapping):
         # Nothing should be changed if mapping is empty
         # prepare
-        mock_load_mapping.return_value = { }
+        mock_load_mapping.return_value = {}
         harvester = DCATdeRDFHarvester()
         harvest_obj = TestDCATdeRDFHarvester._pepare_license_migration_obj('foo', 'other')
 
@@ -175,7 +190,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # prepare
         mock_load_mapping.return_value = {
             'foo': 'foo_new'
-         }
+        }
         harvester = DCATdeRDFHarvester()
         harvest_obj = TestDCATdeRDFHarvester._pepare_license_migration_obj('foo', 'other')
 
@@ -300,7 +315,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._save_object_error')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_import_no_resources_skip_dataset_exists(self, mock_super_import, mock_save_object_error,
-                                      mock_read_datasets_from_db, mock_deletion):
+                                                     mock_read_datasets_from_db, mock_deletion):
         """
         Tests if datasets without resources are skipped if configured.
         When a local dataset exists, it should be removed in addition.
@@ -331,7 +346,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._save_object_error')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_import_no_resources_skip_dataset_exists_multiple(self, mock_super_import, mock_save_object_error,
-                                      mock_read_datasets_from_db, mock_deletion):
+                                                              mock_read_datasets_from_db, mock_deletion):
         """
         Tests if datasets without resources are skipped if configured.
         If multiple local datasets with the same GUID exist, nothing should be deleted.
@@ -410,3 +425,117 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_save_object_error.assert_not_called()
 
         mock_super_import.assert_called_once_with(harvest_obj)
+
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.is_available')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient._get_update_endpoint')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient._get_data_endpoint')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore')
+    def test_harvesting_one_dataset_after_parse(self, mock_fuseki_create_data, mock_fuseki_delete_data,
+                                                mock_fuseki_data_endpoint, mock_fuseki_update_endpoint,
+                                                mock_fuseki_available):
+        """
+        Test valid content in after_parsing() and check if correct methods are being called.
+        """
+        # prepare
+        harvester = DCATdeRDFHarvester()
+        maxrdf = self._get_max_rdf('metadata_max')
+        rdf_parser = RDFParser()
+        rdf_parser.parse(maxrdf, 'application/rdf+xml')
+
+        mock_fuseki_available.return_value = True
+        mock_fuseki_update_endpoint.return_value = 'http://localhost:3030/ds/update'
+        mock_fuseki_data_endpoint.return_value = 'http://localhost:3030/ds/data'
+
+        # run
+        rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, None)
+
+        # the parser should not have changed
+        self.assertEquals(rdf_parser_return, rdf_parser)
+        # check if no errors are returned
+        self.assertEquals(len(error_msgs), 0)
+        # check if delete dataset was called
+        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().next())  # Testdata has only one dataset
+        # check if create dataset was called
+        mock_fuseki_create_data.assert_called_once_with(ANY)
+
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore')
+    def test_harvesting_after_parse_triplestore_not_available(self, mock_fuseki_create_data, mock_fuseki_delete_data):
+        """
+        Test behaviour if triplestore is not available
+        """
+        # prepare
+        harvester = DCATdeRDFHarvester()
+        rdf_parser = RDFParser()
+
+        # run
+        rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, None)
+
+        # the parser should not have changed
+        self.assertEquals(rdf_parser_return, rdf_parser)
+        # check if no errors are returned
+        self.assertEquals(len(error_msgs), 0)
+        # create dataset should not be called
+        mock_fuseki_create_data.assert_not_called()
+        # delete dataset should not be called
+        mock_fuseki_delete_data.assert_not_called()
+
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore')
+    def test_harvesting_after_parse_rdf_parser_not_available(self, mock_fuseki_create_data, mock_fuseki_delete_data):
+        """
+        Test behaviour if RDF-Parser is not available
+        """
+        # prepare
+        harvester = DCATdeRDFHarvester()
+        rdf_parser = None
+
+        # run
+        rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, None)
+
+        # the parser should not have changed
+        self.assertEquals(rdf_parser_return, rdf_parser)
+        # check if no errors are returned
+        self.assertEquals(len(error_msgs), 0)
+        # create dataset should not be called
+        mock_fuseki_create_data.assert_not_called()
+        # delete dataset should not be called
+        mock_fuseki_delete_data.assert_not_called()
+
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.is_available')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient._get_update_endpoint')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient._get_data_endpoint')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore')
+    def test_harvesting_multiple_datasets_after_parse(self, mock_fuseki_create_data, mock_fuseki_delete_data,
+                                                      mock_fuseki_data_endpoint, mock_fuseki_update_endpoint,
+                                                      mock_fuseki_available):
+        """
+        Test valid content in after_parsing() and check if correct methods are being called.
+        """
+        # prepare
+        uris = [URIRef("http://example.org/datasets/1"), URIRef("http://example.org/datasets/2")]
+        g = Graph()
+        for uri in uris:
+            g.add((uri, RDF.type, self.DCAT.Dataset))
+
+        rdf_parser = RDFParser()
+        rdf_parser.g = g
+        harvester = DCATdeRDFHarvester()
+
+        mock_fuseki_available.return_value = True
+        mock_fuseki_update_endpoint.return_value = 'http://localhost:3030/ds/update'
+        mock_fuseki_data_endpoint.return_value = 'http://localhost:3030/ds/data'
+
+        # run
+        rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, None)
+
+        # the parser should not have changed
+        self.assertEquals(rdf_parser_return, rdf_parser)
+        # check if no errors are returned
+        self.assertEquals(len(error_msgs), 0)
+        # check if delete dataset was called twice
+        self.assertEquals(mock_fuseki_delete_data.call_count, len(uris))
+        # check if create dataset was called twice
+        self.assertEquals(mock_fuseki_create_data.call_count, len(uris))

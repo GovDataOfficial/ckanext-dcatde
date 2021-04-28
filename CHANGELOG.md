@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.2.0 2020-12-08
+
+* Implemented: Add harvested data into a triplestore
+
 ## v4.0.0 2020-10-30
 
 * Avoid crashes of the fetch consumer in case deletion harvest objects are corrupted

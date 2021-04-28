@@ -3,20 +3,26 @@
 '''
 DCAT-AP.de RDF Harvester module.
 '''
-import time
 import json
 import logging
-import pylons
+import time
 
-from ckan import plugins as p
+import pylons
+import requests
 from ckan import model
+from ckan import plugins as p
 from ckan.logic import UnknownValidator
 from ckan.plugins import toolkit
+from rdflib import Graph
+from ckanext.dcat.exceptions import RDFParserException
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
+from ckanext.dcat.processors import RDFParser
 from ckanext.dcatde.dataset_utils import set_extras_field
 from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
 from ckanext.dcatde.migration.util import load_json_mapping
+from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient
+from ckanext.dcatde.triplestore.sparql_query_templates import GET_DATASET_BY_URI_SPARQL_QUERY
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
 
 LOGGER = logging.getLogger(__name__)
@@ -42,6 +48,27 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
     def after_download(self, content, harvest_job):
         return content, []
+
+    def after_parsing(self, rdf_parser, harvest_job):
+        """ Insert harvested data into triplestore """
+
+        if rdf_parser and self.triplestore_client.is_available():
+            LOGGER.debug(u'Start updating triplestore...')
+            for uri in rdf_parser._datasets():
+                LOGGER.debug(u'Process URI: %s', str(uri))
+                self.triplestore_client.delete_dataset_in_triplestore(uri)
+
+                triples = rdf_parser.g.query(GET_DATASET_BY_URI_SPARQL_QUERY % {'uri': str(uri)})
+
+                graph = Graph()
+                for triple in triples:
+                    graph.add(triple)
+                rdf_graph = graph.serialize(format="xml")
+
+                self.triplestore_client.create_dataset_in_triplestore(rdf_graph)
+            LOGGER.debug(u'Finished updating triplestore.')
+
+        return rdf_parser, []
 
     def before_update(self, harvest_object, dataset_dict, temp_dict):
         pass
@@ -78,6 +105,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         Set global parameters from config
         '''
         DCATRDFHarvester.__init__(self)
+
+        self.triplestore_client = FusekiTriplestoreClient()
 
         self.licenses_upgrade = {}
         license_file = pylons.config.get('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping')

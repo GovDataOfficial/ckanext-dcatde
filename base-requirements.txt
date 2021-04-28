@@ -1,5 +1,5 @@
 ckanapi>=3,<4
-ckanext-dcat==1.1.0
+ckanext-dcat==1.1.0+gd0
 ckanext-harvest==1.2.0
 ckantoolkit==0.0.3
 pycountry>=17,<20
