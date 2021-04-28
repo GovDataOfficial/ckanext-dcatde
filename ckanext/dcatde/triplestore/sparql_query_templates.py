@@ -8,7 +8,7 @@ Query templates for SPARQL requests
 When formatting this query:
 Format %(uri)s with the URI of the dataset
 '''
-DELETE_DATASET_BY_URI_SPARQL_QUERY = """DELETE { ?s ?p ?o }
+DELETE_DATASET_BY_URI_SPARQL_QUERY = u"""DELETE { ?s ?p ?o }
             WHERE {
               <%(uri)s> (<>|!<>)* ?s .
               ?s ?p ?o
@@ -21,7 +21,7 @@ DELETE_DATASET_BY_URI_SPARQL_QUERY = """DELETE { ?s ?p ?o }
 When formatting this query:
 Format %(uri)s with the URI of the dataset
 '''
-GET_DATASET_BY_URI_SPARQL_QUERY = """SELECT ?s ?p ?o
+GET_DATASET_BY_URI_SPARQL_QUERY = u"""SELECT ?s ?p ?o
                             WHERE {
                               <%(uri)s> (<>|!<>)* ?s .
                               ?s ?p ?o }"""

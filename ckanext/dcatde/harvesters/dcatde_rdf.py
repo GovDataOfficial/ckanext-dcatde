@@ -14,6 +14,7 @@ from ckan import plugins as p
 from ckan.logic import UnknownValidator
 from ckan.plugins import toolkit
 from rdflib import Graph
+from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from ckanext.dcat.exceptions import RDFParserException
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
@@ -52,23 +53,31 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
     def after_parsing(self, rdf_parser, harvest_job):
         """ Insert harvested data into triplestore """
 
+        error_messages = []
         if rdf_parser and self.triplestore_client.is_available():
             LOGGER.debug(u'Start updating triplestore...')
             for uri in rdf_parser._datasets():
-                LOGGER.debug(u'Process URI: %s', str(uri))
-                self.triplestore_client.delete_dataset_in_triplestore(uri)
+                LOGGER.debug(u'Process URI: %s', uri)
+                try:
+                    self.triplestore_client.delete_dataset_in_triplestore(uri)
 
-                triples = rdf_parser.g.query(GET_DATASET_BY_URI_SPARQL_QUERY % {'uri': str(uri)})
+                    triples = rdf_parser.g.query(GET_DATASET_BY_URI_SPARQL_QUERY % {'uri': uri})
 
-                graph = Graph()
-                for triple in triples:
-                    graph.add(triple)
-                rdf_graph = graph.serialize(format="xml")
+                    if triples:
+                        graph = Graph()
+                        for triple in triples:
+                            graph.add(triple)
+                        rdf_graph = graph.serialize(format="xml")
 
-                self.triplestore_client.create_dataset_in_triplestore(rdf_graph)
+                        self.triplestore_client.create_dataset_in_triplestore(rdf_graph)
+                    else:
+                        LOGGER.warn(u'Could not find triples to URI %s. Updating is not possible.', uri)
+                except SPARQLWrapperException as exception:
+                    LOGGER.error(u'Unexpected error while updating dataset with URI %s: %s', uri, exception)
+                    error_messages.extend(exception)
             LOGGER.debug(u'Finished updating triplestore.')
 
-        return rdf_parser, []
+        return rdf_parser, error_messages
 
     def before_update(self, harvest_object, dataset_dict, temp_dict):
         pass

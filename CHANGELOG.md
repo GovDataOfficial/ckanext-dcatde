@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.2.2 2020-12-13
+
+* Improve exception handling when updating data in the triplestore
+* Pin version for cryptography dependency avoiding build errors with version >=3.3
+
 ## v4.2.0 2020-12-08
 
 * Implemented: Add harvested data into a triplestore

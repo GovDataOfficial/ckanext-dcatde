@@ -33,8 +33,8 @@ class FusekiTriplestoreClient(object):
         Delete a dataset in the triplestore
         :param uri: the uri of the dataset
         """
-        LOGGER.debug(u'Deleting in triplestore: Dataset with URI: %s', str(uri))
-        self.sparql_wrapper.setQuery(DELETE_DATASET_BY_URI_SPARQL_QUERY % {'uri': str(uri)})
+        LOGGER.debug(u'Deleting in triplestore: Dataset with URI: %s', uri)
+        self.sparql_wrapper.setQuery(DELETE_DATASET_BY_URI_SPARQL_QUERY % {'uri': uri})
         results = self.sparql_wrapper.query()
         status_code = results.response.getcode()
         if status_code == 200:

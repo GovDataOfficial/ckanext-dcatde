@@ -10,6 +10,7 @@ from ckantoolkit.tests import helpers
 from mock import patch, Mock, ANY
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, Namespace
+from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 
 
 class TestDCATdeRDFHarvester(unittest.TestCase):
@@ -454,8 +455,8 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEquals(rdf_parser_return, rdf_parser)
         # check if no errors are returned
         self.assertEquals(len(error_msgs), 0)
-        # check if delete dataset was called
-        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().next())  # Testdata has only one dataset
+        # check if delete dataset was called. Testdata has only one dataset
+        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().next())
         # check if create dataset was called
         mock_fuseki_create_data.assert_called_once_with(ANY)
 
@@ -539,3 +540,73 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEquals(mock_fuseki_delete_data.call_count, len(uris))
         # check if create dataset was called twice
         self.assertEquals(mock_fuseki_create_data.call_count, len(uris))
+
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.is_available')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient._get_update_endpoint')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient._get_data_endpoint')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore')
+    def test_harvesting_delete_error_msg_after_parse(self, mock_fuseki_create_data, mock_fuseki_delete_data,
+                                                mock_fuseki_data_endpoint, mock_fuseki_update_endpoint,
+                                                mock_fuseki_available):
+        """
+        Test SPARQLWrapper exception while deleting in method after_parsing().
+        """
+        # prepare
+        harvester = DCATdeRDFHarvester()
+        maxrdf = self._get_max_rdf('metadata_max')
+        rdf_parser = RDFParser()
+        rdf_parser.parse(maxrdf, 'application/rdf+xml')
+
+        mock_fuseki_available.return_value = True
+        mock_fuseki_update_endpoint.return_value = 'http://localhost:3030/ds/update'
+        mock_fuseki_data_endpoint.return_value = 'http://localhost:3030/ds/data'
+
+        mock_fuseki_delete_data.side_effect = SPARQLWrapperException('500 Internal server error!')
+
+        # run
+        rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, None)
+
+        # the parser should not have changed
+        self.assertEquals(rdf_parser_return, rdf_parser)
+        # check that one error is returned
+        self.assertEquals(len(error_msgs), 1)
+        # check if delete dataset was called. Testdata has only one dataset.
+        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().next())
+        # create dataset should not be called
+        mock_fuseki_create_data.assert_not_called()
+
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.is_available')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient._get_update_endpoint')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient._get_data_endpoint')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore')
+    def test_harvesting_create_error_msg_after_parse(self, mock_fuseki_create_data, mock_fuseki_delete_data,
+                                                mock_fuseki_data_endpoint, mock_fuseki_update_endpoint,
+                                                mock_fuseki_available):
+        """
+        Test SPARQLWrapper exception while creating in method after_parsing().
+        """
+        # prepare
+        harvester = DCATdeRDFHarvester()
+        maxrdf = self._get_max_rdf('metadata_max')
+        rdf_parser = RDFParser()
+        rdf_parser.parse(maxrdf, 'application/rdf+xml')
+
+        mock_fuseki_available.return_value = True
+        mock_fuseki_update_endpoint.return_value = 'http://localhost:3030/ds/update'
+        mock_fuseki_data_endpoint.return_value = 'http://localhost:3030/ds/data'
+
+        mock_fuseki_create_data.side_effect = SPARQLWrapperException('500 Internal server error!')
+
+        # run
+        rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, None)
+
+        # the parser should not have changed
+        self.assertEquals(rdf_parser_return, rdf_parser)
+        # check that one error is returned
+        self.assertEquals(len(error_msgs), 1)
+        # check if delete dataset was called. Testdata has only one dataset.
+        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().next())
+        # check if create dataset was called
+        mock_fuseki_create_data.assert_called_once_with(ANY)
