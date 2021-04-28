@@ -33,6 +33,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
     p.implements(IDCATRDFHarvester)
 
     # -- begin IDCATRDFHarvester implementation --
+    # pylint: disable=C0111,W0613,R0201,C0103
     def before_download(self, url, harvest_job):
         return url, []
 
@@ -69,6 +70,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         except ValueError:
             pass
         return package_schema
+    # pylint: enable=C0111,W0613,R0201,C0103
     # -- end IDCATRDFHarvester implementation --
 
     def __init__(self, name='dcatde_rdf'):
@@ -157,7 +159,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         guids_in_db_unique = set(guids_in_db)
         LOGGER.debug('guids in source: %s, unique guids in source: %s, '\
                       'guids in db: %s, unique guids in db: %s', len(guids_in_source),
-                      len(guids_in_source_unique), len(guids_in_db), len(guids_in_db_unique))
+                     len(guids_in_source_unique), len(guids_in_db), len(guids_in_db_unique))
         guids_to_delete = guids_in_db_unique - guids_in_source_unique
 
         # Create a harvest object for each of them, flagged for deletion
@@ -216,19 +218,15 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
     def _skip_datasets_without_resource(self, harvest_object):
         '''
-        Checks if resources are present when configured and the dataset not already exists.
+        Checks if resources are present when configured.
         '''
         package = json.loads(harvest_object.content)
         if (self._get_resources_required_config(harvest_object.source.config)\
              and not package.get('resources')):
-            skip_notice = ''
-            if not self._read_datasets_from_db(harvest_object.guid):
-                skip_notice = ' Skipping dataset.'
             # write details to log
-            LOGGER.info(u'{0}: Resources are required, but dataset {1} (GUID {2}) has none.{3}'.format(
-                harvest_object.source.title, package.get('name', ''), harvest_object.guid, skip_notice))
-            if skip_notice:
-                return True
+            LOGGER.info(u'{0}: Resources are required, but dataset {1} (GUID {2}) has none. Skipping dataset.'
+                        .format(harvest_object.source.title, package.get('name', ''), harvest_object.guid))
+            return True
         return False
 
     def import_stage(self, harvest_object):
@@ -248,9 +246,24 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
         # skip if resources are not present when configured
         if self._skip_datasets_without_resource(harvest_object):
+            info_deleted_local_dataset = ''
+            datasets_from_db = self._read_datasets_from_db(harvest_object.guid)
+            if datasets_from_db:
+                if len(datasets_from_db) == 1:
+                    HarvestUtils.rename_delete_dataset_with_id(datasets_from_db[0][0])
+                    LOGGER.info(u'Deleted local dataset with GUID {0} as harvest object has '\
+                                u'no resources.'.format(harvest_object.guid))
+                    info_deleted_local_dataset = ' Local dataset without resources deleted.'
+                else:
+                    LOGGER.warn(
+                        u'Not deleting package with GUID {0}, because more than one dataset was found!'\
+                            .format(harvest_object.guid)
+                    )
+                    info_deleted_local_dataset = ' More than one local dataset with the same GUID!'
             # do not include details in error such that they get summarized in the UI
             self._save_object_error(
-                'Dataset has no resources, but they are required by config. Skipping.',
+                'Dataset has no resources, but they are required by config. Skipping.{0}'.format(
+                    info_deleted_local_dataset),
                 harvest_object, 'Import'
                 )
             return False

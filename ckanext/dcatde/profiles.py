@@ -231,7 +231,7 @@ class DCATdeProfile(RDFProfile):
             for distribution in self.g.objects(dataset_ref, DCAT.distribution):
                 for resource_dict in dataset_dict.get('resources', []):
                     # Match distribution in graph and distribution in ckan-dict
-                    if unicode(distribution) == resource_uri(resource_dict):
+                    if unicode(distribution) == resource_dict.get('uri'):
                         for key, predicate in (
                                 ('licenseAttributionByText', dcatde_namespace.licenseAttributionByText),
                                 ('plannedAvailability', dcatde_namespace.plannedAvailability)

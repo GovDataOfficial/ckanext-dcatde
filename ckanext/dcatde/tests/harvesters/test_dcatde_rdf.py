@@ -259,6 +259,15 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
             'Skipping importing dataset, because of duplicate detection!', harvest_obj, 'Import')
         mock_super_import.assert_not_called()
 
+    def _assert_no_resources_error(self, harvest_obj, mock_save_object_error):
+        # check (do not require exact string message but look for keywords)
+        mock_save_object_error.assert_called_once_with(
+            ANY, harvest_obj, 'Import'
+        )
+        message = mock_save_object_error.call_args[0][0].lower()
+        self.assertTrue('skip' in message)
+        self.assertTrue('no resources' in message)
+
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._read_datasets_from_db')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._save_object_error')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
@@ -274,30 +283,27 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         cfg = json.loads(harvest_obj.source.config)
         cfg['resources_required'] = True
         harvest_obj.source.config = json.dumps(cfg)
-        mock_read_datasets_from_db.return_value = False
+        mock_read_datasets_from_db.return_value = []
 
         # run
         harvester.import_stage(harvest_obj)
 
         # check _read_datasets_from_db is called with the guid of the harvest object
         mock_read_datasets_from_db.assert_called_once_with('guid-123')
-        # check (do not require exact string message but look for keywords)
-        mock_save_object_error.assert_called_once_with(
-            ANY, harvest_obj, 'Import'
-        )
-        message = mock_save_object_error.call_args[0][0].lower()
-        self.assertTrue('skip' in message)
-        self.assertTrue('no resources' in message)
+        # check if error was saved
+        self._assert_no_resources_error(harvest_obj, mock_save_object_error)
         # dataset should be skipped
         mock_super_import.assert_not_called()
 
+    @patch('ckanext.dcatde.harvesters.harvest_utils.HarvestUtils.rename_delete_dataset_with_id')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._read_datasets_from_db')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._save_object_error')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_import_no_resources_skip_dataset_exists(self, mock_super_import, mock_save_object_error,
-                                      mock_read_datasets_from_db):
+                                      mock_read_datasets_from_db, mock_deletion):
         """
         Tests if datasets without resources are skipped if configured.
+        When a local dataset exists, it should be removed in addition.
         """
         # prepare
         harvester = DCATdeRDFHarvester()
@@ -306,17 +312,50 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         cfg = json.loads(harvest_obj.source.config)
         cfg['resources_required'] = True
         harvest_obj.source.config = json.dumps(cfg)
-        mock_read_datasets_from_db.return_value = True
+        mock_read_datasets_from_db.return_value = [['test-id', 'extra']]
 
         # run
         harvester.import_stage(harvest_obj)
 
         # check _read_datasets_from_db is called with the guid of the harvest object
         mock_read_datasets_from_db.assert_called_once_with('guid-123')
-        # do not save object error because import is accepted
-        mock_save_object_error.assert_not_called()
+        # check if error was saved
+        self._assert_no_resources_error(harvest_obj, mock_save_object_error)
+        # local dataset should be deleted
+        mock_deletion.assert_called_once_with('test-id')
+        # dataset should not be imported
+        mock_super_import.assert_not_called()
 
-        mock_super_import.assert_called_once_with(harvest_obj)
+    @patch('ckanext.dcatde.harvesters.harvest_utils.HarvestUtils.rename_delete_dataset_with_id')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._read_datasets_from_db')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._save_object_error')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
+    def test_import_no_resources_skip_dataset_exists_multiple(self, mock_super_import, mock_save_object_error,
+                                      mock_read_datasets_from_db, mock_deletion):
+        """
+        Tests if datasets without resources are skipped if configured.
+        If multiple local datasets with the same GUID exist, nothing should be deleted.
+        """
+        # prepare
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', '')
+        # add resources required config
+        cfg = json.loads(harvest_obj.source.config)
+        cfg['resources_required'] = True
+        harvest_obj.source.config = json.dumps(cfg)
+        mock_read_datasets_from_db.return_value = [['test-id', 'extra'], ['other-id', 'extra']]
+
+        # run
+        harvester.import_stage(harvest_obj)
+
+        # check _read_datasets_from_db is called with the guid of the harvest object
+        mock_read_datasets_from_db.assert_called_once_with('guid-123')
+        # check if error was saved
+        self._assert_no_resources_error(harvest_obj, mock_save_object_error)
+        # nothing should be deleted
+        mock_deletion.assert_not_called()
+        # dataset should be skipped nevertheless
+        mock_super_import.assert_not_called()
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._read_datasets_from_db')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._save_object_error')
@@ -325,6 +364,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
                                                  mock_read_datasets_from_db):
         """
         Tests if datasets without resources are skipped if configured.
+        Empty resource lists should be skipped as well.
         """
         # prepare
         harvester = DCATdeRDFHarvester()
@@ -336,20 +376,15 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         harvest_object_content = json.loads(harvest_obj.content)
         harvest_object_content['resources'] = []
         harvest_obj.content = json.dumps(harvest_object_content)
-        mock_read_datasets_from_db.return_value = False
+        mock_read_datasets_from_db.return_value = []
 
         # run
         harvester.import_stage(harvest_obj)
 
         # check _read_datasets_from_db is called with the guid of the harvest object
         mock_read_datasets_from_db.assert_called_once_with('guid-123')
-        # check (do not require exact string message but look for keywords)
-        mock_save_object_error.assert_called_once_with(
-            ANY, harvest_obj, 'Import'
-        )
-        message = mock_save_object_error.call_args[0][0].lower()
-        self.assertTrue('skip' in message)
-        self.assertTrue('no resources' in message)
+        # check if error was saved
+        self._assert_no_resources_error(harvest_obj, mock_save_object_error)
         # dataset should be skipped
         mock_super_import.assert_not_called()
 

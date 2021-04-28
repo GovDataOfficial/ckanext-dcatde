@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.9.0 2020-03-26
+
+* When remote datasets without resources/distributions are rejected (`resources_required`), any local version of
+  the dataset is deleted if present.
+* Fix line endings to match .gitattributes
+* Fix harvester plugin docs (#11)
+
 ## v3.8.0 2020-02-17
 
 * Update requirement ckanext-dcat to version 1.1.0
