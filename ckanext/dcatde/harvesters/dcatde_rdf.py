@@ -349,7 +349,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         # set custom field and perform other fixes on the data
         self._amend_package(harvest_object)
 
-        import_dataset = HarvestUtils.handle_duplicates(harvest_object.content)
+        import_dataset = HarvestUtils.handle_duplicates(harvest_object)
         if import_dataset:
             return super(DCATdeRDFHarvester, self).import_stage(harvest_object)
 

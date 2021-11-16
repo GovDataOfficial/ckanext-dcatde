@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.6.0 2021-11-04
+
+* Updates the README.md with information about the support of a triplestore and a SHACL validation
+* Adds the option to delete specific dataset by their URIs from the triplestore to the ckan command "triplestore"
+
 ## v4.5.8 2021-10-14
 
 * Updates requirement ckanext-dcat to fix publisher URI handling

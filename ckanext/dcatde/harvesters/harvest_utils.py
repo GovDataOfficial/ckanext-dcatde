@@ -126,9 +126,11 @@ class HarvestUtils(object):
         return True
 
     @staticmethod
-    def handle_duplicates(harvest_object_content):
+    def handle_duplicates(harvest_object):
         '''Compares new dataset with existing and checks, if a dataset should be imported.'''
 
+        harvest_object_content = harvest_object.content
+        harvester_title = harvest_object.source.title
         method_prefix = 'handle_duplicates: '
         context = HarvestUtils.build_context()
 
@@ -150,14 +152,14 @@ class HarvestUtils(object):
                     local_search_result = p.toolkit.get_action("package_search")(context, data_dict)
                     if local_search_result['count'] == 0:
                         # no other dataset with the same identifier was found, import accepted
-                        LOGGER.debug(u'%sDid not find any existing dataset in the database with ' \
-                                     u'Identifier %s. Import accepted for dataset %s.', method_prefix,
-                                     orig_id, remote_dataset_name)
+                        LOGGER.debug(u'[%s] %sDid not find any existing dataset in the database with ' \
+                                     u'Identifier %s. Import accepted for dataset %s.',
+                                     harvester_title, method_prefix, orig_id, remote_dataset_name)
                         return True
                     else:
                         # other dataset with the same identifier was found
-                        LOGGER.debug(u'%sFound duplicate entries with Identifier %s for dataset %s.',
-                                     method_prefix, orig_id, remote_dataset_name)
+                        LOGGER.debug(u'[%s] %sFound duplicate entries with Identifier %s for dataset %s.',
+                                     harvester_title, method_prefix, orig_id, remote_dataset_name)
                         remote_is_latest = True
                         local_dataset_has_modified = False
                         latest_local_dataset = {}
@@ -185,21 +187,22 @@ class HarvestUtils(object):
 
                         if remote_is_latest:
                             # Import accepted. Delete all local datasets with the same identifier.
-                            LOGGER.debug(u'%sRemote dataset with Identifier %s is the latest. '\
+                            LOGGER.debug(u'[%s] %sRemote dataset with Identifier %s is the latest. '\
                                          u'Modified date: %s. Import accepted for dataset %s.',
-                                         method_prefix, orig_id,
+                                         harvester_title, method_prefix, orig_id,
                                          remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED),
                                          remote_dataset_name)
                             packages_deleted = _delete_packages_keep(local_search_result['results'])
-                            LOGGER.debug(u'%sDeleted packages: %s', method_prefix, ','.join(packages_deleted))
+                            LOGGER.debug(u'[%s]: %sDeleted packages: %s', harvester_title,
+                                         method_prefix, ','.join(packages_deleted))
                             return True
                         elif local_dataset_has_modified:
                             # Skip import. Delete local datasets, but keep the dataset with latest date in
                             # the field "modified".
-                            LOGGER.info(u'%sRemote dataset with Identifier %s is NOT the latest. '\
+                            LOGGER.info(u'[%s] %sRemote dataset with Identifier %s is NOT the latest. '\
                                         u'Modified date: %s. Keep local dataset with ' \
                                         u'latest date in field "modified". Skipping import for dataset %s!',
-                                        method_prefix, orig_id,
+                                        harvester_title, method_prefix, orig_id,
                                         remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED, 'n/a'),
                                         remote_dataset_name)
                             packages_deleted = _delete_packages_keep(
@@ -210,10 +213,10 @@ class HarvestUtils(object):
                             # field "modified". Delete local datasets, but keep the dataset last modified in
                             # database.
                             LOGGER.info(
-                                u'%sFound duplicate entries with the value "%s" in field "identifier", but ' \
-                                u'remote and local datasets does not contain a modified date. ' \
+                                u'[%s] %sFound duplicate entries with the value "%s" in field "identifier", '\
+                                u'but remote and local datasets does not contain a modified date. ' \
                                 u'Keep local dataset last modified in database. Skipping import for %s!',
-                                method_prefix, orig_id, remote_dataset_name)
+                                harvester_title, method_prefix, orig_id, remote_dataset_name)
                             last_modified_local_dataset = {}
                             for local_dataset in local_search_result['results']:
                                 # notice the local dataset with the latest date
@@ -223,18 +226,18 @@ class HarvestUtils(object):
                                     local_dataset['id'])
                             packages_deleted = _delete_packages_keep(
                                 local_search_result['results'], last_modified_local_dataset)
-                            LOGGER.debug(u'%sDeleted packages: %s', method_prefix, ','.join(packages_deleted))
+                            LOGGER.debug(u'[%s] %sDeleted packages: %s', harvester_title, method_prefix,
+                                         ','.join(packages_deleted))
                 except Exception as exception:
                     LOGGER.error(exception)
             else:
-                LOGGER.debug(u'%sNo original id in field identifier found. Import accepted for dataset %s.',
-                             method_prefix, remote_dataset_name)
+                LOGGER.debug(u'[%s] %sNo original id in field identifier found. Import accepted for ' \
+                             u'dataset %s.', harvester_title, method_prefix, remote_dataset_name)
                 return True
         else:
-            LOGGER.debug(u'%sNo field identifier found. Import accepted for dataset %s.',
-                         method_prefix, remote_dataset_name)
+            LOGGER.debug(u'[%s] %sNo field identifier found. Import accepted for dataset %s.',
+                         harvester_title, method_prefix, remote_dataset_name)
             return True
-
         return False
 
 

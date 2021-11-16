@@ -63,6 +63,34 @@ configuration:
 The DCAT-AP.de profile implements a different logic for cleaning tags/keywords as implemented in ckanext-dcat,
 e.g. not replacing/removing German umlauts and 'ß'.
 
+### Triplestore support
+The originally harvested RDF data can also be written into a triplestore. It is tested with the Apache Jena
+Fuseki (https://jena.apache.org/documentation/fuseki2/index.html).
+To activate this option set the following configuration parameters.
+
+    ckanext.dcatde.fuseki.triplestore.url = http://url/to/triplestore
+    ckanext.dcatde.fuseki.triplestore.name = datastore_name
+    ckanext.dcatde.fuseki.harvest.info.name = second_datastore_for_harvest_information
+
+The triplestore application have to be installed and running before the first harvesting. In addition the
+datastores have to be created manually.
+`ckanext.dcatde.fuseki.triplestore.name` is the name of the datastore where the actual data is stored.
+The datatstore `ckanext.dcatde.fuseki.harvest.info.name` is needed for the harvester to keep track of
+information about the datasets so the current data will be updated properly when reharvesting.
+
+#### SHACL support
+
+If the triplestore is used you can also activate SHACL validation support by adding the following parameters.
+It is tested with the SHACL-Validator from the ISA2 Interoperability Test Bed
+(Sourcecode: https://github.com/ISAITB/shacl-validator,
+Documentation: https://www.itb.ec.europa.eu/docs/guides/latest/validatingRDF)
+The SHACL results will be stored in the triplestore.
+
+    ckanext.dcatde.fuseki.shacl.store.name = shacl_output_datastore_name
+    ckanext.dcatde.shacl_validator.api_url = http://url/to/shacl/validator/api
+    ckanext.dcatde.shacl.validator.profile.type = shacl_profile_name
+
+The SHACL validator application have to be installed and running before the first harvesting.
 
 ## Creating dcat-ap categories as groups
 You need to add the following parameter to your CKAN configuration file:

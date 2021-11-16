@@ -137,6 +137,9 @@ class DCATdeMigrateCommand(tk.CkanCommand):
             (' [dry run, did not save]' if self.dry_run else ''))
 
     def migrate_adms_identifier(self):
+        '''
+        Iterates over all datasets and migrates fields with 'adms_identifier'
+        '''
         util.get_migrator_log().info(
             'Migrating adms:identifier to dct:identifier' +
             (' [dry run without saving]' if self.dry_run else ''))

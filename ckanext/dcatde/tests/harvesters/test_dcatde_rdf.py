@@ -311,7 +311,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_harvest_get_username.assert_not_called()
         mock_triplestore_is_available.assert_not_called()
         mock_fuseki_delete_data.assert_not_called()
-        mock_handle_duplicates.assert_called_with(harvest_obj.content)
+        mock_handle_duplicates.assert_called_with(harvest_obj)
         mock_super_import.assert_called_with(harvest_obj)
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._save_object_error')
@@ -338,7 +338,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertFalse(result)
         # no call to the custom delete logic was made
         mock_deletion.assert_not_called()
-        mock_handle_duplicates.assert_called_with(harvest_obj.content)
+        mock_handle_duplicates.assert_called_with(harvest_obj)
         mock_save_object_error.assert_called_with(
             'Skipping importing dataset, because of duplicate detection!', harvest_obj, 'Import')
         mock_super_import.assert_not_called()

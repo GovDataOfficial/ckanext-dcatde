@@ -13,6 +13,7 @@ EXTRA_KEY_HARVESTED_PORTAL = 'metadata_harvested_portal'
 
 
 def get_extras_field(dataset, name):
+    """ Getter for extra fields """
     for field in dataset['extras']:
         if field['key'] == name:
             return field
@@ -21,6 +22,7 @@ def get_extras_field(dataset, name):
 
 
 def process_value(value, as_list=False):
+    """ Process value if as_list is True """
     if as_list:
         return json.dumps([value])
 
@@ -28,10 +30,12 @@ def process_value(value, as_list=False):
 
 
 def insert_new_extras_field(dataset, key, value, as_list=False):
+    """ Add new field for extra fields """
     dataset['extras'].insert(0, {u'value': process_value(value, as_list), u'key': key})
 
 
 def set_extras_field(dataset, key, value, as_list=False):
+    """ Setter for extra fields """
     current = get_extras_field(dataset, key)
 
     if current:
@@ -41,10 +45,12 @@ def set_extras_field(dataset, key, value, as_list=False):
 
 
 def delete_extras_field(dataset, name):
+    """ Delete extra field by name """
     dataset['extras'].remove(get_extras_field(dataset, name))
 
 
 def rename_extras_field(dataset, name_old, name_new, as_list):
+    """ Rename an extra field """
     field = get_extras_field(dataset, name_old)
 
     if field is not None:
@@ -79,8 +85,8 @@ def insert(dataset_dict, key, value, isextra):
             dataset_dict[key] = value
 
 
-def gather_dataset_ids():
-    '''Collects all dataset ids to reindex.'''
+def gather_dataset_ids(include_private=True):
+    """Collects all dataset ids to reindex."""
     package_obj_found = {}
     # pylint: disable=E1101
     # read orgs related to a harvest source
@@ -107,6 +113,8 @@ def gather_dataset_ids():
                                            package_extra_alias.state == model.State.ACTIVE,
                                            package_extra_alias.key == EXTRA_KEY_HARVESTED_PORTAL))
                               .exists()))))
+    if not include_private:
+        query = query.filter(model.Package.private.is_(False))
     # pylint: enable=E1101
 
     for row in query:

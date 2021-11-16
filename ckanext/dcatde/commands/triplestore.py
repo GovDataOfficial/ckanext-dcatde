@@ -27,6 +27,9 @@ class Triplestore(CkanCommand):
         - Reindex all datasets edited manually in the GovData portal only and which are not imported
         automatically by a harvester.
 
+      triplestore delete_datasets [--dry-run] [--uris]
+        - Delete all datatsets from the ds-triplestore for the URIs given with the uris-option.
+
         '''
 
     summary = __doc__.split('\n')[0]
@@ -37,11 +40,15 @@ class Triplestore(CkanCommand):
         self.parser.add_option('--dry-run', dest='dry_run', default='True',
                                help='With dry-run True the reindex will be not executed. '
                                'The default is True.')
+        self.parser.add_option('--uris', dest='uris', default='',
+                               help='Use comma separated URI-values to specify which datasets ' \
+                                    'should be deleted when running delete_datasets')
 
         self.admin_user = None
         self.triplestore_client = None
         self.shacl_validation_client = None
         self.dry_run = True
+        self.uris_to_clean = ''
 
     def command(self):
         '''Executes commands.'''
@@ -62,6 +69,10 @@ class Triplestore(CkanCommand):
             self.triplestore_client = FusekiTriplestoreClient()
             self.shacl_validation_client = ShaclValidator()
             self._reindex()
+        elif cmd == 'delete_datasets':
+            self._check_options()
+            self.triplestore_client = FusekiTriplestoreClient()
+            self._clean_triplestore_from_uris()
         else:
             print u'Command {0} not recognized'.format(cmd)
 
@@ -73,11 +84,13 @@ class Triplestore(CkanCommand):
                                   % str(self.options.dry_run))
             elif self.options.dry_run.lower() in ('no', 'false'):
                 self.dry_run = False
+        if self.options.uris:
+            self.uris_to_clean = self.options.uris.split(",")
 
     def _reindex(self):
         '''Deletes all datasets matching package search filter query.'''
         starttime = time.time()
-        package_obj_to_reindex = gather_dataset_ids()
+        package_obj_to_reindex = gather_dataset_ids(include_private=False)
         endtime = time.time()
         print "INFO: %s datasets found to reindex. Total time: %s." % \
                 (len(package_obj_to_reindex), str(endtime - starttime))
@@ -142,3 +155,23 @@ class Triplestore(CkanCommand):
                 self.triplestore_client.create_dataset_in_triplestore_mqa(validation_rdf, uri)
 
         return uri
+
+    def _clean_triplestore_from_uris(self):
+        '''Delete dataset-uris from args from the triplestore'''
+        if self.uris_to_clean == '':
+            print "INFO: Missing Arg 'uris'." \
+                "Use comma separated URI-values to specify which datasets should be deleted."
+            return
+        if self.dry_run:
+            print "INFO: DRY-RUN: Deleting datasets is disabled."
+
+        if self.triplestore_client.is_available():
+            starttime = time.time()
+            for uri in self.uris_to_clean:
+                print "Deleting dataset with URI: " + uri
+                if not self.dry_run:
+                    self.triplestore_client.delete_dataset_in_triplestore(uri)
+            endtime = time.time()
+            print "INFO: Total time: %s." % (str(endtime - starttime))
+        else:
+            print "INFO: TripleStore is not available. Skipping cleaning!"

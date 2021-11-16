@@ -32,10 +32,12 @@ class TestTripleStoreCommand(unittest.TestCase):
         self.cmd.args = []
         self.cmd.options = DummyClass()
         self.cmd.options.dry_run = 'True'
+        self.cmd.options.uris = ''
 
     def tearDown(self):
         # Remove option to avoid OptionConflictError
         self.cmd.parser.remove_option('--dry-run')
+        self.cmd.parser.remove_option('--uris')
 
     @staticmethod
     def _get_rdf(uri):
@@ -95,7 +97,7 @@ class TestTripleStoreCommand(unittest.TestCase):
         mock_triplestore_create_mqa.assert_not_called()
         # ensure config was loaded
         mock_super_load_config.assert_called_once_with()
-        mock_gather_ids.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with(include_private=False)
 
         # assert that the needed methods were obtained in the expected order.
         mock_get_action.assert_has_calls([call('get_site_user')])
@@ -121,7 +123,7 @@ class TestTripleStoreCommand(unittest.TestCase):
         mock_triplestore_create_mqa.assert_not_called()
         # ensure config was loaded
         mock_super_load_config.assert_called_once_with()
-        mock_gather_ids.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with(include_private=False)
 
         # assert that the needed methods were obtained in the expected order.
         mock_get_action.assert_has_calls([call('get_site_user')])
@@ -165,7 +167,7 @@ class TestTripleStoreCommand(unittest.TestCase):
                                                       call(d2['shacl_result'], URIRef(uri_d2))])
         # ensure config was loaded
         mock_super_load_config.assert_called_once_with()
-        mock_gather_ids.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with(include_private=False)
 
         # assert that the needed methods were obtained in the expected order.
         mock_get_action.assert_has_calls([call('get_site_user'), call('dcat_dataset_show'),
@@ -194,8 +196,76 @@ class TestTripleStoreCommand(unittest.TestCase):
         mock_triplestore_create_mqa.assert_not_called()
         # ensure config was loaded
         mock_super_load_config.assert_called_once_with()
-        mock_gather_ids.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with(include_private=False)
 
         # assert that the needed methods were obtained in the expected order.
         mock_get_action.assert_has_calls([call('get_site_user')])
         self.assertEqual(mock_get_action.call_count, 1)
+
+    def test_delete_datasets_dry_run(self, mock_super_load_config, mock_get_action, mock_model,
+                                    mock_triplestore_is_available, mock_triplestore_delete,
+                                    mock_triplestore_create, mock_triplestore_delete_mqa,
+                                    mock_triplestore_create_mqa, mock_shacl_validate, mock_gather_ids):
+        ''' Call delete datasets with dry run'''
+        mock_triplestore_is_available.return_value = True
+
+        self.cmd.options.dry_run = 'True'
+        self.cmd.options.uris = '123,234'
+        self.cmd.args = ['delete_datasets']
+
+        self.cmd.command()
+
+        mock_triplestore_is_available.assert_called_once_with()
+        mock_triplestore_delete.assert_not_called()
+        mock_triplestore_create.assert_not_called()
+
+
+    def test_delete_datasets_no_uris(self, mock_super_load_config, mock_get_action, mock_model,
+                                    mock_triplestore_is_available, mock_triplestore_delete,
+                                    mock_triplestore_create, mock_triplestore_delete_mqa,
+                                    mock_triplestore_create_mqa, mock_shacl_validate, mock_gather_ids):
+        ''' Call delete datasets without URIs'''
+        mock_triplestore_is_available.return_value = True
+
+        self.cmd.options.dry_run = 'False'
+        self.cmd.args = ['delete_datasets']
+
+        self.cmd.command()
+
+        mock_triplestore_is_available.assert_not_called()
+        mock_triplestore_delete.assert_not_called()
+        mock_triplestore_create.assert_not_called()
+
+    def test_delete_datasets_triplestore_not_available(self, mock_super_load_config, mock_get_action, mock_model,
+                                    mock_triplestore_is_available, mock_triplestore_delete,
+                                    mock_triplestore_create, mock_triplestore_delete_mqa,
+                                    mock_triplestore_create_mqa, mock_shacl_validate, mock_gather_ids):
+        ''' Call delete datasets when triplestore is not available'''
+        mock_triplestore_is_available.return_value = False
+
+        self.cmd.options.dry_run = 'False'
+        self.cmd.options.uris = '123,234'
+        self.cmd.args = ['delete_datasets']
+
+        self.cmd.command()
+
+        mock_triplestore_is_available.assert_called_once_with()
+        mock_triplestore_delete.assert_not_called()
+        mock_triplestore_create.assert_not_called()
+
+    def test_delete_datasets_success(self, mock_super_load_config, mock_get_action, mock_model,
+                                    mock_triplestore_is_available, mock_triplestore_delete,
+                                    mock_triplestore_create, mock_triplestore_delete_mqa,
+                                    mock_triplestore_create_mqa, mock_shacl_validate, mock_gather_ids):
+        ''' Call delete datasets'''
+        mock_triplestore_is_available.return_value = True
+
+        self.cmd.options.dry_run = 'False'
+        self.cmd.options.uris = '123,234'
+        self.cmd.args = ['delete_datasets']
+
+        self.cmd.command()
+
+        mock_triplestore_is_available.assert_called_once_with()
+        mock_triplestore_delete.assert_has_calls([call('123'), call('234')])
+        mock_triplestore_create.assert_not_called()

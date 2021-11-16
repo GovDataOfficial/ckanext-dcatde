@@ -4,6 +4,7 @@ import json
 import unittest
 
 from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
+from ckanext.harvest.model import HarvestObject
 from mock import call, patch, Mock, ANY
 
 
@@ -133,6 +134,12 @@ class TestHarvestUtils(unittest.TestCase):
 
         mock_package_delete_action = Mock("package_delete")
 
+        remote_source = json.dumps({
+            'source': {
+                'title': 'DummyHarvester'
+            }
+        })
+
         def mock_action_methods(action):
             if action == 'package_search':
                 return package_search_action
@@ -227,8 +234,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'hasone'
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
@@ -245,8 +253,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'multiple'
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
@@ -265,8 +274,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'nodata'
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
         self.assertEqual(mock_get_action.call_count, 1)
         mock_get_action.assert_has_calls([call("package_search")])
@@ -280,8 +290,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'modified': remote_modified,
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
         mock_get_action.assert_not_called()
         mock_package_delete_action.assert_not_called()
@@ -294,8 +305,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'hasone'
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset should not be accepted as update.")
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
@@ -310,8 +322,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'metadata_harvested_portal': 'harvest1'
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset was not accepted as update.")
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
@@ -326,8 +339,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'newer'
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset should not be accepted as update.")
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
@@ -343,8 +357,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'guid': '1234567890'
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
@@ -361,8 +376,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': ''
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
         mock_get_action.assert_not_called()
         mock_package_delete_action.assert_not_called()
@@ -376,8 +392,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'multiple-local-newer'
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset should not be accepted as update.")
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
@@ -392,8 +409,9 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'multiple-without-modified-date'
                 }
             })
+        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
 
-        result = HarvestUtils.handle_duplicates(remote_dataset)
+        result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset should not be accepted as update.")
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])

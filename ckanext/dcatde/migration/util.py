@@ -12,8 +12,7 @@ import ckanext.dcatde.dataset_utils as ds_utils
 def log_dataset_prefix(dataset):
     if isinstance(dataset, dict) and 'name' in dataset:
         return 'Dataset ' + dataset['name'] + ': '
-    else:
-        return ''
+    return ''
 
 
 def get_migrator_log():
@@ -181,8 +180,7 @@ def unify_country_code(country):
         return country_mapping[country.lower()].upper()
     elif country.lower() in country_mapping.keys():
         return country.upper()
-    else:
-        return country
+    return country
 
 
 def addr_parse(address):
