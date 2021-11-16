@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.5.8 2021-10-14
+
+* Updates requirement ckanext-dcat to fix publisher URI handling
+
 ## v4.5.7 2021-10-07
 
 * Updates requirement ckanext-dcat to support URIRef values in "rights" and "accessRights"
