@@ -1,5 +1,9 @@
 # Changelog
 
+## unreleased 2021-mm-dd
+
+* Limit size of harvesting fetch and gather consumer log files
+
 ## v4.4.3 2021-06-22
 
 * Updates requirement ckanext-dcat to version 1.1.2
