@@ -39,12 +39,10 @@ class TestTripleStoreCommand(unittest.TestCase):
 
     @staticmethod
     def _get_rdf(uri):
-        rdf = '''<?xml version="1.0" encoding="utf-8"?>
-        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-            xmlns:dcat="http://www.w3.org/ns/dcat#">
-        <dcat:Dataset 
-            rdf:about="%s" />
-        </rdf:RDF>''' % uri
+        rdf = '''@prefix dcat: <http://www.w3.org/ns/dcat#> .
+        
+        <%s> a dcat:Dataset .
+        ''' % uri
         return rdf
 
     def test_dry_run_no_booelan(self, mock_super_load_config, mock_get_action, mock_model,

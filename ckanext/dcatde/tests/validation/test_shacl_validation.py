@@ -7,7 +7,7 @@ from mock import patch
 VALIDATOR_API_URL = "http://foo:8050/shacl/dcat-ap.de/api/"
 VALIDATION_PROFILE = "all"
 DATASET_TEST_URI = "<https://www.foo.de/bar/1e17f560-2061-4219-a37d-61e2fce75336>"
-TEST_ORAGNIZATION_ID = "1e17f560-2061-4219-a37d-61e2fce75336"
+TEST_ORGANIZATION_ID = "1e17f560-2061-4219-a37d-61e2fce75336"
 TEST_QUERY = '''"CONSTRUCT { ?s ?p ?o } WHERE { " +
     "<https://www.foo.de/bar/1e17f560-2061-4219-a37d-61e2fce75336> (<>|!<>)* ?s . " +
     "  ?s ?p ?o ." +
@@ -48,7 +48,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         """ Tests if validate() returns None if url is not set properly """
 
         client = ShaclValidator()
-        result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORAGNIZATION_ID)
+        result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID)
         self.assertEquals(result, None)
 
 
@@ -59,7 +59,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         mock_validator_get_config.return_value = VALIDATOR_API_URL, VALIDATION_PROFILE
 
         client = ShaclValidator()
-        result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORAGNIZATION_ID)
+        result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID)
         self.assertEquals(result, None)
 
 
@@ -72,7 +72,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         mock_validator_get_config.return_value = VALIDATOR_API_URL, VALIDATION_PROFILE
 
         client = ShaclValidator()
-        result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORAGNIZATION_ID)
+        result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID)
 
         self.assertEquals(result, None)
 
@@ -88,7 +88,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         mock_validator_get_config.return_value = VALIDATOR_API_URL, VALIDATION_PROFILE
 
         client = ShaclValidator()
-        result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORAGNIZATION_ID)
+        result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID)
 
         self.assertEquals(result, expected_repsonse)
 
@@ -96,18 +96,18 @@ class TestShaclValidatorClient(unittest.TestCase):
     def test_get_report_query(self):
         """ Tests if get_report_query() returns the expected Query """
 
-        expected_value = u'PREFIX sh: <http://www.w3.org/ns/shacl#> ' \
-            u'PREFIX dqv: <http://www.w3.org/ns/dqv#> ' \
-            u'PREFIX govdata: <http://govdata.de/mqa/#> ' \
-            u'CONSTRUCT { ' \
-            u'    ?report dqv:computedOn <' + DATASET_TEST_URI + u'> . ' \
-            u'    ?report govdata:attributedTo \'' + TEST_ORAGNIZATION_ID + u'\' . ' \
-            u'    ?s ?p ?o . ' \
-            u'} WHERE { ' \
-            u'    { ?report a sh:ValidationReport . } ' \
-            u'    UNION ' \
-            u'    { ?s ?p ?o . }' \
-            u'}'
+        expected_value = u"""PREFIX sh: <http://www.w3.org/ns/shacl#>
+            PREFIX dqv: <http://www.w3.org/ns/dqv#>
+            PREFIX govdata: <http://govdata.de/mqa/#>
+            CONSTRUCT {{
+                ?report dqv:computedOn <{dataset_uri}> .
+                ?report govdata:attributedTo '{owner_org}' .
+                ?s ?p ?o .
+            }} WHERE {{
+                {{ ?report a sh:ValidationReport . }}
+                UNION
+                {{ ?s ?p ?o . }}
+            }}""".format(dataset_uri=DATASET_TEST_URI, owner_org=TEST_ORGANIZATION_ID)
 
-        report_query = ShaclValidator._get_report_query(DATASET_TEST_URI, TEST_ORAGNIZATION_ID)
+        report_query = ShaclValidator._get_report_query(DATASET_TEST_URI, TEST_ORGANIZATION_ID)
         self.assertEquals(report_query, expected_value)

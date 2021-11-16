@@ -1,6 +1,12 @@
 # Changelog
 
-## unreleased 2021-mm-dd
+## v4.5.7 2021-10-07
+
+* Updates requirement ckanext-dcat to support URIRef values in "rights" and "accessRights"
+* Changes the serialization format for metadata from "xml" to "turtle", because it is more strict and fails
+  if URIRef elements contain invalid characters
+
+## v4.5.4 2021-09-10
 
 * Limit size of harvesting fetch and gather consumer log files
 

@@ -69,7 +69,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             for uri in rdf_parser._datasets():
                 LOGGER.debug(u'Process URI: %s', uri)
                 try:
-                    self.triplestore_client.delete_dataset_in_triplestore(uri)
+                    self._delete_dataset_in_triplestore_by_uri(uri, source_dataset)
 
                     triples = rdf_parser.g.query(GET_DATASET_BY_URI_SPARQL_QUERY % {'uri': uri})
 
@@ -77,7 +77,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                         graph = Graph()
                         for triple in triples:
                             graph.add(triple)
-                        rdf_graph = graph.serialize(format="xml")
+                        rdf_graph = graph.serialize(format="turtle")
 
                         self.triplestore_client.create_dataset_in_triplestore(rdf_graph, uri)
 
@@ -89,18 +89,19 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                             rdf_harvest_graph = harvest_graph.serialize(format="xml")
                             self.triplestore_client.create_dataset_in_triplestore_harvest_info(
                                 rdf_harvest_graph, uri)
-
-                        if org_available:
                             # SHACL Validation
-                            validation_errors = self._validate_dataset_rdf_graph(
-                                uri, rdf_graph, source_dataset)
-                            error_messages.extend(validation_errors)
+                            self._validate_dataset_rdf_graph(uri, rdf_graph, source_dataset)
                     else:
                         LOGGER.warn(u'Could not find triples to URI %s. Updating is not possible.', uri)
                 except SPARQLWrapperException as exception:
-                    LOGGER.error(u'Unexpected error while deleting dataset with URI %s in TripleStore: %s',
+                    LOGGER.error(u'Unexpected error while deleting dataset with URI %s from TripleStore: %s',
                                  uri, exception)
                     error_messages.append(u'Error while deleting dataset from TripleStore: %s' % exception)
+                except Exception as exception:
+                    LOGGER.warn(u'Unexpected error or error while graph serialization: %s. Skipping ' \
+                                u'dataset with URI %s.', exception, uri)
+                    error_messages.append(u'Unexpected error or error while graph serialization: %s' \
+                                          % exception)
             LOGGER.debug(u'Finished updating triplestore.')
 
         return rdf_parser, error_messages
@@ -395,43 +396,35 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         except RDFParserException as ex:
             LOGGER.warn(u'Error while parsing the RDF file for dataset with ID %s: %s',
                         package_id, ex)
+        except SPARQLWrapperException as ex:
+            LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s', uri, ex)
 
     def _delete_dataset_in_triplestore_by_uri(self, uri, source_dataset):
         '''
         Deletes the package with the given URI in the triple store.
         '''
-        try:
-            if self.triplestore_client.is_available():
-                LOGGER.debug(u'Start deleting dataset with URI %s from triplestore.', uri)
-                if uri:
-                    self.triplestore_client.delete_dataset_in_triplestore(uri)
-                    if source_dataset and hasattr(source_dataset, 'owner_org'):
-                        self.triplestore_client.delete_dataset_in_triplestore_mqa(
-                            uri, source_dataset.owner_org)
-                        self.triplestore_client.delete_dataset_in_triplestore_harvest_info(
-                            uri, source_dataset.owner_org)
-                    LOGGER.debug(u'Successfully deleted dataset with URI %s from triplestore.', uri)
-                else:
-                    LOGGER.debug(u'URI could not determined. Skip deleting.')
-        except SPARQLWrapperException as ex:
-            LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s', uri, ex)
+        if self.triplestore_client.is_available():
+            LOGGER.debug(u'Start deleting dataset with URI %s from triplestore.', uri)
+            if uri:
+                self.triplestore_client.delete_dataset_in_triplestore(uri)
+                if source_dataset and hasattr(source_dataset, 'owner_org'):
+                    self.triplestore_client.delete_dataset_in_triplestore_mqa(
+                        uri, source_dataset.owner_org)
+                    self.triplestore_client.delete_dataset_in_triplestore_harvest_info(
+                        uri, source_dataset.owner_org)
+                LOGGER.debug(u'Successfully deleted dataset with URI %s from triplestore.', uri)
+            else:
+                LOGGER.debug(u'URI could not determined. Skip deleting.')
 
     def _validate_dataset_rdf_graph(self, uri, rdf_graph, source_dataset):
         '''
         Validates the package rdf graph with the given URI and saves the validation report in the
         triple store.
         '''
-        error_messages = []
-        try:
-            result = self.shacl_validator_client.validate(
-                rdf_graph, uri, source_dataset.owner_org)
-            self.triplestore_client.delete_dataset_in_triplestore_mqa(uri, source_dataset.owner_org)
+        result = self.shacl_validator_client.validate(
+            rdf_graph, uri, source_dataset.owner_org)
+        if result:
             self.triplestore_client.create_dataset_in_triplestore_mqa(result, uri)
-        except SPARQLWrapperException as exception:
-            LOGGER.error(u'Unexpected error while deleting SHACL validation report for ' \
-                         u'dataset with URI %s: %s', uri, exception)
-            error_messages.append(u'Error while deleting SHACL report: %s' % exception)
-        return error_messages
 
     def _delete_deprecated_datasets_from_triplestore(self, harvested_uris, uris_db_marked_deleted,
                                                      harvest_job):
@@ -444,19 +437,25 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         source_dataset = model.Package.get(harvest_job.source.id)
         if source_dataset and hasattr(source_dataset, 'owner_org'):
             # Read URIs from harvest_info datastore
-            existing_uris = self._get_existing_dataset_uris_from_triplestore(source_dataset.owner_org)
+            owner_org = source_dataset.owner_org
+            existing_uris = self._get_existing_dataset_uris_from_triplestore(owner_org)
 
             # compare existing with harvested URIs to see which URIs were not updated
             existing_uris_unique = set(existing_uris)
             harvested_uris_unique = set(harvested_uris)
             uris_to_be_deleted = (existing_uris_unique - harvested_uris_unique) - set(uris_db_marked_deleted)
-            LOGGER.info(u'Found %s harvesting URIs in the triplestore that are no longer provided.',
-                        len(uris_to_be_deleted))
+            LOGGER.info(u'Found %s harvesting URIs in the triplestore belonging to organization %s ' \
+                        u'that are no longer provided.',
+                        len(uris_to_be_deleted), owner_org)
 
             # delete deprecated datasets from triplestore
             for dataset_uri in uris_to_be_deleted:
                 LOGGER.info(u'Delete <%s> from all triplestore datastores.', dataset_uri)
-                self._delete_dataset_in_triplestore_by_uri(dataset_uri, source_dataset)
+                try:
+                    self._delete_dataset_in_triplestore_by_uri(dataset_uri, source_dataset)
+                except SPARQLWrapperException as ex:
+                    LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s',
+                                dataset_uri, ex)
         else:
             LOGGER.info(u'Harvest source %s, harvest job %s: "owner_org" NOT found. Cannot retrieve the ' \
                         u'harvested URIs to the harvest source. Deprecated datasets which are not ' \
@@ -468,10 +467,13 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         Requests all URIs from the harvest_info datastore and returns them as a list.
         '''
         existing_uris = []
-        query = GET_URIS_FROM_HARVEST_INFO_QUERY % {'owner_org': owner_org}
-        raw_response = self.triplestore_client.select_datasets_in_triplestore_harvest_info(query)
-        response = raw_response.convert()
-        for res in response["results"]["bindings"]:
-            if "s" in res:
-                existing_uris.append(res["s"]["value"])
+        try:
+            query = GET_URIS_FROM_HARVEST_INFO_QUERY % {'owner_org': owner_org}
+            raw_response = self.triplestore_client.select_datasets_in_triplestore_harvest_info(query)
+            response = raw_response.convert()
+            for res in response["results"]["bindings"]:
+                if "s" in res:
+                    existing_uris.append(res["s"]["value"])
+        except SPARQLWrapperException as exception:
+            LOGGER.error(u'Unexpected error while querying harvest info from triplestore: %s', exception)
         return existing_uris

@@ -22,17 +22,17 @@ class ShaclValidator(object):
     """Validates RDF graphs using the DCAT-AP.de SHACL validator service"""
 
     def __init__(self):
-        self.validator_url, self.validator_profile  = self._get_validator_config()
+        self.validator_url, self.validator_profile = self._get_validator_config()
 
-    def validate(self, rdf_xml_graph, dataset_uri, dataset_org):
+    def validate(self, rdf_graph, dataset_uri, dataset_org, rdf_format='text/turtle'):
         """Validates given RDF graph using the DCAT-AP.de SHACL validator service"""
 
         result = None
         if self.validator_url is not None and self.validator_profile is not None:
             body = {
-                u'contentToValidate': rdf_xml_graph,
+                u'contentToValidate': rdf_graph,
                 u'embeddingMethod': u'STRING',
-                u'contentSyntax': u'application/rdf+xml',
+                u'contentSyntax': rdf_format,
                 u'validationType': self.validator_profile,
                 u'reportQuery': self._get_report_query(dataset_uri, dataset_org)
             }
@@ -54,18 +54,18 @@ class ShaclValidator(object):
     def _get_report_query(dataset_uri, owner_org):
         """Gets the report query for the SHACL validation request"""
 
-        return u'PREFIX sh: <' + SHACL + u'> ' \
-            u'PREFIX dqv: <' + DQV + u'> ' \
-            u'PREFIX govdata: <' + GOVDATA_MQA + u'> ' \
-            u'CONSTRUCT { ' \
-            u'    ?report dqv:computedOn <' + dataset_uri + u'> . ' \
-            u'    ?report govdata:attributedTo \'' + owner_org + u'\' . ' \
-            u'    ?s ?p ?o . ' \
-            u'} WHERE { ' \
-            u'    { ?report a sh:ValidationReport . } ' \
-            u'    UNION ' \
-            u'    { ?s ?p ?o . }' \
-            u'}'
+        return u"""PREFIX sh: <{shacl}>
+            PREFIX dqv: <{dqv}>
+            PREFIX govdata: <{mqa}>
+            CONSTRUCT {{
+                ?report dqv:computedOn <{dataset_uri}> .
+                ?report govdata:attributedTo '{owner_org}' .
+                ?s ?p ?o .
+            }} WHERE {{
+                {{ ?report a sh:ValidationReport . }}
+                UNION
+                {{ ?s ?p ?o . }}
+            }}""".format(shacl=SHACL, dqv=DQV, mqa=GOVDATA_MQA, dataset_uri=dataset_uri, owner_org=owner_org)
 
     @staticmethod
     def _get_validator_config():
@@ -87,4 +87,3 @@ class ShaclValidator(object):
             LOGGER.info(u'Did not find configurations for SHACL validator. SHACL validaton support is ' \
                         u'deactivated.')
         return endpoint_base_url, profile_type
-

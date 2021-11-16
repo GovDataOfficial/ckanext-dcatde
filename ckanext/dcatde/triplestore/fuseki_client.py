@@ -19,7 +19,8 @@ DATA_ENDPOINT = 'data'
 QUERY_ENDPOINT = 'query'
 PING_ENDPOINT = '$/ping'
 
-HEADERS = {'Content-Type': 'application/rdf+xml'}
+CONTENT_TYPE_RDF_XML = 'application/rdf+xml'
+CONTENT_TYPE_TURTLE = 'text/turtle'
 
 
 class FusekiTriplestoreClient(object):
@@ -77,23 +78,24 @@ class FusekiTriplestoreClient(object):
         Create a new dataset in the triplestore
         :param graph: the dataset as rdf graph
         """
-        self._create_dataset_in_triplestore_base(graph, uri, self.ds_name_default)
+        self._create_dataset_in_triplestore_base(graph, uri, self.ds_name_default, CONTENT_TYPE_TURTLE)
 
     def create_dataset_in_triplestore_mqa(self, graph, uri):
         """
         Create a new dataset in the triplestore
         :param graph: the dataset as rdf graph
         """
-        self._create_dataset_in_triplestore_base(graph, uri, self.ds_name_shacl_validation)
+        self._create_dataset_in_triplestore_base(graph, uri, self.ds_name_shacl_validation,
+                                                 CONTENT_TYPE_RDF_XML)
 
     def create_dataset_in_triplestore_harvest_info(self, graph, uri):
         """
         Create a new dataset in the triplestore
         :param graph: the dataset as rdf graph
         """
-        self._create_dataset_in_triplestore_base(graph, uri, self.ds_name_harvest_info)
+        self._create_dataset_in_triplestore_base(graph, uri, self.ds_name_harvest_info, CONTENT_TYPE_RDF_XML)
 
-    def _create_dataset_in_triplestore_base(self, graph, uri, datastore_name):
+    def _create_dataset_in_triplestore_base(self, graph, uri, datastore_name, content_type):
         """
         Create a new dataset in the triplestore
         :param graph: the dataset as rdf graph
@@ -105,7 +107,9 @@ class FusekiTriplestoreClient(object):
                      datastore_name, uri)
         if isinstance(graph, unicode):
             graph = graph.encode('utf-8')
-        response = requests.post(self._get_data_endpoint(datastore_name), data=graph, headers=HEADERS)
+
+        headers = {'Content-Type': content_type}
+        response = requests.post(self._get_data_endpoint(datastore_name), data=graph, headers=headers)
         status_code = response.status_code
         if status_code == 200:
             LOGGER.debug(u'Dataset in triple store successfully created')
@@ -189,7 +193,8 @@ class FusekiTriplestoreClient(object):
                             u'stored in CKAN will not be deleted properly from the triplestore.')
         else:
             LOGGER.info(u'Cannot read Fuseki URL from config: %s. TripleStore support is deactivated.')
-        return fuseki_base_url, datastore_name_default, datastore_name_shacl_validation, datastore_name_harvest_info
+        return (fuseki_base_url, datastore_name_default, datastore_name_shacl_validation,
+                datastore_name_harvest_info)
 
     def _query_sparql_wrapper(self, datastore_name, query):
         """ Queries the given query against the configured triplestore with the given datastore name. """

@@ -1,7 +1,8 @@
 import unittest
 
 import requests
-from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient, HEADERS
+from ckanext.dcatde.triplestore.fuseki_client import (
+    FusekiTriplestoreClient, CONTENT_TYPE_RDF_XML, CONTENT_TYPE_TURTLE)
 from ckanext.dcatde.triplestore.sparql_query_templates import DELETE_DATASET_BY_URI_SPARQL_QUERY
 from ckanext.dcatde.triplestore.sparql_query_templates import DELETE_DATASET_FROM_HARVEST_INFO_QUERY
 from ckanext.dcatde.triplestore.sparql_query_templates import DELETE_VALIDATION_REPORT_BY_URI_SPARQL_QUERY
@@ -17,6 +18,9 @@ FUSEKI_SHACL_DS_NAME = 'foo'
 FUSEKI_HARVEST_DS_NAME = 'foobar'
 FUSEKI_ENDPOINT_URL = '{}/{}'.format(FUSEKI_BASE_URL, FUSEKI_BASE_DS_NAME)
 FUSEKI_SHACL_ENDPOINT_URL = '{}/{}'.format(FUSEKI_BASE_URL, FUSEKI_SHACL_DS_NAME)
+FUSEKI_HARVEST_ENDPOINT_URL = '{}/{}'.format(FUSEKI_BASE_URL, FUSEKI_HARVEST_DS_NAME)
+HEADERS_CONTENT_TYPE_TURTLE = {'Content-Type': CONTENT_TYPE_TURTLE}
+HEADERS_CONTENT_TYPE_RDF_XML = {'Content-Type': CONTENT_TYPE_RDF_XML}
 
 
 class TestFusekiTriplestoreClient(unittest.TestCase):
@@ -158,7 +162,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         client.create_dataset_in_triplestore(g, uri)
 
         mock_requests_post.assert_called_once_with('{}/data'.format(FUSEKI_ENDPOINT_URL),
-                                                   data=g, headers=HEADERS)
+                                                   data=g, headers=HEADERS_CONTENT_TYPE_TURTLE)
 
     @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', FUSEKI_HARVEST_DS_NAME)
     @helpers.change_config('ckanext.dcatde.fuseki.shacl.store.name', FUSEKI_SHACL_DS_NAME)
@@ -179,7 +183,27 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         client.create_dataset_in_triplestore_mqa(g, uri)
 
         mock_requests_post.assert_called_once_with('{}/data'.format(FUSEKI_SHACL_ENDPOINT_URL),
-                                                   data=g, headers=HEADERS)
+                                                   data=g, headers=HEADERS_CONTENT_TYPE_RDF_XML)
+
+    @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', FUSEKI_HARVEST_DS_NAME)
+    @helpers.change_config('ckanext.dcatde.fuseki.triplestore.url', FUSEKI_BASE_URL)
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.is_available')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.requests.post')
+    def test_create_dataset_successful_harvest_info(self, mock_requests_post, mock_fuseki_is_available):
+        """ Tests create MQA is called with correct parameters """
+
+        uri = "http://example.org/datasets/1"
+        g = Graph()
+        g.add((URIRef(uri), RDF.type, self.DCAT.Dataset))
+
+        mock_requests_post.return_value.status_code = 200
+        mock_fuseki_is_available.return_value = True
+
+        client = FusekiTriplestoreClient()
+        client.create_dataset_in_triplestore_harvest_info(g, uri)
+
+        mock_requests_post.assert_called_once_with('{}/data'.format(FUSEKI_HARVEST_ENDPOINT_URL),
+                                                   data=g, headers=HEADERS_CONTENT_TYPE_RDF_XML)
 
     @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', FUSEKI_HARVEST_DS_NAME)
     @helpers.change_config('ckanext.dcatde.fuseki.triplestore.name', FUSEKI_BASE_DS_NAME)
@@ -200,7 +224,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         client.create_dataset_in_triplestore(g, uri)
 
         mock_requests_post.assert_called_once_with('{}/data'.format(FUSEKI_ENDPOINT_URL),
-                                                   data=g, headers=HEADERS)
+                                                   data=g, headers=HEADERS_CONTENT_TYPE_TURTLE)
 
     @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', FUSEKI_HARVEST_DS_NAME)
     @helpers.change_config('ckanext.dcatde.fuseki.triplestore.name', FUSEKI_BASE_DS_NAME)
@@ -217,7 +241,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         mock_fuseki_is_available.return_value = True
 
         client = FusekiTriplestoreClient()
-        client._create_dataset_in_triplestore_base(g, uri, None)
+        client._create_dataset_in_triplestore_base(g, uri, None, CONTENT_TYPE_RDF_XML)
 
         mock_requests_post.assert_not_called()
 

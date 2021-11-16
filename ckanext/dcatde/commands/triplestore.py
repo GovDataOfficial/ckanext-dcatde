@@ -15,6 +15,9 @@ from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient
 from ckanext.dcatde.validation.shacl_validation import ShaclValidator
 from ckanext.dcatde.dataset_utils import gather_dataset_ids
 
+RDF_FORMAT_TURTLE = 'turtle'
+
+
 class Triplestore(CkanCommand):
     '''Interacts with the triple store, e.g. reindex data.
 
@@ -117,7 +120,7 @@ class Triplestore(CkanCommand):
     def _get_rdf(self, dataset_ref):
         '''Reads the RDF presentation of the dataset with the given ID.'''
         context = {'user': self.admin_user['name']}
-        return tk.get_action('dcat_dataset_show')(context, {'id': dataset_ref})
+        return tk.get_action('dcat_dataset_show')(context, {'id': dataset_ref, 'format': RDF_FORMAT_TURTLE})
 
     def _update_package_in_triplestore(self, package_id, package_org):
         '''Updates the package with the given package ID in the triple store.'''
@@ -125,7 +128,7 @@ class Triplestore(CkanCommand):
         # Get uri of dataset
         rdf = self._get_rdf(package_id)
         rdf_parser = RDFParser()
-        rdf_parser.parse(rdf)
+        rdf_parser.parse(rdf, RDF_FORMAT_TURTLE)
         # Should be only one dataset
         for uri in rdf_parser._datasets():
             self.triplestore_client.delete_dataset_in_triplestore(uri)
