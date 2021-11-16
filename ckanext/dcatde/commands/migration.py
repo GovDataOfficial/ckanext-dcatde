@@ -21,12 +21,18 @@ EXTRA_KEY_ADMS_IDENTIFIER = 'alternate_identifier'
 EXTRA_KEY_DCT_IDENTIFIER = 'identifier'
 EXTRA_KEY_CONTRIBUTOR_ID = 'contributorID'
 
+DEPRECATED_CONTRIBUTOR_IDS = {
+    # key: old value || value: new value
+    'http://dcat-ap.de/def/contributors/bundesanstaltFuerLandwirtschaftUndErnaehrung':
+    'http://dcat-ap.de/def/contributors/bundesministeriumFuerErnaehrungUndLandwirtschaft'}
+
+
 
 class DCATdeMigrateCommand(tk.CkanCommand):
     '''
     Migrates CKAN datasets from OGD to DCAT-AP.de.
 
-    Usage: dcatde_migrate [dry-run] [adms-id-migrate]
+    Usage: dcatde_migrate [dry-run] [adms-id-migrate] [contributor-id-migrate]
     Params:
         dry-run             If given, perform all migration tasks without saving. A full
                             log file is written.
@@ -164,21 +170,22 @@ class DCATdeMigrateCommand(tk.CkanCommand):
 
         organization_list = tk.get_action('organization_list')(self.create_context(),
                                                                {'all_fields': True, 'include_extras': True})
-        updated_count = created_count = 0
+        updated_count = created_count = deprecated_count = 0
+
         starttime = time.time()
 
         for dataset in self.iterate_datasets(package_obj_to_update.keys()):
-            print u'Updating dataset: {}'.format(dataset['title'])
+            print u'[DEBUG] Checking dataset: {}'.format(dataset['title'])
 
             dataset_org_id = dataset['organization']['id']
             dataset_org = next((item for item in organization_list if item['id'] == dataset_org_id), None)
             if not dataset_org:
-                print u'Did not find a Organization for ID: ' + dataset_org_id
+                print u'[INFO] Did not find a Organization for ID: ' + dataset_org_id
                 continue
 
             org_contributor_field = get_extras_field(dataset_org, EXTRA_KEY_CONTRIBUTOR_ID)
             if not org_contributor_field:
-                print u'Did not find a contributor ID for Organization: ' + dataset_org_id
+                print u'[INFO] Did not find a contributor ID for Organization: ' + dataset_org_id
                 continue
 
             try:
@@ -201,18 +208,30 @@ class DCATdeMigrateCommand(tk.CkanCommand):
                     # json.loads failed -> value is not an array but a single string
                     current_ids_list = [dataset_contributor_field['value']]
 
+                for index, cur_id in enumerate(current_ids_list):
+                    # check for deprecated values
+                    if cur_id in DEPRECATED_CONTRIBUTOR_IDS:
+                        print u'[DEBUG] Found deprecated contributorID: %s. Replace with new value.' % cur_id
+                        current_ids_list[index] = DEPRECATED_CONTRIBUTOR_IDS[cur_id]
+                        deprecated_count = deprecated_count + 1
+                        requires_update = True
+
                 for contributor_id in org_contributor_id_list:
                     if contributor_id not in current_ids_list:
                         current_ids_list.append(contributor_id)
                         requires_update = True
+
                 if requires_update:
                     updated_count = updated_count + 1
-                    set_extras_field(dataset, EXTRA_KEY_CONTRIBUTOR_ID, json.dumps(current_ids_list))
+                    # Remove duplicate values in list
+                    current_ids_list_unique = list(set(current_ids_list))
+                    set_extras_field(dataset, EXTRA_KEY_CONTRIBUTOR_ID, json.dumps(current_ids_list_unique))
 
             if requires_update:
                 self.update_dataset(dataset)
 
         endtime = time.time()
+        print "INFO: %s deprecated Contributor-IDs were updated." % deprecated_count
         print "INFO: A Contributor-ID was created for %s datasets that did not have one before." % \
               created_count
         print "INFO: %s datasets were updated. Total time: %s." % (updated_count, str(endtime - starttime))

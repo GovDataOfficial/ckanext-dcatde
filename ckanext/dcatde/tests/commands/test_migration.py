@@ -12,6 +12,7 @@ PYLONS_TEST_CFG = {
     'ckanext.dcatde.urls.category_mapping': 'categories.json'
 }
 
+CONTRIBUTOR_ID_NEW = "http://dcat-ap.de/def/contributors/bundesministeriumFuerErnaehrungUndLandwirtschaft"
 
 def mock_load_json_mapping(filename, _):
     '''mock for util.load_json_mapping which returns dummy data'''
@@ -75,6 +76,8 @@ class GetActionHelperMigration(helpers.GetActionHelper):
             dataset['extras'] = [{'value': '["test_org_contrib_id"]', 'key': 'contributorID'}]
         elif ds_id == 'pkg8':
             dataset['extras'] = [{'value': 'test_ds_contrib_id', 'key': 'contributorID'}]
+        elif ds_id == 'pkg9':
+            dataset['extras'] = [{'value': '["http://dcat-ap.de/def/contributors/bundesanstaltFuerLandwirtschaftUndErnaehrung","test_org_contrib_id","test_org_contrib_id"]', 'key': 'contributorID'}]
 
         return dataset
 
@@ -465,3 +468,32 @@ class TestMigration(unittest.TestCase):
         mock_super_load_config.assert_called_once_with()
         mock_gather_ids.assert_called_once_with()
         mock_update_dataset.assert_not_called()
+
+    def test_deprecated_contributor_id(self, mock_super_load_config, mock_get_action, mock_model,
+                                           mock_sa_or, mock_gather_ids):
+        """ Tests if a deprecated contributorID is detected and replaced """
+        pkg_id = 'pkg9'
+        organization_id = '123'
+
+        mock_update_dataset = Mock('update_dataset')
+        self.cmd.update_dataset = mock_update_dataset
+        mock_gather_ids.return_value = {pkg_id: organization_id}
+
+        # The contributorID in the CKAN organization was already updated before
+        action_hlp = GetActionHelperMigration()
+        action_hlp.return_val_actions['organization_list'] = [{
+            'id': organization_id, 'extras': [{'value': '["' + CONTRIBUTOR_ID_NEW + '"]', 'key': 'contributorID'}]}]
+        action_hlp.build_mocks()
+        mock_get_action.side_effect = action_hlp.mock_get_action
+
+        self.cmd.args = ['contributor-id-migrate']
+        self.cmd.command()
+
+        mock_super_load_config.assert_called_once_with()
+        mock_get_action.assert_has_calls([call('package_show')])
+        self.assertEqual(mock_get_action.call_count, 2)
+        mock_super_load_config.assert_called_once_with()
+        mock_gather_ids.assert_called_once_with()
+        mock_update_dataset.assert_called_once_with({'organization': {'id': organization_id}, 'extras': [{
+            'key': 'contributorID', 'value': '["test_org_contrib_id", "' + CONTRIBUTOR_ID_NEW + '"]'}],
+            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'})

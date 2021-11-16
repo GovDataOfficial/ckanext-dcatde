@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.4.3 2021-06-22
+
+* Updates requirement ckanext-dcat to version 1.1.2
+* Adds the possibility to update the contributorID for manually maintained datasets when the contributorID
+  has changed
+
 ## v4.4.1 2021-04-28
 
 * Make requirement for ckanext-harvest optional (#10)
