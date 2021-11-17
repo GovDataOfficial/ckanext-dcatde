@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.6.1 2021-11-15
+
+* Updates requirement ckanext-dcat to official version 1.1.3
+
 ## v4.6.0 2021-11-04
 
 * Updates the README.md with information about the support of a triplestore and a SHACL validation
