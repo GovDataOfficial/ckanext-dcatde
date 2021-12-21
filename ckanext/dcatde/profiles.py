@@ -371,8 +371,46 @@ class DCATdeProfile(RDFProfile):
 
 
     def graph_from_catalog(self, catalog_dict, catalog_ref):
-        """ Creates a Catalog representation, will not be used for now """
-        pass
+        """ Creates a Catalog representation """
+        g = self.g
+
+        for prefix, namespace in namespaces.items():
+            g.bind(prefix, namespace)
+
+        g.add((catalog_ref, RDF.type, DCAT.Catalog))
+
+        # Basic fields
+        items = [
+            ('title', DCT.title, config.get('ckan.site_title'), Literal),
+            ('description', DCT.description, config.get('ckan.site_description'), Literal),
+            ('homepage', FOAF.homepage, config.get('ckan.site_url'), URIRef),
+            ('language', DCT.language, config.get('ckan.locale_default', 'en'), URIRefOrLiteral)
+        ]
+
+        for item in items:
+            key, predicate, fallback, _type = item
+            if catalog_dict:
+                value = catalog_dict.get(key, fallback)
+            else:
+                value = fallback
+            if value:
+                g.add((catalog_ref, predicate, _type(value)))
+
+        # Add a dct:publisher node implementing FOAF:AGENT
+        agent = BNode()
+        g.add((agent, RDF.type, FOAF.Agent))
+        g.add((catalog_ref, DCT.publisher, agent))
+        catalog_publisher = [
+            ('name', FOAF.name, config.get('ckan.site_title'), Literal)
+        ]
+
+        for key, predicate, value, _type in catalog_publisher:
+            g.add((agent, predicate, _type(value)))
+
+        # Dates
+        modified = self._last_catalog_modification()
+        if modified:
+            self._add_date_triple(catalog_ref, DCT.modified, modified)
 
 
 def _munge_tag(tag):
