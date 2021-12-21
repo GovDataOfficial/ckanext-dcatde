@@ -4,6 +4,8 @@ DCAT-AP.de specific CKAN extension for providing and importing DCAT-AP.de-Profil
 
 ## Dependencies
 
+> Requires CKAN 2.9 and above. May not work well with previous versions.
+
 The CKAN-Plugin ckanext-dcatde is based on the CKAN extension [ckanext-dcat](https://github.com/ckan/ckanext-dcat).
 
 For the RDF harvester, [ckanext-harvest](https://github.com/ckan/ckanext-harvest) is used (optional, see below).
@@ -100,7 +102,7 @@ You need to add the following parameter to your CKAN configuration file:
 You will find an example file here: [dcat_theme.json](./examples/dcat_theme.json)
 If you want to create the standard dcat-ap categories as groups you can use the ckan command "dcatde_themeadder" by following the instructions:
 
-    (pyenv) $ paster --plugin=ckanext-dcatde dcatde_themeadder --config=/etc/ckan/default/production.ini
+    (pyenv) $ ckan dcatde_themeadder --config=/etc/ckan/default/production.ini
 
 ## Migrating ogd conform datasets to dcat-ap.de
 You need to add the following parameter to your CKAN configuration file:
@@ -112,12 +114,12 @@ You will find the example files here: [dcat_license_mapping.json](./examples/dca
 The migration requires that the dcat-ap categories exists as groups in CKAN, see [Creating dcat-ap categories as groups](#creating-dcat-ap-categories-as-groups).
 If you want to migrate the datasets from ogd to dcat-ap.de you can use the ckan command "dcatde_migrate" by following the instructions:
 
-    (pyenv) $ paster --plugin=ckanext-dcatde dcatde_migrate --config=/etc/ckan/default/production.ini
+    (pyenv) $ ckan dcatde_migrate --config=/etc/ckan/default/production.ini
 
 With the version 3.1.1 an additional option to the migrate command was added to fix the migration of the OGD field `metadata_original_id`. Instead of mapping this field to `adms:identifier` it will be mapped to the field `dct:identifier` now.
 The command can be executed as follows:
 
-    (pyenv) $ paster --plugin=ckanext-dcatde dcatde_migrate adms-id-migrate --config=/etc/ckan/default/production.ini
+    (pyenv) $ ckan dcatde_migrate adms-id-migrate --config=/etc/ckan/default/production.ini
 
 ## Testing
 

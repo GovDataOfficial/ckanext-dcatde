@@ -5,7 +5,7 @@
 import logging
 import os
 
-import pylons
+from ckan.plugins import toolkit
 import requests
 from SPARQLWrapper import SPARQLWrapper, POST, JSON
 from ckanext.dcatde.triplestore.sparql_query_templates import DELETE_DATASET_BY_URI_SPARQL_QUERY
@@ -105,7 +105,7 @@ class FusekiTriplestoreClient(object):
             return
         LOGGER.debug(u'Creating new dataset in triplestore. Datastore name: %s, Dataset with URI %s',
                      datastore_name, uri)
-        if isinstance(graph, unicode):
+        if isinstance(graph, str):
             graph = graph.encode('utf-8')
 
         headers = {'Content-Type': content_type}
@@ -176,10 +176,10 @@ class FusekiTriplestoreClient(object):
     @staticmethod
     def _get_fuseki_config():
         """ Read URLs for Fuseki from the config """
-        fuseki_base_url = pylons.config.get('ckanext.dcatde.fuseki.triplestore.url')
-        datastore_name_default = pylons.config.get('ckanext.dcatde.fuseki.triplestore.name')
-        datastore_name_shacl_validation = pylons.config.get('ckanext.dcatde.fuseki.shacl.store.name')
-        datastore_name_harvest_info = pylons.config.get('ckanext.dcatde.fuseki.harvest.info.name')
+        fuseki_base_url = toolkit.config.get('ckanext.dcatde.fuseki.triplestore.url')
+        datastore_name_default = toolkit.config.get('ckanext.dcatde.fuseki.triplestore.name')
+        datastore_name_shacl_validation = toolkit.config.get('ckanext.dcatde.fuseki.shacl.store.name')
+        datastore_name_harvest_info = toolkit.config.get('ckanext.dcatde.fuseki.harvest.info.name')
         if fuseki_base_url:
             LOGGER.info(u'Found Fuseki URL in config. TripleStore support is basically activated.')
             if not datastore_name_default:

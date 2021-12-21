@@ -3,9 +3,9 @@
 """SHACL validation utility"""
 
 import logging
-from urlparse import urljoin
+from urllib.parse import urljoin
 
-import pylons
+from ckan.plugins import toolkit
 from rdflib.namespace import Namespace
 import requests
 
@@ -71,8 +71,8 @@ class ShaclValidator(object):
     def _get_validator_config():
         """Gets the URL to the SHACL validator API"""
 
-        endpoint_base_url = pylons.config.get('ckanext.dcatde.shacl_validator.api_url')
-        profile_type = pylons.config.get('ckanext.dcatde.shacl.validator.profile.type')
+        endpoint_base_url = toolkit.config.get('ckanext.dcatde.shacl_validator.api_url')
+        profile_type = toolkit.config.get('ckanext.dcatde.shacl.validator.profile.type')
 
         if endpoint_base_url and not profile_type:
             LOGGER.warn(u'Invalid configuration of SHACL validator. Profile type is missing! SHACL ' \

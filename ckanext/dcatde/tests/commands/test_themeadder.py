@@ -3,6 +3,7 @@
 import unittest
 
 from ckanext.dcatde.commands.themeadder import ThemeAdder as ThemeAdderCommand
+from ckanext.dcatde.commands.click.themeadder import migrate_user_permissions
 import ckanext.dcatde.tests.commands.common_helpers as helpers
 from mock import patch, Mock
 
@@ -128,7 +129,7 @@ class GroupPermissionHelper:
 
 
 @patch("ckan.plugins.toolkit.get_action")
-@patch("ckan.lib.cli.CkanCommand._load_config")
+@patch("ckanext.dcatde.commands.cli.CkanCommand._load_config")
 @patch("ckanapi.LocalCKAN")
 @patch("json.loads", mock_jsonload)
 class TestThemeAdderCommand(unittest.TestCase):
@@ -256,7 +257,7 @@ class TestThemeAdderCommand(unittest.TestCase):
 
         mock_getaction.side_effect = action_hlp.mock_get_action
 
-        self.cmd.migrate_user_permissions(["old1", "old2"], ["new1", "new2"])
+        migrate_user_permissions(["old1", "old2"], ["new1", "new2"])
 
         calls = permissionhelper.get_calls()
         self.assertListEqual(calls, [
@@ -270,19 +271,19 @@ class TestThemeAdderCommand(unittest.TestCase):
                 "role": "member"
             }, {
                 "id": "new1",
-                "username": "user3",
-                "role": "editor"
+                "username": "user2",
+                "role": "admin"
             }, {
                 "id": "new2",
-                "username": "user3",
-                "role": "editor"
+                "username": "user2",
+                "role": "admin"
             }, {
                 "id": "new1",
-                "username": "user2",
-                "role": "admin"
+                "username": "user3",
+                "role": "editor"
             }, {
                 "id": "new2",
-                "username": "user2",
-                "role": "admin"
+                "username": "user3",
+                "role": "editor"
             }
         ], "calls do not match")

@@ -39,7 +39,8 @@ class GetActionHelperMigration(helpers.GetActionHelper):
         self.return_val_actions = {
             'group_list': {'new': ''},
             'package_list': ['pkg1', 'pkg2'],
-            'organization_list': [{'id': '123'}]
+            'organization_list': [{'id': '123'}],
+            'get_site_user': {'name': 'admin'}
         }
 
         self.side_effect_actions = {
@@ -84,15 +85,14 @@ class GetActionHelperMigration(helpers.GetActionHelper):
     def mock_pkg_update(self, _, dataset):
         self.updated_datasets[dataset['id']] = dataset
 
-
-@patch("ckanext.dcatde.commands.migration.gather_dataset_ids")
-@patch("ckanext.dcatde.commands.migration.or_", autospec=True)
-@patch("ckanext.dcatde.commands.migration.model", autospec=True)
+@patch("ckanext.dcatde.commands.click.migration.gather_dataset_ids")
+@patch("ckanext.dcatde.commands.click.migration.or_", autospec=True)
+@patch("ckanext.dcatde.commands.click.migration.model", autospec=True)
 @patch("ckan.plugins.toolkit.get_action")
-@patch("ckan.lib.cli.CkanCommand._load_config")
+@patch("ckanext.dcatde.commands.cli.CkanCommand._load_config")
 @patch("ckanext.dcatde.migration.util.load_json_mapping",
        mock_load_json_mapping)
-@patch.dict("pylons.config", PYLONS_TEST_CFG)
+@patch.dict("ckan.plugins.toolkit.config", PYLONS_TEST_CFG)
 class TestMigration(unittest.TestCase):
     '''Tests the CKAN DCATde migration command.'''
 
@@ -200,7 +200,7 @@ class TestMigration(unittest.TestCase):
                                          call('package_list'),
                                          call('package_show'),
                                          call('package_update')])
-        self.assertEqual(mock_get_action.call_count, 4)
+        self.assertEqual(mock_get_action.call_count, 5)
         self._assert_group_list_once(action_hlp)
         # only the datasets from package_list were shown
         self._assert_package_show(action_hlp)
@@ -268,8 +268,9 @@ class TestMigration(unittest.TestCase):
         # assert that the needed methods were obtained in the expected
         # order. Update gets obtained for each dataset, but we only use one dataset anyway.
         mock_get_action.assert_has_calls([call('package_show'),
-                                          call('package_update')])
-        self.assertEqual(mock_get_action.call_count, 2)
+                                          call('package_update'),
+                                          call('get_site_user')])
+        self.assertEqual(mock_get_action.call_count, 3)
 
         # check if the extras field contains exactly one entry with the new key
         self.assertEqual(action_hlp.updated_datasets['pkg3']['extras'],
@@ -326,14 +327,13 @@ class TestMigration(unittest.TestCase):
         self.cmd.args = ['adms-id-migrate']
         self._check_adms_id_no_save(mock_super_load_config, mock_get_action)
 
-    def test_contributor_id_add_id_to_existing_field(self, mock_super_load_config, mock_get_action,
+    @patch("ckanext.dcatde.commands.click.migration.update_dataset")
+    def test_contributor_id_add_id_to_existing_field(self, mock_update_dataset, mock_super_load_config, mock_get_action,
                                                      mock_model, mock_sa_or, mock_gather_ids):
         """ Tests if the organization contributor-id has been added to the existing contributor-ids """
         pkg_id = 'pkg5'
         organization_id = '123'
 
-        mock_update_dataset = Mock('update_dataset')
-        self.cmd.update_dataset = mock_update_dataset
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         action_hlp = GetActionHelperMigration()
@@ -353,16 +353,15 @@ class TestMigration(unittest.TestCase):
         mock_gather_ids.assert_called_once_with()
         mock_update_dataset.assert_called_once_with({'organization': {'id': organization_id}, 'extras': [{
             'key': 'contributorID', 'value': '["test_ds_contrib_id", "test_org_contrib_id"]'}],
-            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'})
+            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'}, dry_run=False)
 
-    def test_contributor_id_create_id_field(self, mock_super_load_config, mock_get_action, mock_model,
+    @patch("ckanext.dcatde.commands.click.migration.update_dataset")
+    def test_contributor_id_create_id_field(self, mock_update_dataset, mock_super_load_config, mock_get_action, mock_model,
                                             mock_sa_or, mock_gather_ids):
         """ Tests if a new contributor-id-field has been created in the dataset"""
         pkg_id = 'pkg6'
         organization_id = '123'
 
-        mock_update_dataset = Mock('update_dataset')
-        self.cmd.update_dataset = mock_update_dataset
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         action_hlp = GetActionHelperMigration()
@@ -382,9 +381,10 @@ class TestMigration(unittest.TestCase):
         mock_gather_ids.assert_called_once_with()
         mock_update_dataset.assert_called_once_with({'organization': {'id': organization_id}, 'extras': [{
             'key': 'contributorID', 'value': '["test_org_contrib_id"]'}],
-            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'})
+            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'}, dry_run=False)
 
-    def test_contributor_id_already_exists(self, mock_super_load_config, mock_get_action, mock_model,
+    @patch("ckanext.dcatde.commands.click.migration.update_dataset")
+    def test_contributor_id_already_exists(self, mock_update_dataset, mock_super_load_config, mock_get_action, mock_model,
                                            mock_sa_or, mock_gather_ids):
         """
         Tests if the organization contributor-id will not be added if it already exists for the dataset
@@ -392,8 +392,6 @@ class TestMigration(unittest.TestCase):
         pkg_id = 'pkg7'
         organization_id = '123'
 
-        mock_update_dataset = Mock('update_dataset')
-        self.cmd.update_dataset = mock_update_dataset
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         action_hlp = GetActionHelperMigration()
@@ -412,15 +410,14 @@ class TestMigration(unittest.TestCase):
         mock_gather_ids.assert_called_once_with()
         mock_update_dataset.assert_not_called()
 
-    def test_contributor_id_single_values_add_to_field(self, mock_super_load_config, mock_get_action,
+    @patch("ckanext.dcatde.commands.click.migration.update_dataset")
+    def test_contributor_id_single_values_add_to_field(self, mock_update_dataset, mock_super_load_config, mock_get_action,
                                                      mock_model, mock_sa_or, mock_gather_ids):
         """ Tests if the organization contributor-id has been added to the existing contributor-ids.
          The contributor-IDs are not lists but Strings """
         pkg_id = 'pkg8'
         organization_id = '123'
 
-        mock_update_dataset = Mock('update_dataset')
-        self.cmd.update_dataset = mock_update_dataset
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         action_hlp = GetActionHelperMigration()
@@ -440,17 +437,16 @@ class TestMigration(unittest.TestCase):
         mock_gather_ids.assert_called_once_with()
         mock_update_dataset.assert_called_once_with({'organization': {'id': organization_id}, 'extras': [{
             'key': 'contributorID', 'value': '["test_ds_contrib_id", "test_org_contrib_id"]'}],
-            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'})
+            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'}, dry_run=False)
 
-    def test_contributor_id_no_contributorid_in_org(self, mock_super_load_config, mock_get_action,
+    @patch("ckanext.dcatde.commands.click.migration.update_dataset")
+    def test_contributor_id_no_contributorid_in_org(self, mock_update_dataset, mock_super_load_config, mock_get_action,
                                                     mock_model, mock_sa_or, mock_gather_ids):
         """ Tests if the organization has no contributor-id defined that migration is skipped for the
         datasets of the org """
         pkg_id = 'pkg5'
         organization_id = '123'
 
-        mock_update_dataset = Mock('update_dataset')
-        self.cmd.update_dataset = mock_update_dataset
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         action_hlp = GetActionHelperMigration()
@@ -469,14 +465,13 @@ class TestMigration(unittest.TestCase):
         mock_gather_ids.assert_called_once_with()
         mock_update_dataset.assert_not_called()
 
-    def test_deprecated_contributor_id(self, mock_super_load_config, mock_get_action, mock_model,
+    @patch("ckanext.dcatde.commands.click.migration.update_dataset")
+    def test_deprecated_contributor_id(self, mock_update_dataset, mock_super_load_config, mock_get_action, mock_model,
                                            mock_sa_or, mock_gather_ids):
         """ Tests if a deprecated contributorID is detected and replaced """
         pkg_id = 'pkg9'
         organization_id = '123'
 
-        mock_update_dataset = Mock('update_dataset')
-        self.cmd.update_dataset = mock_update_dataset
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         # The contributorID in the CKAN organization was already updated before
@@ -496,4 +491,4 @@ class TestMigration(unittest.TestCase):
         mock_gather_ids.assert_called_once_with()
         mock_update_dataset.assert_called_once_with({'organization': {'id': organization_id}, 'extras': [{
             'key': 'contributorID', 'value': '["test_org_contrib_id", "' + CONTRIBUTOR_ID_NEW + '"]'}],
-            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'})
+            'type': 'datensatz', 'id': pkg_id, 'title': 'titel'}, dry_run=False)

@@ -7,11 +7,10 @@ import json
 import logging
 import time
 
-import pylons
 from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import FOAF
-from ckan import model
+from ckan.lib.base import model
 from ckan import plugins as p
 from ckan.logic import UnknownValidator
 from ckan.plugins import toolkit
@@ -27,7 +26,10 @@ from ckanext.dcatde.triplestore.sparql_query_templates import GET_DATASET_BY_URI
     GET_URIS_FROM_HARVEST_INFO_QUERY
 from ckanext.dcatde.validation.shacl_validation import ShaclValidator
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
+from ckan.config.environment import load_environment
+from ckan.cli import load_config as _get_config
 
+load_environment(_get_config())
 
 LOGGER = logging.getLogger(__name__)
 
@@ -146,7 +148,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         self.shacl_validator_client = ShaclValidator()
 
         self.licenses_upgrade = {}
-        license_file = pylons.config.get('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping')
+        license_file = toolkit.config.get('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping')
         if license_file:
             self.licenses_upgrade = load_json_mapping(license_file, "DCAT License upgrade mapping", LOGGER)
         try:
@@ -177,7 +179,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
     @staticmethod
     def _get_fallback_license():
-        fallback = pylons.config.get('ckanext.dcatde.harvest.default_license',
+        fallback = toolkit.config.get('ckanext.dcatde.harvest.default_license',
                                      'http://dcat-ap.de/def/licenses/other-closed')
         return fallback
 
@@ -367,7 +369,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             config_obj = json.loads(cfg)
             if CONFIG_PARAM_HARVESTED_PORTAL in config_obj:
                 harvested_portal = config_obj[CONFIG_PARAM_HARVESTED_PORTAL]
-                if not isinstance(harvested_portal, basestring):
+                if not isinstance(harvested_portal, str):
                     raise ValueError('%s must be a string' % CONFIG_PARAM_HARVESTED_PORTAL)
             else:
                 raise KeyError('%s is not set in config.' % CONFIG_PARAM_HARVESTED_PORTAL)

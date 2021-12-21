@@ -1,5 +1,8 @@
 ckanapi>=3,<4
 ckanext-dcat==1.1.3
+ckanext-harvest==1.3.3
 ckantoolkit==0.0.3
-pycountry>=17,<20
+pycountry>=17
 python-dateutil>=2.7,<2.8.1
+SPARQLWrapper==1.8.5
+PasteScript==3.2.1

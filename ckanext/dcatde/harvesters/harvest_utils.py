@@ -130,7 +130,11 @@ class HarvestUtils(object):
         '''Compares new dataset with existing and checks, if a dataset should be imported.'''
 
         harvest_object_content = harvest_object.content
-        harvester_title = harvest_object.source.title
+        try:
+            harvester_title = harvest_object.source.title
+        except Exception as e:
+            harvester_title = harvest_object.harvest_source_id
+
         method_prefix = 'handle_duplicates: '
         context = HarvestUtils.build_context()
 

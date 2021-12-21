@@ -110,9 +110,9 @@ class TestMigrationFunctions(unittest.TestCase):
         '''
         real_val = self._assert_extras_key(dataset, key)
         self.assertTrue(real_val == value,
-                        u'expected value "' + unicode(value)
-                        + u'", but was "' + unicode(real_val)
-                        + u'" for key ' + unicode(key))
+                        u'expected value "' + str(value)
+                        + u'", but was "' + str(real_val)
+                        + u'" for key ' + str(key))
 
     def _assert_extras_other_unaffected(self, dataset):
         '''

@@ -14,7 +14,7 @@ class DummyClass:
     pass
 
 
-@patch("ckanext.dcatde.commands.triplestore.gather_dataset_ids")
+@patch("ckanext.dcatde.commands.click.triplestore.gather_dataset_ids")
 @patch("ckanext.dcatde.validation.shacl_validation.ShaclValidator.validate")
 @patch("ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore_mqa")
 @patch("ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore_mqa")
@@ -23,7 +23,7 @@ class DummyClass:
 @patch("ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.is_available")
 @patch("ckanext.dcatde.commands.triplestore.model", autospec=True)
 @patch("ckan.plugins.toolkit.get_action")
-@patch("ckan.lib.cli.CkanCommand._load_config")
+@patch("ckanext.dcatde.commands.cli.CkanCommand._load_config")
 class TestTripleStoreCommand(unittest.TestCase):
     '''Tests the CKAN DCATde triplestore command.'''
 
@@ -53,9 +53,9 @@ class TestTripleStoreCommand(unittest.TestCase):
                                 mock_triplestore_create_mqa, mock_shacl_validate, mock_gather_ids):
         '''Calls the triplestore command with invalid dry-run flag.'''
 
-        mock_gather_ids.return_value = []
+        mock_gather_ids.return_value = {}
         self.cmd.args = ['reindex']
-        self.cmd.options.dry_run = 'F'
+        self.cmd.options.dry_run = 'None'
 
         with self.assertRaises(SystemExit) as cm:
             self.cmd.command()
@@ -148,7 +148,7 @@ class TestTripleStoreCommand(unittest.TestCase):
         mock_shacl_validate.side_effect = [d1['shacl_result'], d2['shacl_result']]
         package_ids_with_org = dict(d1=d1['org'], d2=d2['org'])
         # use sorted dict because of expected order
-        mock_gather_ids.return_value = OrderedDict(sorted(package_ids_with_org.iteritems(),
+        mock_gather_ids.return_value = OrderedDict(sorted(package_ids_with_org.items(),
                                                           key=lambda x: x[1]))
         self.cmd.options.dry_run = 'False'
         self.cmd.args = ['reindex']

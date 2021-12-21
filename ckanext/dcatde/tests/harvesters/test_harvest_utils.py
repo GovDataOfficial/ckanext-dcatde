@@ -134,11 +134,7 @@ class TestHarvestUtils(unittest.TestCase):
 
         mock_package_delete_action = Mock("package_delete")
 
-        remote_source = json.dumps({
-            'source': {
-                'title': 'DummyHarvester'
-            }
-        })
+        remote_source = 'DummyHarvester'
 
         def mock_action_methods(action):
             if action == 'package_search':
@@ -234,7 +230,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'hasone'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
@@ -253,7 +249,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'multiple'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
@@ -274,7 +270,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'nodata'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
@@ -290,7 +286,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'modified': remote_modified,
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
@@ -305,7 +301,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'hasone'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset should not be accepted as update.")
@@ -322,7 +318,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'metadata_harvested_portal': 'harvest1'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset was not accepted as update.")
@@ -339,7 +335,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'newer'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset should not be accepted as update.")
@@ -357,7 +353,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'guid': '1234567890'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
@@ -376,7 +372,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': ''
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertTrue(result, "Dataset was not accepted as update.")
@@ -392,7 +388,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'multiple-local-newer'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset should not be accepted as update.")
@@ -409,7 +405,7 @@ class TestHarvestUtils(unittest.TestCase):
                     'identifier': 'multiple-without-modified-date'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=remote_source)
+        harvest_object = HarvestObject(content=remote_dataset, harvest_source_id=remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
         self.assertFalse(result, "Dataset should not be accepted as update.")

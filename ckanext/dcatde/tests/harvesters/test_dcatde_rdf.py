@@ -535,7 +535,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEquals(rdf_parser_return, rdf_parser)
         # check if no errors are returned
         self.assertEquals(len(error_msgs), 0)
-        uri = rdf_parser._datasets().next()
+        uri = rdf_parser._datasets().__next__()
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset
@@ -589,7 +589,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEquals(rdf_parser_return, rdf_parser)
         # error should be returned
         self.assertEquals(len(error_msgs), 1)
-        uri = rdf_parser._datasets().next()
+        uri = rdf_parser._datasets().__next__()
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # Dataset should be removed, but not created again
@@ -856,7 +856,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset.
-        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().next())
+        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().__next__())
         # create dataset should not be called
         mock_fuseki_create_data.assert_not_called()
         mock_shacl_validate.assert_not_called()
@@ -902,7 +902,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEquals(rdf_parser_return, rdf_parser)
         # check that one error is returned
         self.assertEquals(len(error_msgs), 1)
-        uri = rdf_parser._datasets().next()
+        uri = rdf_parser._datasets().__next__()
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset.

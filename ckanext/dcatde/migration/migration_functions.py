@@ -42,7 +42,7 @@ class MigrationFunctionExecutor(object):
         Returns True if all groups are found, and False otherwise.'''
         for group in self.functions.new_groups:
             if group not in ckan_group_dict:
-                util.get_migrator_log().error(u'Group ' + unicode(group)
+                util.get_migrator_log().error(u'Group ' + str(group)
                                               + u' not found. Did you run the '
                                               + u' theme adder command?')
                 return False
@@ -120,7 +120,7 @@ class MigrationFunctions(object):
                                                  field, True)
 
                 sr_value_dict.pop('text', None)
-                spatial_reference['value'] = unicode(json.dumps(sr_value_dict,
+                spatial_reference['value'] = str(json.dumps(sr_value_dict,
                                                                 sort_keys=True))
 
     def groups(self, dataset):
@@ -133,14 +133,14 @@ class MigrationFunctions(object):
                     util.delete_group(dataset, group_name)
 
                     # transform single strings to lists with one argument
-                    if isinstance(themes, basestring):
+                    if isinstance(themes, str):
                         themes = [themes]
 
                     if themes is not None:
                         for theme in themes:
                             dataset['groups'].append({'id': theme, 'name': theme})
                 elif group_name not in self.new_groups:
-                    util.log_error(dataset, u'INVALID: non-OGD-Category found: ' + unicode(group_name))
+                    util.log_error(dataset, u'INVALID: non-OGD-Category found: ' + str(group_name))
 
     def temporal_coverage_from(self, dataset):
         '''temporal_coverage_from -> temporal_start'''
@@ -275,7 +275,7 @@ class MigrationFunctions(object):
             dataset['license_id'] = license_id_dcat
         elif license_id_data not in self.license_mapping.values():
             # Invalid value, neither OGD nor DCAT
-            util.log_error(dataset, u"license_id '" + unicode(license_id_data) + u"' not part of the mapping")
+            util.log_error(dataset, u"license_id '" + str(license_id_data) + u"' not part of the mapping")
             return
 
         # At this point, a valid DCAT license is present in dataset['license_id'].

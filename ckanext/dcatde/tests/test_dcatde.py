@@ -38,7 +38,7 @@ class TestDCATde(unittest.TestCase):
     DCATDE = Namespace("http://dcat-ap.de/def/dcatde/")
 
     INVALID_TAG = u'Som`E:-in.valid tagäß!;'
-    VALID_TAG = {'name': u'some-in.valid-tagäß'}
+    VALID_TAG = {'name': u'some-in.valid-tag'}
 
     dcat_theme_prefix = "http://publications.europa.eu/resource/authority/data-theme/"
 
@@ -122,8 +122,8 @@ class TestDCATde(unittest.TestCase):
             raise TypeError('values must be type of list')
         values_found = []
         for obj in self.graph.objects(ref, predicate):
-            if unicode(obj) in values:
-                values_found.append(unicode(obj))
+            if str(obj) in values:
+                values_found.append(str(obj))
 
         self.assertTrue(len(values_found) == len(values),
                         "Not all expected values were found in graph. remaining: {}".format(
@@ -134,7 +134,7 @@ class TestDCATde(unittest.TestCase):
         This assumes that the extras value is serialized as string."""
         item = self._get_value_from_extras(extras, key)
         content = json.loads(item)
-        self.assertItemsEqual(content, expected)
+        self.assertCountEqual(content, expected)
 
     def _assert_extras_dict_serialized(self, extras, key, expected):
         """ check if the extras field with the given key contains the expected dict
@@ -826,8 +826,8 @@ class TestDCATde(unittest.TestCase):
         # Keywords
         self._assert_tag_list(
             dataset,
-            [u'Karte', u'hmbtg_09_geodaten', u'Grundwasser', u'Bodenschutz', u'Geodaten',
-             u'Umwelt und Klima', u'hmbtg', u'opendata', u'Thematische Karte'])
+            [u'karte', u'hmbtg_09_geodaten', u'grundwasser', u'bodenschutz', u'geodaten',
+             u'umwelt-und-klima', u'hmbtg', u'opendata', u'thematische-karte'])
 
         # dct:location
         self._assert_extras_dict_serialized(
