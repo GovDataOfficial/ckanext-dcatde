@@ -1,4 +1,3 @@
-ckantoolkit==0.0.3
 pylint>=1.4
 mock
 isort<4.3

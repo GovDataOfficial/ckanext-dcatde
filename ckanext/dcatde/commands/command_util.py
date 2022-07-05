@@ -31,12 +31,8 @@ RDF_FORMAT_TURTLE = 'turtle'
 
 DEPRECATED_CONTRIBUTOR_IDS = {
     # key: old value || value: new value
-    'http://dcat-ap.de/def/contributors/bundesministeriumDesInnernFuerBauUndHeimat':
-    'http://dcat-ap.de/def/contributors/bundesministeriumDesInnernUndHeimat',
-    'http://dcat-ap.de/def/contributors/bundesministeriumFuerWirtschaftUndEnergie':
-    'http://dcat-ap.de/def/contributors/bundesministeriumFuerWirtschaftUndKlimaschutz',
-    'http://dcat-ap.de/def/contributors/dieBundesbeauftragteFuerDenDatenschutzUndDieInformationsfreiheit':
-    'http://dcat-ap.de/def/contributors/derBundesbeauftragteFuerDenDatenschutzUndDieInformationsfreiheit'}
+    'http://dcat-ap.de/def/contributors/bundesamtFuerMaterialforschungUndPruefung':
+    'http://dcat-ap.de/def/contributors/bundesanstaltFuerMaterialforschungUndPruefung'}
 
 _context = None
 

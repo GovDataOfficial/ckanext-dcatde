@@ -1,5 +1,10 @@
 # Changelog
 
+## v5.2.0 2022-05-31
+
+* Updates ckanext-harvest to version 1.4.0 and ckanext-dcat to version 1.2.0
+* Updates deprecated contributor IDs in migration command
+
 ## v5.1.2 2022-05-05
 
 * Fixes saving resource extras in the migration functions and in the DCAT-AP.de profile

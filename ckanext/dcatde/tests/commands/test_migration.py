@@ -14,8 +14,9 @@ TK_TEST_CFG = {
     'ckanext.dcatde.urls.category_mapping': 'categories.json'
 }
 
-CONTRIBUTOR_ID_DEPRECATED = "http://dcat-ap.de/def/contributors/bundesministeriumDesInnernFuerBauUndHeimat"
-CONTRIBUTOR_ID_NEW = "http://dcat-ap.de/def/contributors/bundesministeriumDesInnernUndHeimat"
+CONTRIBUTOR_ID_DEPRECATED = "http://dcat-ap.de/def/contributors/bundesamtFuerMaterialforschungUndPruefung"
+CONTRIBUTOR_ID_NEW = "http://dcat-ap.de/def/contributors/bundesanstaltFuerMaterialforschungUndPruefung"
+
 
 def mock_load_json_mapping(filename, _):
     '''mock for util.load_json_mapping which returns dummy data'''
