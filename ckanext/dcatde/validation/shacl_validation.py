@@ -24,7 +24,7 @@ class ShaclValidator(object):
     def __init__(self):
         self.validator_url, self.validator_profile = self._get_validator_config()
 
-    def validate(self, rdf_graph, dataset_uri, dataset_org, rdf_format='text/turtle'):
+    def validate(self, rdf_graph, dataset_uri, dataset_org, contributor_id=None, rdf_format='text/turtle'):
         """Validates given RDF graph using the DCAT-AP.de SHACL validator service"""
 
         result = None
@@ -34,7 +34,7 @@ class ShaclValidator(object):
                 u'embeddingMethod': u'STRING',
                 u'contentSyntax': rdf_format,
                 u'validationType': self.validator_profile,
-                u'reportQuery': self._get_report_query(dataset_uri, dataset_org)
+                u'reportQuery': self._get_report_query(dataset_uri, dataset_org, contributor_id)
             }
 
             try:
@@ -51,21 +51,27 @@ class ShaclValidator(object):
         return result
 
     @staticmethod
-    def _get_report_query(dataset_uri, owner_org):
+    def _get_report_query(dataset_uri, owner_org, contributor_id):
         """Gets the report query for the SHACL validation request"""
 
-        return u"""PREFIX sh: <{shacl}>
+        query = u"""PREFIX sh: <{shacl}>
             PREFIX dqv: <{dqv}>
             PREFIX govdata: <{mqa}>
             CONSTRUCT {{
                 ?report dqv:computedOn <{dataset_uri}> .
-                ?report govdata:attributedTo '{owner_org}' .
+                ?report govdata:attributedTo '{owner_org}' .""".format(
+                    shacl=SHACL, dqv=DQV, mqa=GOVDATA_MQA, dataset_uri=dataset_uri, owner_org=owner_org)
+        if contributor_id:
+            query += u"""
+                ?report govdata:attributedTo <{contributor_id}> .""".format(contributor_id=contributor_id)
+        query += u"""
                 ?s ?p ?o .
-            }} WHERE {{
-                {{ ?report a sh:ValidationReport . }}
+            } WHERE {
+                { ?report a sh:ValidationReport . }
                 UNION
-                {{ ?s ?p ?o . }}
-            }}""".format(shacl=SHACL, dqv=DQV, mqa=GOVDATA_MQA, dataset_uri=dataset_uri, owner_org=owner_org)
+                { ?s ?p ?o . }
+            }"""
+        return query
 
     @staticmethod
     def _get_validator_config():

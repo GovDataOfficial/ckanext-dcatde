@@ -40,11 +40,15 @@ class TestTripleStoreCommand(unittest.TestCase):
         self.cmd.parser.remove_option('--uris')
 
     @staticmethod
-    def _get_rdf(uri):
+    def _get_serialized_rdf(uri, contributor_id=None):
         rdf = '''@prefix dcat: <http://www.w3.org/ns/dcat#> .
         
-        <%s> a dcat:Dataset .
-        ''' % uri
+        <{uri}> a dcat:Dataset .'''.format(uri=uri)
+        if contributor_id:
+            rdf = '''@prefix dcatde: <http://dcat-ap.de/def/dcatde/> .
+            ''' + rdf + '''
+            <{uri}> dcatde:contributorID <{contributor_id}> .
+            '''.format(uri=uri, contributor_id=contributor_id)
         return rdf
 
     def test_dry_run_no_booelan(self, mock_super_load_config, mock_get_action, mock_model,
@@ -137,9 +141,11 @@ class TestTripleStoreCommand(unittest.TestCase):
 
         mock_triplestore_is_available.return_value = True
         uri_d1 = 'http://ckan.govdata.de/dataset/d1'
-        d1 = dict(rdf=self._get_rdf(uri_d1), org='org-d1', shacl_result='ValidationReport-d1')
+        d1 = dict(rdf=self._get_serialized_rdf(uri_d1), org='org-d1', shacl_result='ValidationReport-d1')
         uri_d2 = 'http://ckan.govdata.de/dataset/d2'
-        d2 = dict(rdf=self._get_rdf(uri_d2), org='org-d2', shacl_result='ValidationReport-d2')
+        contributor_id_d2 = 'http://dcat-ap.de/def/contributors/test'
+        d2 = dict(rdf=self._get_serialized_rdf(uri_d2, contributor_id_d2), org='org-d2',
+                  shacl_result='ValidationReport-d2')
         action_hlp = helpers.GetActionHelper()
         action_hlp.return_val_actions['get_site_user'] = dict(name='admin')
         action_hlp.side_effect_actions['dcat_dataset_show'] = [d1['rdf'], d2['rdf']]
@@ -159,8 +165,8 @@ class TestTripleStoreCommand(unittest.TestCase):
         mock_triplestore_delete.assert_has_calls([call(URIRef(uri_d1)), call(URIRef(uri_d2))])
         mock_triplestore_create.assert_has_calls([call(d1['rdf'], URIRef(uri_d1)),
                                                   call(d2['rdf'], URIRef(uri_d2))])
-        mock_shacl_validate.assert_has_calls([call(d1['rdf'], URIRef(uri_d1), d1['org']),
-                                              call(d2['rdf'], URIRef(uri_d2), d2['org'])])
+        mock_shacl_validate.assert_has_calls([call(d1['rdf'], URIRef(uri_d1), d1['org'], None),
+                                              call(d2['rdf'], URIRef(uri_d2), d2['org'], contributor_id_d2)])
         mock_triplestore_delete_mqa.assert_has_calls([call(URIRef(uri_d1)), call(URIRef(uri_d2))])
         mock_triplestore_create_mqa.assert_has_calls([call(d1['shacl_result'], URIRef(uri_d1)),
                                                       call(d2['shacl_result'], URIRef(uri_d2))])

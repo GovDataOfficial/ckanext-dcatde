@@ -6,11 +6,13 @@ Paster command for the triple store.
 import sys
 import time
 
+from rdflib import URIRef
 from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from ckan.lib.base import model
 from ckan.lib.cli import CkanCommand
 from ckan.plugins import toolkit as tk
 from ckanext.dcat.processors import RDFParserException, RDFParser
+from ckanext.dcatde.profiles import DCATDE
 from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient
 from ckanext.dcatde.validation.shacl_validation import ShaclValidator
 from ckanext.dcatde.dataset_utils import gather_dataset_ids
@@ -147,14 +149,27 @@ class Triplestore(CkanCommand):
             self.triplestore_client.delete_dataset_in_triplestore(uri)
             self.triplestore_client.create_dataset_in_triplestore(rdf, uri)
 
+            contributor_id = self._get_contributor_id(uri, rdf_parser)
             # shacl-validate the graph
-            validation_rdf = self.shacl_validation_client.validate(rdf, uri, package_org)
+            validation_rdf = self.shacl_validation_client.validate(rdf, uri, package_org, contributor_id)
             if validation_rdf:
                 # update in mqa-triplestore
                 self.triplestore_client.delete_dataset_in_triplestore_mqa(uri)
                 self.triplestore_client.create_dataset_in_triplestore_mqa(validation_rdf, uri)
 
         return uri
+
+    @staticmethod
+    def _get_contributor_id(uri, rdf_parser):
+        '''Gets the first contributorID from the DCAT-AP.de list within the graph.'''
+        for contributor_id in rdf_parser.g.objects(uri, URIRef(DCATDE.contributorID)):
+            candidate = str(contributor_id)
+            # A dataset should only have one contributorID from the DCAT-AP.de list. So, just pick the first
+            # element.
+            if candidate.startswith('http://dcat-ap.de/def/contributors/'):
+                return candidate
+
+        return None
 
     def _clean_triplestore_from_uris(self):
         '''Delete dataset-uris from args from the triplestore'''

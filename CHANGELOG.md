@@ -1,5 +1,16 @@
 # Changelog
 
+## v4.7.0 2022-02-17
+
+* Skip saving harvested datasets in the triple store without distribution and harvest source config param
+  `resources_required: true` is set
+* Reads the ContributorID from the harvester config and add it to the dataset graph if not already present
+* Saves ContributorID in addition to the organizationID in the triple store with the validation results
+* Adds ContributorID from the harvester config to CKAN dataset if not already present
+* Ensure that tags keep minimum length after normalization
+* Fixes harvest object state. Marks corresponding harvest objects as not current when deleting duplicate
+  datasets and datasets which contain no resources anymore
+
 ## v4.6.6 2022-01-27
 
 * Deletes deprecated datasets in CKAN regardless of whether the dataset could previously be renamed or not 
@@ -12,7 +23,7 @@
 ## v4.6.3 2021-12-16
 
 * Fixes dev-requirements.txt: Broken version 1.7.0 of lazy-object-proxy was banned
-* Fixes saving information about the harvested datasets saved in the triplestore if there is more than one
+* Fixes saving information about the harvested datasets saved in the triple store if there is more than one
   harvest source linked to the same organisation
 
 ## v4.6.2 2021-11-23

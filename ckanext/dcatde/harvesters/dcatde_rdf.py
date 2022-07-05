@@ -19,9 +19,10 @@ from ckanext.dcat.exceptions import RDFParserException
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
 from ckanext.dcat.processors import RDFParser
-from ckanext.dcatde.dataset_utils import set_extras_field, EXTRA_KEY_HARVESTED_PORTAL
+from ckanext.dcatde.dataset_utils import set_extras_field, EXTRA_KEY_HARVESTED_PORTAL, get_extras_field
 from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
 from ckanext.dcatde.migration.util import load_json_mapping
+from ckanext.dcatde.profiles import DCATDE, DCAT
 from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient
 from ckanext.dcatde.triplestore.sparql_query_templates import GET_DATASET_BY_URI_SPARQL_QUERY, \
     GET_URIS_FROM_HARVEST_INFO_QUERY
@@ -33,6 +34,8 @@ LOGGER = logging.getLogger(__name__)
 
 CONFIG_PARAM_HARVESTED_PORTAL = 'harvested_portal'
 CONFIG_PARAM_RESOURCES_REQUIRED = 'resources_required'
+CONFIG_PARAM_CONTRIBUTOR_ID = 'contributorID'
+CONTRIBUTOR_ID_FIELD_NAME = 'contributorID'
 RES_EXTRA_KEY_LICENSE = 'license'
 
 
@@ -54,17 +57,17 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
     def after_parsing(self, rdf_parser, harvest_job):
         """ Insert harvested data into triplestore and validate the data """
-
         error_messages = []
         if rdf_parser and self.triplestore_client.is_available():
             LOGGER.debug(u'Start updating triplestore...')
 
             source_dataset = model.Package.get(harvest_job.source.id)
-            org_available = True
+            owner_org = None
             if not source_dataset or not hasattr(source_dataset, 'owner_org'):
-                org_available = False
                 LOGGER.warn(u'There is no organization specified in the harvest source. SHACL validation ' \
                             u'will be deactivated!')
+            else:
+                owner_org = source_dataset.owner_org
 
             for uri in rdf_parser._datasets():
                 LOGGER.debug(u'Process URI: %s', uri)
@@ -77,21 +80,26 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                         graph = Graph()
                         for triple in triples:
                             graph.add(triple)
+
+                        # Skip the dataset if it does't contain a distribution when it's required
+                        if self._skip_dataset_in_triplestore(harvest_job.source.config, uri, graph):
+                            continue
+
+                        # Add contributor id from harvester config
+                        contributor_id = self._add_contributor_id_from_harvest_source_config(
+                            harvest_job, uri, graph)
+
                         rdf_graph = graph.serialize(format="turtle")
 
+                        # Save dataset graph in the triple store
                         self.triplestore_client.create_dataset_in_triplestore(rdf_graph, uri)
 
-                        if org_available:
-                            # save harvesting info
-                            harvest_graph = Graph()
-                            harvest_graph.bind("foaf", FOAF)
-                            harvest_graph.add((URIRef(uri), FOAF.knows, Literal(source_dataset.owner_org)))
-                            harvest_graph.add((URIRef(uri), FOAF.knows, Literal(harvest_job.source.id)))
-                            rdf_harvest_graph = harvest_graph.serialize(format="xml")
-                            self.triplestore_client.create_dataset_in_triplestore_harvest_info(
-                                rdf_harvest_graph, uri)
-                            # SHACL Validation
-                            self._validate_dataset_rdf_graph(uri, rdf_graph, source_dataset)
+                        # save harvesting info
+                        self._save_harvest_info(harvest_job, owner_org, uri)
+
+                        # SHACL Validation
+                        if owner_org or contributor_id:
+                            self._validate_dataset_rdf_graph(uri, rdf_graph, owner_org, contributor_id)
                     else:
                         LOGGER.warn(u'Could not find triples to URI %s. Updating is not possible.', uri)
                 except SPARQLWrapperException as exception:
@@ -179,11 +187,27 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         return False
 
     @staticmethod
+    def _get_contributor_from_config(source_config):
+        ''' Get contributor ID from source '''
+        if source_config:
+            return json.loads(source_config).get(CONFIG_PARAM_CONTRIBUTOR_ID)
+
+        return ''
+
+    @staticmethod
     def _get_fallback_license():
         ''' Get fallback licence from config '''
         fallback = pylons.config.get('ckanext.dcatde.harvest.default_license',
                                      'http://dcat-ap.de/def/licenses/other-closed')
         return fallback
+
+    def _skip_dataset_in_triplestore(self, harvester_config, uri, graph):
+        ''' Returns True if resources_required is active and dataset does not contain a distribution'''
+        if self._get_resources_required_config(harvester_config) \
+                and (uri, DCAT.distribution, None) not in graph:
+            LOGGER.debug(u'%s does not contain a valid resource! Skip saving dataset in triple store.', uri)
+            return True
+        return False
 
     def _mark_datasets_for_deletion(self, guids_in_source, harvest_job):
         # This is the same as the method in the base class, except that a different query is used.
@@ -268,6 +292,9 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         if 'extras' not in package:
             package['extras'] = []
 
+        # add contributor_id if missing
+        self._set_contributor_id_for_dataset(harvest_object, package)
+
         portal = self._get_portal_from_config(harvest_object.source.config)
         set_extras_field(package, EXTRA_KEY_HARVESTED_PORTAL, portal)
 
@@ -293,6 +320,26 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                     resource[RES_EXTRA_KEY_LICENSE] = new_license
         # write changes back to harvest object content
         harvest_object.content = json.dumps(package)
+
+    def _set_contributor_id_for_dataset(self, harvest_object, package):
+        '''
+        Add contributor_id if not yet available in ckan dataset.
+        '''
+        source_contributor_id = self._get_contributor_from_config(harvest_object.source.config)
+
+        contributor_id_field = get_extras_field(package, CONTRIBUTOR_ID_FIELD_NAME)
+        if contributor_id_field:
+            contributor_id_list = json.loads(contributor_id_field['value'])
+
+            if source_contributor_id and (source_contributor_id not in contributor_id_list):
+                contributor_id_list.append(source_contributor_id)
+                set_extras_field(package, CONTRIBUTOR_ID_FIELD_NAME, json.dumps(contributor_id_list))
+                LOGGER.debug(u'Added contributorId from Harvester source to dataset with GUID %s',
+                             harvest_object.guid)
+        elif source_contributor_id:
+            set_extras_field(package, CONTRIBUTOR_ID_FIELD_NAME, json.dumps([source_contributor_id]))
+            LOGGER.debug(u'No contributorId field. Added contributorId from Harvester source to dataset'\
+                         u' with GUID %s', harvest_object.guid)
 
     def _skip_datasets_without_resource(self, harvest_object):
         '''
@@ -416,13 +463,12 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             else:
                 LOGGER.debug(u'URI could not determined. Skip deleting.')
 
-    def _validate_dataset_rdf_graph(self, uri, rdf_graph, source_dataset):
+    def _validate_dataset_rdf_graph(self, uri, rdf_graph, owner_org, contributor_id,):
         '''
         Validates the package rdf graph with the given URI and saves the validation report in the
         triple store.
         '''
-        result = self.shacl_validator_client.validate(
-            rdf_graph, uri, source_dataset.owner_org)
+        result = self.shacl_validator_client.validate(rdf_graph, uri, owner_org, contributor_id)
         if result:
             self.triplestore_client.create_dataset_in_triplestore_mqa(result, uri)
 
@@ -473,3 +519,30 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         except SPARQLWrapperException as exception:
             LOGGER.error(u'Unexpected error while querying harvest info from triplestore: %s', exception)
         return existing_uris
+
+    def _add_contributor_id_from_harvest_source_config(self, harvest_job, uri, graph):
+        """
+        Adds the contributor id from the harvester config if the contributor id is missing in the graph.
+        """
+        contributor_id = self._get_contributor_from_config(harvest_job.source.config)
+        if contributor_id:
+            contributor_triple = URIRef(uri), URIRef(DCATDE.contributorID), URIRef(contributor_id)
+            if contributor_triple not in graph:
+                graph.add(contributor_triple)
+                LOGGER.debug(u'%s: Added ContributorID to graph', uri)
+        else:
+            LOGGER.debug(u'%s: ContributorID is missing in harvester config!', harvest_job.source.id)
+        return contributor_id
+
+    def _save_harvest_info(self, harvest_job, owner_org, uri):
+        """
+        Saves the info about the harvested and in the triple store stored datasets in the 'harvest_info'
+        graph.
+        """
+        harvest_graph = Graph()
+        harvest_graph.bind("foaf", FOAF)
+        if owner_org:
+            harvest_graph.add((URIRef(uri), FOAF.knows, Literal(owner_org)))
+        harvest_graph.add((URIRef(uri), FOAF.knows, Literal(harvest_job.source.id)))
+        rdf_harvest_graph = harvest_graph.serialize(format="xml")
+        self.triplestore_client.create_dataset_in_triplestore_harvest_info(rdf_harvest_graph, uri)

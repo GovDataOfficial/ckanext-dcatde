@@ -82,6 +82,26 @@ class TestShaclValidatorClient(unittest.TestCase):
     def test_validate_successful_request(self, mock_requests_post, mock_validator_get_config):
         """ Tests if validate() returns the expected value if the post request is successful """
 
+        contributor_id = 'http://dcat-ap.de/def/contributors/test'
+
+        expected_repsonse = "SUCCESS"
+        mock_requests_post.return_value.status_code = 200
+        mock_requests_post.return_value.text = expected_repsonse
+        mock_validator_get_config.return_value = VALIDATOR_API_URL, VALIDATION_PROFILE
+
+        client = ShaclValidator()
+        result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID, contributor_id)
+
+        self.assertEquals(result, expected_repsonse)
+
+    @patch('ckanext.dcatde.validation.shacl_validation.ShaclValidator._get_validator_config')
+    @patch('ckanext.dcatde.validation.shacl_validation.requests.post')
+    def test_validate_successful_request_without_contributor_id(self, mock_requests_post,
+                                                                mock_validator_get_config):
+        """ Tests if validate() returns the expected value if the post request is successful 
+            without contributorID
+        """
+
         expected_repsonse = "SUCCESS"
         mock_requests_post.return_value.status_code = 200
         mock_requests_post.return_value.text = expected_repsonse
@@ -109,5 +129,29 @@ class TestShaclValidatorClient(unittest.TestCase):
                 {{ ?s ?p ?o . }}
             }}""".format(dataset_uri=DATASET_TEST_URI, owner_org=TEST_ORGANIZATION_ID)
 
-        report_query = ShaclValidator._get_report_query(DATASET_TEST_URI, TEST_ORGANIZATION_ID)
+        report_query = ShaclValidator._get_report_query(DATASET_TEST_URI, TEST_ORGANIZATION_ID, None)
+        self.assertEquals(report_query, expected_value)
+
+    def test_get_report_query_with_contributor_id(self):
+        """ Tests if get_report_query() returns the expected Query with contributorID """
+
+        contributor_id = 'http://dcat-ap.de/def/contributors/test'
+
+        expected_value = u"""PREFIX sh: <http://www.w3.org/ns/shacl#>
+            PREFIX dqv: <http://www.w3.org/ns/dqv#>
+            PREFIX govdata: <http://govdata.de/mqa/#>
+            CONSTRUCT {{
+                ?report dqv:computedOn <{dataset_uri}> .
+                ?report govdata:attributedTo '{owner_org}' .
+                ?report govdata:attributedTo <{contributor_id}> .
+                ?s ?p ?o .
+            }} WHERE {{
+                {{ ?report a sh:ValidationReport . }}
+                UNION
+                {{ ?s ?p ?o . }}
+            }}""".format(dataset_uri=DATASET_TEST_URI, owner_org=TEST_ORGANIZATION_ID,
+                         contributor_id=contributor_id)
+
+        report_query = ShaclValidator._get_report_query(
+            DATASET_TEST_URI, TEST_ORGANIZATION_ID, contributor_id)
         self.assertEquals(report_query, expected_value)

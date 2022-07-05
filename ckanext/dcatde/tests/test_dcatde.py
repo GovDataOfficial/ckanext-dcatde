@@ -38,6 +38,7 @@ class TestDCATde(unittest.TestCase):
     DCATDE = Namespace("http://dcat-ap.de/def/dcatde/")
 
     INVALID_TAG = u'Som`E:-in.valid tagäß!;'
+    INVALID_TAG_SHORT = u';;a'
     VALID_TAG = {'name': u'some-in.valid-tagäß'}
 
     dcat_theme_prefix = "http://publications.europa.eu/resource/authority/data-theme/"
@@ -1262,3 +1263,20 @@ class TestDCATde(unittest.TestCase):
         datasets = [d for d in p.datasets()]
         self.assertNotIn(self.VALID_TAG, datasets[0]['tags'])
         self.assertIn({'name': self.INVALID_TAG}, datasets[0]['tags'])
+
+    @helpers.change_config(DCAT_CLEAN_TAGS, 'true')
+    def test_tags_clean_tags_min_len(self):
+        g = Graph()
+
+        dataset = URIRef('http://example.org/datasets/1')
+        g.add((dataset, RDF.type, self.DCAT.Dataset))
+        # tag would become too short without invalid characters, ensure it will still have minimum length
+        g.add((dataset, self.DCAT.keyword, Literal(self.INVALID_TAG_SHORT)))
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        datasets = [d for d in p.datasets()]
+        self.assertNotIn({'name': self.INVALID_TAG_SHORT}, datasets[0]['tags'])
+        # depends on ckan.model.MIN_TAG_LENGTH and behaviour of ckan's _munge_to_length
+        self.assertIn({'name': u'a_'}, datasets[0]['tags'])

@@ -378,5 +378,5 @@ class DCATdeProfile(RDFProfile):
 def _munge_tag(tag):
     '''Cleans a given tag from special characters.'''
     tag = tag.lower().strip()
-    tag = _munge_to_length(tag, model.MIN_TAG_LENGTH, model.MAX_TAG_LENGTH)
-    return re.sub(ur'[^a-zA-ZÄÖÜäöüß0-9 \-_\.]', '', tag).replace(' ', '-')
+    tag = re.sub(ur'[^a-zA-ZÄÖÜäöüß0-9 \-_\.]', '', tag).replace(' ', '-')
+    return _munge_to_length(tag, model.MIN_TAG_LENGTH, model.MAX_TAG_LENGTH)

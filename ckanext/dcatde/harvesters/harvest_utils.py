@@ -8,13 +8,14 @@ For instance, they provide functions to rename datasets before they get deleted.
 import json
 import logging
 import uuid
-import pytz
 
+from dateutil.parser import parse as parse_date
+import pytz
 from ckan import model
 from ckan.model import Session, PACKAGE_NAME_MAX_LENGTH
 import ckan.plugins as p
-from dateutil.parser import parse as parse_date
 from ckanext.dcatde.extras import Extras
+from ckanext.harvest.model import HarvestObject
 
 
 LOGGER = logging.getLogger(__name__)
@@ -106,6 +107,7 @@ class HarvestUtils(object):
         package_dict = p.toolkit.get_action('package_show')(context, {'id': package_id})
         # rename and delete the package
         HarvestUtils.rename_datasets_before_delete([package_dict])
+        _mark_harvest_objects_as_not_current([package_id])
         HarvestUtils.delete_packages([package_id])
 
     @staticmethod
@@ -237,6 +239,16 @@ class HarvestUtils(object):
         return False
 
 
+def _mark_harvest_objects_as_not_current(package_ids_to_delete):
+    '''
+    Mark harvest objects with the given package ids as not current.
+    '''
+    model.Session.query(HarvestObject) \
+                .filter(HarvestObject.current.is_(True)) \
+                .filter(HarvestObject.package_id.in_(package_ids_to_delete)) \
+                .update({'current': False}, False)
+
+
 def _delete_packages_keep(local_dataset_list, dataset_to_keep=None):
     '''
     Delete all packages within the given list, except the package with the ID in "dataset_to_keep".
@@ -246,7 +258,7 @@ def _delete_packages_keep(local_dataset_list, dataset_to_keep=None):
         if dataset_to_keep is None or 'id' not in dataset_to_keep or \
                 local_dataset['id'] != dataset_to_keep['id']:
             package_ids_to_delete.add(local_dataset['id'])
-
+    _mark_harvest_objects_as_not_current(package_ids_to_delete)
     packages_deleted = HarvestUtils.delete_packages(package_ids_to_delete)
     return packages_deleted
 
