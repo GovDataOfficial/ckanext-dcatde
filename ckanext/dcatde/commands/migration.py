@@ -23,8 +23,12 @@ EXTRA_KEY_CONTRIBUTOR_ID = 'contributorID'
 
 DEPRECATED_CONTRIBUTOR_IDS = {
     # key: old value || value: new value
-    'http://dcat-ap.de/def/contributors/bundesanstaltFuerLandwirtschaftUndErnaehrung':
-    'http://dcat-ap.de/def/contributors/bundesministeriumFuerErnaehrungUndLandwirtschaft'}
+    'http://dcat-ap.de/def/contributors/bundesministeriumDesInnernFuerBauUndHeimat':
+    'http://dcat-ap.de/def/contributors/bundesministeriumDesInnernUndHeimat',
+    'http://dcat-ap.de/def/contributors/bundesministeriumFuerWirtschaftUndEnergie':
+    'http://dcat-ap.de/def/contributors/bundesministeriumFuerWirtschaftUndKlimaschutz',
+    'http://dcat-ap.de/def/contributors/dieBundesbeauftragteFuerDenDatenschutzUndDieInformationsfreiheit':
+    'http://dcat-ap.de/def/contributors/derBundesbeauftragteFuerDenDatenschutzUndDieInformationsfreiheit'}
 
 
 

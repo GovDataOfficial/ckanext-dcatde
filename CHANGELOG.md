@@ -1,5 +1,10 @@
 # Changelog
 
+## v5.0.1 2022-03-31
+
+* Updates ckanext-harvest to version 1.3.4
+* Updates deprecated contributor IDs in migration command
+
 ## v4.7.0 2022-02-17
 
 * Skip saving harvested datasets in the triple store without distribution and harvest source config param

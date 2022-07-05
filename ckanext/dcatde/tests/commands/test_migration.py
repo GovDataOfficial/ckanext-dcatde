@@ -12,7 +12,8 @@ PYLONS_TEST_CFG = {
     'ckanext.dcatde.urls.category_mapping': 'categories.json'
 }
 
-CONTRIBUTOR_ID_NEW = "http://dcat-ap.de/def/contributors/bundesministeriumFuerErnaehrungUndLandwirtschaft"
+CONTRIBUTOR_ID_DEPRECATED = "http://dcat-ap.de/def/contributors/bundesministeriumDesInnernFuerBauUndHeimat"
+CONTRIBUTOR_ID_NEW = "http://dcat-ap.de/def/contributors/bundesministeriumDesInnernUndHeimat"
 
 def mock_load_json_mapping(filename, _):
     '''mock for util.load_json_mapping which returns dummy data'''
@@ -77,7 +78,8 @@ class GetActionHelperMigration(helpers.GetActionHelper):
         elif ds_id == 'pkg8':
             dataset['extras'] = [{'value': 'test_ds_contrib_id', 'key': 'contributorID'}]
         elif ds_id == 'pkg9':
-            dataset['extras'] = [{'value': '["http://dcat-ap.de/def/contributors/bundesanstaltFuerLandwirtschaftUndErnaehrung","test_org_contrib_id","test_org_contrib_id"]', 'key': 'contributorID'}]
+            dataset['extras'] = [{'value': '["' + CONTRIBUTOR_ID_DEPRECATED + '"'\
+                                  ',"test_org_contrib_id","test_org_contrib_id"]', 'key': 'contributorID'}]
 
         return dataset
 
