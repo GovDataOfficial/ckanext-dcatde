@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.6.4 2021-12-21
+
+* Adds the option `--keep-current=true` to the clear harvest jobs shell script.
+
 ## v4.6.3 2021-12-16
 
 * Fixes dev-requirements.txt: Broken version 1.7.0 of lazy-object-proxy was banned
