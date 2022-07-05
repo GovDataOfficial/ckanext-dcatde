@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.6.2 2021-11-23
+
+* Explicitly disallow incorrect version of python-dateutil
+* Updates requirement ckanext-harvest to internal version 1.3.3.dev1
+
 ## v4.6.1 2021-11-15
 
 * Updates requirement ckanext-dcat to official version 1.1.3
