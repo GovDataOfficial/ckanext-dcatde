@@ -21,14 +21,13 @@ DELETE_DATASET_BY_URI_SPARQL_QUERY = u"""DELETE { ?s ?p ?o }
 
 '''
 When formatting this query:
-Format %(uri)s with the URI and %(owner_org) with the organization of the dataset
+Format %(uri)s with the URI of the dataset
 '''
 DELETE_VALIDATION_REPORT_BY_URI_SPARQL_QUERY = u"""PREFIX dqv: <{dqv}>
             PREFIX govdata: <{mqa}>
             DELETE {{ ?s ?p ?o }}
             WHERE {{
               ?report dqv:computedOn <%(uri)s> .
-              ?report govdata:attributedTo '%(owner_org)s' .
               ?report (<>|!<>)* ?s .
               ?s (<>|!<>)* ?o .
               ?s ?p ?o
@@ -36,12 +35,12 @@ DELETE_VALIDATION_REPORT_BY_URI_SPARQL_QUERY = u"""PREFIX dqv: <{dqv}>
 
 '''
 When formatting this query:
-Format %(uri)s with the URI and %(owner_org) with the organization id of the dataset
+Format %(uri)s with the URI
 '''
 DELETE_DATASET_FROM_HARVEST_INFO_QUERY = u"""DELETE { ?s ?p ?o }
             WHERE {
               ?s ?p ?o
-              FILTER ( ?s = <%(uri)s> && ?o = '%(owner_org)s')
+              FILTER ( ?s = <%(uri)s> )
             }"""
 
 '''
@@ -55,9 +54,9 @@ GET_DATASET_BY_URI_SPARQL_QUERY = u"""SELECT ?s ?p ?o
 
 '''
 When formatting this query:
-Format %(owner_org)s with the organization id of the dataset
+Format %(owner_org_or_source_id)s with the organization id of the dataset
 '''
 GET_URIS_FROM_HARVEST_INFO_QUERY = u"""SELECT ?s ?p ?o
                                     WHERE {
-                                        ?s ?p '%(owner_org)s'
+                                        ?s ?p '%(owner_org_or_source_id)s'
                                     }"""

@@ -161,8 +161,7 @@ class TestTripleStoreCommand(unittest.TestCase):
                                                   call(d2['rdf'], URIRef(uri_d2))])
         mock_shacl_validate.assert_has_calls([call(d1['rdf'], URIRef(uri_d1), d1['org']),
                                               call(d2['rdf'], URIRef(uri_d2), d2['org'])])
-        mock_triplestore_delete_mqa.assert_has_calls([call(URIRef(uri_d1), d1['org']),
-                                                      call(URIRef(uri_d2), d2['org'])])
+        mock_triplestore_delete_mqa.assert_has_calls([call(URIRef(uri_d1)), call(URIRef(uri_d2))])
         mock_triplestore_create_mqa.assert_has_calls([call(d1['shacl_result'], URIRef(uri_d1)),
                                                       call(d2['shacl_result'], URIRef(uri_d2))])
         # ensure config was loaded

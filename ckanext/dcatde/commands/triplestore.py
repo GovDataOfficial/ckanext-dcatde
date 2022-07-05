@@ -151,7 +151,7 @@ class Triplestore(CkanCommand):
             validation_rdf = self.shacl_validation_client.validate(rdf, uri, package_org)
             if validation_rdf:
                 # update in mqa-triplestore
-                self.triplestore_client.delete_dataset_in_triplestore_mqa(uri, package_org)
+                self.triplestore_client.delete_dataset_in_triplestore_mqa(uri)
                 self.triplestore_client.create_dataset_in_triplestore_mqa(validation_rdf, uri)
 
         return uri

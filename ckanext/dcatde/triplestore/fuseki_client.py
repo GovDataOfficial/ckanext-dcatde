@@ -37,24 +37,22 @@ class FusekiTriplestoreClient(object):
         self._delete_dataset_in_triplestore_base(
             uri, DELETE_DATASET_BY_URI_SPARQL_QUERY % {'uri': uri}, self.ds_name_default)
 
-    def delete_dataset_in_triplestore_mqa(self, uri, owner_org):
+    def delete_dataset_in_triplestore_mqa(self, uri):
         """
         Delete a dataset in the triplestore
         :param uri: the uri of the dataset
-        :param owner_org: id of the organization
         """
         self._delete_dataset_in_triplestore_base(
-            uri, DELETE_VALIDATION_REPORT_BY_URI_SPARQL_QUERY % {'uri': uri, 'owner_org': owner_org},
+            uri, DELETE_VALIDATION_REPORT_BY_URI_SPARQL_QUERY % {'uri': uri},
             self.ds_name_shacl_validation)
 
-    def delete_dataset_in_triplestore_harvest_info(self, uri, owner_org):
+    def delete_dataset_in_triplestore_harvest_info(self, uri):
         """
         Delete a dataset in the triplestore
         :param uri: the uri of the dataset
-        :param owner_org: id of the organization
         """
         self._delete_dataset_in_triplestore_base(
-            uri, DELETE_DATASET_FROM_HARVEST_INFO_QUERY % {'uri': uri, 'owner_org': owner_org},
+            uri, DELETE_DATASET_FROM_HARVEST_INFO_QUERY % {'uri': uri},
             self.ds_name_harvest_info)
 
     def _delete_dataset_in_triplestore_base(self, uri, query_template, datastore_name):

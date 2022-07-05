@@ -69,7 +69,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             for uri in rdf_parser._datasets():
                 LOGGER.debug(u'Process URI: %s', uri)
                 try:
-                    self._delete_dataset_in_triplestore_by_uri(uri, source_dataset)
+                    self._delete_dataset_in_triplestore_by_uri(uri)
 
                     triples = rdf_parser.g.query(GET_DATASET_BY_URI_SPARQL_QUERY % {'uri': uri})
 
@@ -86,6 +86,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                             harvest_graph = Graph()
                             harvest_graph.bind("foaf", FOAF)
                             harvest_graph.add((URIRef(uri), FOAF.knows, Literal(source_dataset.owner_org)))
+                            harvest_graph.add((URIRef(uri), FOAF.knows, Literal(harvest_job.source.id)))
                             rdf_harvest_graph = harvest_graph.serialize(format="xml")
                             self.triplestore_client.create_dataset_in_triplestore_harvest_info(
                                 rdf_harvest_graph, uri)
@@ -163,6 +164,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
     @staticmethod
     def _get_portal_from_config(source_config):
+        ''' Get portal from source '''
         if source_config:
             return json.loads(source_config).get(CONFIG_PARAM_HARVESTED_PORTAL)
 
@@ -170,6 +172,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
     @staticmethod
     def _get_resources_required_config(source_config):
+        ''' Check if resources are required in source '''
         if source_config:
             return json.loads(source_config).get(CONFIG_PARAM_RESOURCES_REQUIRED, False)
 
@@ -177,6 +180,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
     @staticmethod
     def _get_fallback_license():
+        ''' Get fallback licence from config '''
         fallback = pylons.config.get('ckanext.dcatde.harvest.default_license',
                                      'http://dcat-ap.de/def/licenses/other-closed')
         return fallback
@@ -391,15 +395,14 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                 rdf_parser.parse(rdf)
                 # Should be only one dataset
                 uri = next(rdf_parser._datasets(), None)
-                source_dataset = model.Package.get(harvest_object.source.id)
-                self._delete_dataset_in_triplestore_by_uri(uri, source_dataset)
+                self._delete_dataset_in_triplestore_by_uri(uri)
         except RDFParserException as ex:
             LOGGER.warn(u'Error while parsing the RDF file for dataset with ID %s: %s',
                         package_id, ex)
         except SPARQLWrapperException as ex:
             LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s', uri, ex)
 
-    def _delete_dataset_in_triplestore_by_uri(self, uri, source_dataset):
+    def _delete_dataset_in_triplestore_by_uri(self, uri):
         '''
         Deletes the package with the given URI in the triple store.
         '''
@@ -407,11 +410,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             LOGGER.debug(u'Start deleting dataset with URI %s from triplestore.', uri)
             if uri:
                 self.triplestore_client.delete_dataset_in_triplestore(uri)
-                if source_dataset and hasattr(source_dataset, 'owner_org'):
-                    self.triplestore_client.delete_dataset_in_triplestore_mqa(
-                        uri, source_dataset.owner_org)
-                    self.triplestore_client.delete_dataset_in_triplestore_harvest_info(
-                        uri, source_dataset.owner_org)
+                self.triplestore_client.delete_dataset_in_triplestore_mqa(uri)
+                self.triplestore_client.delete_dataset_in_triplestore_harvest_info(uri)
                 LOGGER.debug(u'Successfully deleted dataset with URI %s from triplestore.', uri)
             else:
                 LOGGER.debug(u'URI could not determined. Skip deleting.')
@@ -437,22 +437,21 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         source_dataset = model.Package.get(harvest_job.source.id)
         if source_dataset and hasattr(source_dataset, 'owner_org'):
             # Read URIs from harvest_info datastore
-            owner_org = source_dataset.owner_org
-            existing_uris = self._get_existing_dataset_uris_from_triplestore(owner_org)
+            existing_uris = self._get_existing_dataset_uris_from_triplestore(harvest_job.source.id)
 
             # compare existing with harvested URIs to see which URIs were not updated
             existing_uris_unique = set(existing_uris)
             harvested_uris_unique = set(harvested_uris)
             uris_to_be_deleted = (existing_uris_unique - harvested_uris_unique) - set(uris_db_marked_deleted)
             LOGGER.info(u'Found %s harvesting URIs in the triplestore belonging to organization %s ' \
-                        u'that are no longer provided.',
-                        len(uris_to_be_deleted), owner_org)
+                        u'and harvest source id %s that are no longer provided.',
+                        len(uris_to_be_deleted), source_dataset.owner_org, harvest_job.source.id)
 
             # delete deprecated datasets from triplestore
             for dataset_uri in uris_to_be_deleted:
                 LOGGER.info(u'Delete <%s> from all triplestore datastores.', dataset_uri)
                 try:
-                    self._delete_dataset_in_triplestore_by_uri(dataset_uri, source_dataset)
+                    self._delete_dataset_in_triplestore_by_uri(dataset_uri)
                 except SPARQLWrapperException as ex:
                     LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s',
                                 dataset_uri, ex)
@@ -462,13 +461,13 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                         u'stored in CKAN will not be deleted properly from the triplestore.',
                         harvest_job.source.id, harvest_job.id)
 
-    def _get_existing_dataset_uris_from_triplestore(self, owner_org):
+    def _get_existing_dataset_uris_from_triplestore(self, owner_org_or_source_id):
         '''
         Requests all URIs from the harvest_info datastore and returns them as a list.
         '''
         existing_uris = []
         try:
-            query = GET_URIS_FROM_HARVEST_INFO_QUERY % {'owner_org': owner_org}
+            query = GET_URIS_FROM_HARVEST_INFO_QUERY % {'owner_org_or_source_id': owner_org_or_source_id}
             raw_response = self.triplestore_client.select_datasets_in_triplestore_harvest_info(query)
             response = raw_response.convert()
             for res in response["results"]["bindings"]:

@@ -274,17 +274,16 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         """ Tests query for MQA deletion is set properly """
 
         test_uri = URIRef("http://example.org/datasets/1")
-        owner_org = 'org-1'
 
         mock_fuseki_is_available.return_value = True
 
         client = FusekiTriplestoreClient()
-        client.delete_dataset_in_triplestore_mqa(test_uri, owner_org)
+        client.delete_dataset_in_triplestore_mqa(test_uri)
 
         # set_query() is called in SPARQLWrapper-init() as well, so we can't check for called_once
         self.assertEquals(mock_sparql_set_query.call_count, 2)
         mock_sparql_set_query.assert_called_with(
-            DELETE_VALIDATION_REPORT_BY_URI_SPARQL_QUERY % {'owner_org': owner_org, 'uri': str(test_uri)})
+            DELETE_VALIDATION_REPORT_BY_URI_SPARQL_QUERY % {'uri': str(test_uri)})
         mock_sparql_query.assert_called_once_with()
 
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.is_available')
@@ -296,17 +295,16 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         """ Tests query for harvest_info deletion is set properly """
 
         test_uri = URIRef("http://example.org/datasets/1")
-        owner_org = 'org-1'
 
         mock_fuseki_is_available.return_value = True
 
         client = FusekiTriplestoreClient()
-        client.delete_dataset_in_triplestore_harvest_info(test_uri, owner_org)
+        client.delete_dataset_in_triplestore_harvest_info(test_uri)
 
         # set_query() is called in SPARQLWrapper-init() as well, so we can't check for called_once
         self.assertEquals(mock_sparql_set_query.call_count, 2)
         mock_sparql_set_query.assert_called_with(
-            DELETE_DATASET_FROM_HARVEST_INFO_QUERY % {'uri': str(test_uri), 'owner_org': owner_org})
+            DELETE_DATASET_FROM_HARVEST_INFO_QUERY % {'uri': str(test_uri)})
         mock_sparql_query.assert_called_once_with()
 
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.is_available')
@@ -335,7 +333,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         """ Test if query for selection is set properly and if results returned """
         owner_org = 'org-1'
         mock_response = {"foo": "bar"}
-        test_query = GET_URIS_FROM_HARVEST_INFO_QUERY % {'owner_org': owner_org}
+        test_query = GET_URIS_FROM_HARVEST_INFO_QUERY % {'owner_org_or_source_id': owner_org}
 
         mock_fuseki_is_available.return_value = True
         mock_sparql_query.return_value = mock_response

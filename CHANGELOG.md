@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.6.3 2021-12-16
+
+* Fixes dev-requirements.txt: Broken version 1.7.0 of lazy-object-proxy was banned
+* Fixes saving information about the harvested datasets saved in the triplestore if there is more than one
+  harvest source linked to the same organisation
+
 ## v4.6.2 2021-11-23
 
 * Explicitly disallow incorrect version of python-dateutil

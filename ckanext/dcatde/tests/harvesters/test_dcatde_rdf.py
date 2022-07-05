@@ -93,14 +93,6 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         </rdf:RDF>''' % uri
         return rdf
 
-    @staticmethod
-    def _get_rdf_harvest_info(uri, owner_org):
-        harvest_graph = Graph()
-        harvest_graph.bind("foaf", FOAF)
-        harvest_graph.add((URIRef(uri), FOAF.knows, Literal(owner_org)))
-        rdf_harvest_graph = harvest_graph.serialize(format="xml")
-        return rdf_harvest_graph
-
     def _assert_no_resources_error(self, harvest_obj, mock_save_object_error):
         # check (do not require exact string message but look for keywords)
         mock_save_object_error.assert_called_once_with(
@@ -109,6 +101,19 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         message = mock_save_object_error.call_args[0][0].lower()
         self.assertTrue('skip' in message)
         self.assertTrue('no resources' in message)
+
+    def _assert_rdf_harvest_info(self, mock_call_args_list, uris, owner_org, harvest_source_id):
+        assert len(uris) > 0
+        assert len(mock_call_args_list) == len(uris)
+        for calls in mock_call_args_list:
+            args, kwargs = calls
+            graph_from_mock_args = Graph().parse(data=args[0], format='application/rdf+xml')
+            object_list = []
+            for s, p, o in graph_from_mock_args.triples((None, None, None)):
+                self.assertIn(s, [URIRef(uri) for uri in uris])
+                self.assertEquals(p, FOAF.knows)
+                object_list.append(o)
+            self.assertItemsEqual(object_list, [Literal(owner_org), Literal(harvest_source_id)])
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_metadata_on_import(self, mock_super_import):
@@ -256,9 +261,6 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_dcat_dataset_show.return_value = rdf
         mock_get_action.return_value = mock_dcat_dataset_show
 
-        owner_org = 'owner-org-1'
-        mock_model_package_get.return_value = Mock(name='package-mock', owner_org=owner_org)
-
         mock_triplestore_is_available = Mock(name='triplestore-is-available')
         mock_triplestore_is_available.return_value = True
         harvester.triplestore_client.is_available = mock_triplestore_is_available
@@ -275,8 +277,8 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         mock_get_action.assert_has_calls([call('dcat_dataset_show')])
         mock_fuseki_delete_data.assert_called_with(URIRef(uri))
-        mock_model_package_get.assert_called_with(harvest_obj.source.id)
-        mock_fuseki_delete_data_mqa.assert_called_with(URIRef(uri), owner_org)
+        mock_model_package_get.assert_not_called()
+        mock_fuseki_delete_data_mqa.assert_called_with(URIRef(uri))
 
     @patch('ckanext.harvest.harvesters.base.HarvesterBase._get_user_name')
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
@@ -531,6 +533,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # run
         rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, harvest_obj)
 
+        mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
         self.assertEquals(rdf_parser_return, rdf_parser)
         # check if no errors are returned
@@ -545,13 +548,17 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # check if shacle validator was called
         mock_shacl_validate.assert_called_once_with(ANY, uri, org_id)
         # check if delete dataset was called.
-        mock_fuseki_delete_data_mqa.assert_called_once_with(uri, org_id)
+        mock_fuseki_delete_data_mqa.assert_called_once_with(uri)
         # check if create dataset was called
         mock_fuseki_create_data_mqa.assert_called_once_with(mock_validate_result, uri)
         # check if delete harvest_info was called.
-        mock_fuseki_delete_hi.assert_called_once_with(uri, org_id)
+        mock_fuseki_delete_hi.assert_called_once_with(uri)
         # check if create harvest_info was called.
-        mock_fuseki_create_hi.assert_called_once_with(self._get_rdf_harvest_info(uri, org_id), uri)
+        mock_fuseki_create_hi.assert_called_once_with(ANY, uri)
+        # check if harvest_info was called with the correct parameters
+        # the order of the graph is random, so we to check values individually
+        self._assert_rdf_harvest_info(mock_fuseki_create_hi.call_args_list, [uri], org_id,
+                                      harvest_obj.source.id)
 
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore_harvest_info')
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore_harvest_info')
@@ -579,12 +586,11 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_triplestore_is_available = Mock(name='triplestore-is-available')
         mock_triplestore_is_available.return_value = True
         harvester.triplestore_client.is_available = mock_triplestore_is_available
-        org_id = "test-org-id"
-        mock_model_get.return_value = Mock(owner_org=org_id)
 
         # run
         rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, harvest_obj)
 
+        mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
         self.assertEquals(rdf_parser_return, rdf_parser)
         # error should be returned
@@ -598,10 +604,10 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # validation should also be skipped
         mock_shacl_validate.assert_not_called()
         # and no validation results should be written, but existing should be removed
-        mock_fuseki_delete_data_mqa.assert_called_once_with(uri, org_id)
+        mock_fuseki_delete_data_mqa.assert_called_once_with(uri)
         mock_fuseki_create_data_mqa.assert_not_called()
         # harvest_info should be removed
-        mock_fuseki_delete_hi.assert_called_once_with(uri, org_id)
+        mock_fuseki_delete_hi.assert_called_once_with(uri)
         # create harvest_info skipped
         mock_fuseki_create_hi.assert_not_called()
 
@@ -787,6 +793,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # run
         rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, harvest_obj)
 
+        mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
         self.assertEquals(rdf_parser_return, rdf_parser)
         # There should be two errors
@@ -806,7 +813,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # check if delete mqa storage called for all datasets
         self.assertEquals(mock_fuseki_delete_data_mqa.call_count, len(uris))
         for uri in uris:
-            mock_fuseki_delete_data_mqa.assert_any_call(uri, org_id)
+            mock_fuseki_delete_data_mqa.assert_any_call(uri)
         # check if MQA result storage is handled correctly for datsets 3 and 4
         self.assertEquals(mock_fuseki_create_data_mqa.call_count, 2)
         mock_fuseki_create_data_mqa.assert_any_call(mock_validate_result, uris[2])
@@ -814,11 +821,15 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # check if delete harvest_info was called.
         self.assertEquals(mock_fuseki_delete_hi.call_count, len(uris))
         for uri in uris:
-            mock_fuseki_delete_data_mqa.assert_any_call(uri, org_id)
+            mock_fuseki_delete_hi.assert_any_call(uri)
         # check if create harvest_info was called.
         self.assertEquals(mock_fuseki_create_hi.call_count, 2)
-        mock_fuseki_create_hi.assert_any_call(self._get_rdf_harvest_info(uris[2], org_id), uris[2])
-        mock_fuseki_create_hi.assert_any_call(self._get_rdf_harvest_info(uris[3], org_id), uris[3])
+        mock_fuseki_create_hi.assert_any_call(ANY, uris[2])
+        mock_fuseki_create_hi.assert_any_call(ANY, uris[3])
+        # check if create harvest_info was called with correct parameters
+        # the order of the graph is random, so we to check values individually
+        self._assert_rdf_harvest_info(mock_fuseki_create_hi.call_args_list, [uris[2], uris[3]], org_id,
+                                      harvest_obj.source.id)
 
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore_harvest_info')
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore_harvest_info')
@@ -890,14 +901,13 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_triplestore_is_available = Mock(name='triplestore-is-available')
         mock_triplestore_is_available.return_value = True
         harvester.triplestore_client.is_available = mock_triplestore_is_available
-        org_id = "test-org-id"
-        mock_model_get.return_value = Mock(owner_org=org_id)
 
         mock_fuseki_create_data.side_effect = SPARQLWrapperException('500 Internal server error!')
 
         # run
         rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, harvest_obj)
 
+        mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
         self.assertEquals(rdf_parser_return, rdf_parser)
         # check that one error is returned
@@ -910,9 +920,9 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # check if create dataset was called
         mock_fuseki_create_data.assert_called_once_with(ANY, uri)
         mock_shacl_validate.assert_not_called()
-        mock_fuseki_delete_data_mqa.assert_called_once_with(uri, org_id)
+        mock_fuseki_delete_data_mqa.assert_called_once_with(uri)
         mock_fuseki_create_data_mqa.assert_not_called()
-        mock_fuseki_delete_hi.assert_called_once_with(uri, org_id)
+        mock_fuseki_delete_hi.assert_called_once_with(uri)
         mock_fuseki_create_hi.assert_not_called()
 
     @patch('ckanext.harvest.harvesters.base.HarvesterBase._get_user_name')
@@ -937,9 +947,6 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_dcat_dataset_show.return_value = rdf
         mock_get_action.return_value = mock_dcat_dataset_show
 
-        owner_org = 'owner-org-1'
-        mock_model_package_get.return_value = Mock(name='package-mock', owner_org=owner_org)
-
         mock_triplestore_is_available = Mock(name='triplestore-is-available')
         mock_triplestore_is_available.return_value = True
         harvester.triplestore_client.is_available = mock_triplestore_is_available
@@ -953,54 +960,9 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         mock_get_action.assert_has_calls([call('dcat_dataset_show')])
         mock_fuseki_delete_data.assert_called_with(URIRef(uri))
-        mock_model_package_get.assert_called_with(harvest_obj.source.id)
-        mock_fuseki_delete_data_mqa.assert_called_with(URIRef(uri), owner_org)
-        mock_fuseki_delete_hi.assert_called_once_with(URIRef(uri), owner_org)
-
-    @patch('ckanext.harvest.harvesters.base.HarvesterBase._get_user_name')
-    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
-    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore_mqa')
-    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore_harvest_info')
-    @patch('ckan.model.Package.get')
-    @patch("ckan.plugins.toolkit.get_action")
-    def test_delete_dataset_in_triplestore_skip_mqa_without_owner_org(
-            self, mock_get_action, mock_model_package_get, mock_fuseki_delete_hi, mock_fuseki_delete_data_mqa,
-            mock_fuseki_delete_data, mock_harvest_get_username):
-        """
-        Tests if the dataset with the given ID and without owner_org will NOT be deleted in the triplestore 
-        mqa datastore.
-        """
-        # prepare
-        harvester = DCATdeRDFHarvester()
-
-        mock_harvest_get_username.return_value = 'harvest'
-        uri = 'http://ckan.govdata.de/dataset/317aa7ac-fd1d-49fe-8a43-63eb64d4392c'
-        rdf = self._get_rdf(uri)
-        mock_dcat_dataset_show = Mock()
-        mock_dcat_dataset_show.return_value = rdf
-        mock_get_action.return_value = mock_dcat_dataset_show
-
-        mock_package = Mock(name='package-mock')
-        # delete mock property to avoid creating property on demand
-        del mock_package.owner_org
-        mock_model_package_get.return_value = mock_package
-
-        mock_triplestore_is_available = Mock(name='triplestore-is-available')
-        mock_triplestore_is_available.return_value = True
-        harvester.triplestore_client.is_available = mock_triplestore_is_available
-
-        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', 'delete')
-
-        # run
-        harvester._delete_dataset_in_triplestore(harvest_obj)
-
-        # check
-        mock_triplestore_is_available.assert_has_calls([call(), call()])
-        mock_get_action.assert_has_calls([call('dcat_dataset_show')])
-        mock_fuseki_delete_data.assert_called_with(URIRef(uri))
-        mock_model_package_get.assert_called_with(harvest_obj.source.id)
-        mock_fuseki_delete_data_mqa.assert_not_called()
-        mock_fuseki_delete_hi.assert_not_called()
+        mock_model_package_get.assert_not_called()
+        mock_fuseki_delete_data_mqa.assert_called_with(URIRef(uri))
+        mock_fuseki_delete_hi.assert_called_once_with(URIRef(uri))
 
     @patch('ckanext.harvest.harvesters.base.HarvesterBase._get_user_name')
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
@@ -1141,10 +1103,11 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
                                                                harvest_obj)
 
         mock_triplestore_is_available.assert_called_once_with()
-        mock_get_uris.assert_called_once_with(owner_org)
+        mock_package_get.assert_called_once_with(harvest_obj.source.id)
+        mock_get_uris.assert_called_once_with(harvest_obj.source.id)
         mock_triplestore_delete_ds.assert_called_once_with(existing_uris[0])
-        mock_triplestore_delete_mqa.assert_called_once_with(existing_uris[0], owner_org)
-        mock_triplestore_delete_hi.assert_called_once_with(existing_uris[0], owner_org)
+        mock_triplestore_delete_mqa.assert_called_once_with(existing_uris[0])
+        mock_triplestore_delete_hi.assert_called_once_with(existing_uris[0])
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._get_existing_dataset_uris_from_triplestore')
     @patch('ckan.model.Package.get')
@@ -1179,7 +1142,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         result = harvester._get_existing_dataset_uris_from_triplestore(test_owner_org)
 
         mock_select_datatsets_ts.assert_called_once_with(GET_URIS_FROM_HARVEST_INFO_QUERY % {
-            'owner_org': test_owner_org})
+            'owner_org_or_source_id': test_owner_org})
         self.assertEquals(result, expected_result)
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.HarvestObject')
