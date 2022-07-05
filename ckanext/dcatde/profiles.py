@@ -239,7 +239,7 @@ class DCATdeProfile(RDFProfile):
                         ):
                             value = self._object_value(distribution, predicate)
                             if value:
-                                ds_utils.insert_resource_extra(resource_dict, key, value)
+                                resource_dict[key] = value
         # -- end loop over dcatde namespaces --
 
         # additions in other namespaces than DCATDE

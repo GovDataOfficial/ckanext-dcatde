@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.1.2 2022-05-05
+
+* Fixes saving resource extras in the migration functions and in the DCAT-AP.de profile
+* Fixes clear harvest source history command call in cronjob shell script
+* Fixes CKAN action context DCAT-AP.de migration command
+
 ## v5.1.0 2022-04-07
 
 * Support for Python 3

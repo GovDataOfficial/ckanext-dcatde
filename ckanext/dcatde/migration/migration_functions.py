@@ -283,10 +283,7 @@ class MigrationFunctions(object):
 
         if resources is not None:
             for resource in resources:
-                if '__extras' not in resource:
-                    resource['__extras'] = {}
-
-                resource['__extras'][u'license'] = dataset['license_id']
+                resource['license'] = dataset['license_id']
 
     def terms_of_use_attribution_text(self, dataset):
         '''
@@ -302,9 +299,7 @@ class MigrationFunctions(object):
 
             if text and resources:
                 for resource in resources:
-                    if '__extras' not in resource:
-                        resource['__extras'] = {}
-                    resource['__extras'][u'licenseAttributionByText'] = text
+                    resource['licenseAttributionByText'] = text
 
     def dates_role_veroeffentlicht(self, dataset):
         '''extras.dates.role = "veroeffentlicht" -> extras.issued'''

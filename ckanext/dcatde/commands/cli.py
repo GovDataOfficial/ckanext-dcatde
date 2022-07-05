@@ -7,7 +7,6 @@ from six.moves import urllib
 
 import ckanapi
 import click
-from ckan import model
 from ckan.plugins import toolkit as tk
 import ckanext.dcatde.commands.command_util as utils
 from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient
@@ -78,7 +77,6 @@ def dcatde_themeadder(args):
     Usage: dcatde_themeadder [omit-group-migration]
     '''
     omit_group_migration = False
-    admin_user = None
 
     if len(args) > 0:
         cmd = args[0]
@@ -109,10 +107,10 @@ def dcatde_themeadder(args):
 
     govdata_groups = json.loads(groups_str)
 
-    utils.create_groups(present_groups_keys, govdata_groups, admin_user)
+    utils.create_groups(present_groups_keys, govdata_groups)
 
     if not omit_group_migration:
-        utils.migrate_user_permissions(present_groups_keys, govdata_groups, admin_user)
+        utils.migrate_user_permissions(present_groups_keys, govdata_groups)
 
 
 @click.group()
@@ -142,11 +140,7 @@ def reindex(dry_run):
     """
     result = _check_options(dry_run=dry_run)
 
-    # Getting/Setting default site user
-    context = {'model': model, 'session': model.Session, 'ignore_auth': True}
-    admin_user = tk.get_action('get_site_user')(context, {})
-
-    utils.reindex(result["dry_run"], triplestore_client, shacl_validation_client, admin_user)
+    utils.reindex(result["dry_run"], triplestore_client, shacl_validation_client)
 
 
 @triplestore.command('delete_datasets')

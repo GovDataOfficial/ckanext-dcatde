@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
 
+import json
+import six
 import unittest
 
 import ckanext.dcatde.commands.command_util as utils
@@ -45,7 +47,8 @@ class GetActionHelperMigration(helpers.GetActionHelper):
 
         self.side_effect_actions = {
             'package_show': self.mock_pkg_show,
-            'package_update': self.mock_pkg_update
+            'package_update': self.mock_pkg_update,
+            'get_site_user': self.mock_get_site_user
         }
 
         self.build_mocks()
@@ -85,6 +88,9 @@ class GetActionHelperMigration(helpers.GetActionHelper):
 
     def mock_pkg_update(self, _, dataset):
         self.updated_datasets[dataset['id']] = dataset
+
+    def mock_get_site_user(self, _, data):
+        return {'name': 'default_test'}
 
 
 @patch("ckanext.dcatde.dataset_utils.gather_dataset_ids")
@@ -247,8 +253,9 @@ class TestMigration(unittest.TestCase):
         # assert that the needed methods were obtained in the expected
         # order. Update gets obtained for each dataset, but we only use one dataset anyway.
         mock_get_action.assert_has_calls([call('package_show'),
+                                          call('get_site_user'),
                                           call('package_update')])
-        self.assertEqual(mock_get_action.call_count, 2)
+        self.assertEqual(mock_get_action.call_count, 3)
 
         # check if the extras field contains exactly one entry with the new key
         self.assertEqual(action_hlp.updated_datasets['pkg3']['extras'],
@@ -301,21 +308,32 @@ class TestMigration(unittest.TestCase):
         """ Tests if the organization contributor-id has been added to the existing contributor-ids """
         pkg_id = 'pkg5'
         organization_id = '123'
+        contributor_id_list = ['test_org_contrib_id']
 
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         action_hlp = GetActionHelperMigration()
-        action_hlp.return_val_actions['organization_list'] = [{'id': organization_id,
-                                                               'extras': [{'value': '["test_org_contrib_id"]',
-                                                                           'key': 'contributorID'}]}]
+        action_hlp.return_val_actions['organization_list'] = [
+            {'id': organization_id,
+             'extras': [{'value': json.dumps(contributor_id_list), 'key': 'contributorID'}]
+            }
+        ]
         action_hlp.build_mocks()
         mock_get_action.side_effect = action_hlp.mock_get_action
 
         utils.migrate_contributor_identifier(False)
 
-        mock_get_action.assert_has_calls([call('package_show')])
-        mock_get_action.assert_has_calls([call('package_update')])
+        mock_get_action.assert_has_calls([call('package_show'), call('organization_list')],
+                                         call('package_update'))
         self.assertEqual(mock_get_action.call_count, 3)
+
+        contributor_id_list.append('test_ds_contrib_id')
+        # check if the extras field contains the correct value for the ContributorID
+        extras_list = action_hlp.updated_datasets[pkg_id]['extras']
+        assert len(extras_list) == 1
+        assert 'key' in extras_list[0] and extras_list[0]['key'] == 'contributorID'
+        six.assertCountEqual(self, json.loads(extras_list[0]['value']), contributor_id_list)
+
         mock_gather_ids.assert_called_once_with()
 
     def test_contributor_id_create_id_field(self, mock_get_action, mock_model,
@@ -323,21 +341,28 @@ class TestMigration(unittest.TestCase):
         """ Tests if a new contributor-id-field has been created in the dataset"""
         pkg_id = 'pkg6'
         organization_id = '123'
+        contributor_id_list = ['test_org_contrib_id']
 
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         action_hlp = GetActionHelperMigration()
-        action_hlp.return_val_actions['organization_list'] = [{'id': organization_id,
-                                                            'extras': [{'value': '["test_org_contrib_id"]',
-                                                                        'key': 'contributorID'}]}]
+        action_hlp.return_val_actions['organization_list'] = [
+            {'id': organization_id,
+             'extras': [{'value': json.dumps(contributor_id_list), 'key': 'contributorID'}]
+            }
+        ]
         action_hlp.build_mocks()
         mock_get_action.side_effect = action_hlp.mock_get_action
 
         utils.migrate_contributor_identifier(False)
 
-        mock_get_action.assert_has_calls([call('package_show')])
-        mock_get_action.assert_has_calls([call('package_update')])
+        mock_get_action.assert_has_calls([call('package_show'), call('organization_list')],
+                                         call('package_update'))
         self.assertEqual(mock_get_action.call_count, 3)
+
+        # check if the extras field contains the correct value for the ContributorID
+        self.assertEqual(action_hlp.updated_datasets[pkg_id]['extras'],
+                         [{'value': json.dumps(contributor_id_list), 'key': 'contributorID'}])
 
         mock_gather_ids.assert_called_once_with()
 
@@ -359,8 +384,7 @@ class TestMigration(unittest.TestCase):
 
         utils.migrate_contributor_identifier(False)
 
-        mock_get_action.assert_has_calls([call('package_show')])
-        mock_get_action.assert_has_calls([call('organization_list')])
+        mock_get_action.assert_has_calls([call('organization_list'), call('package_show')])
         self.assertEqual(mock_get_action.call_count, 2)
         mock_gather_ids.assert_called_once_with()
 
@@ -370,21 +394,31 @@ class TestMigration(unittest.TestCase):
          The contributor-IDs are not lists but Strings """
         pkg_id = 'pkg8'
         organization_id = '123'
+        contributor_id_org = 'test_org_contrib_id'
+        contributor_id_list = [contributor_id_org]
 
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         action_hlp = GetActionHelperMigration()
         action_hlp.return_val_actions['organization_list'] = [{'id': organization_id,
-                                                               'extras': [{'value': 'test_org_contrib_id',
+                                                               'extras': [{'value': contributor_id_org,
                                                                            'key': 'contributorID'}]}]
         action_hlp.build_mocks()
         mock_get_action.side_effect = action_hlp.mock_get_action
 
         utils.migrate_contributor_identifier(False)
 
-        mock_get_action.assert_has_calls([call('package_show')])
-        mock_get_action.assert_has_calls([call('package_update')])
+        mock_get_action.assert_has_calls([call('package_show'), call('organization_list')],
+                                         call('package_update'))
         self.assertEqual(mock_get_action.call_count, 3)
+
+        contributor_id_list.append('test_ds_contrib_id')
+        # check if the extras field contains the correct value for the ContributorID
+        extras_list = action_hlp.updated_datasets[pkg_id]['extras']
+        assert len(extras_list) == 1
+        assert 'key' in extras_list[0] and extras_list[0]['key'] == 'contributorID'
+        six.assertCountEqual(self, json.loads(extras_list[0]['value']), contributor_id_list)
+
         mock_gather_ids.assert_called_once_with()
 
     def test_contributor_id_no_contributorid_in_org(self, mock_get_action,
@@ -404,7 +438,7 @@ class TestMigration(unittest.TestCase):
 
         utils.migrate_contributor_identifier(False)
 
-        mock_get_action.assert_has_calls([call('package_show')])
+        mock_get_action.assert_has_calls([call('organization_list'), call('package_show')])
         self.assertEqual(mock_get_action.call_count, 2)
         mock_gather_ids.assert_called_once_with()
 
@@ -413,19 +447,29 @@ class TestMigration(unittest.TestCase):
         """ Tests if a deprecated contributorID is detected and replaced """
         pkg_id = 'pkg9'
         organization_id = '123'
+        contributor_id_list = [CONTRIBUTOR_ID_NEW]
 
         mock_gather_ids.return_value = {pkg_id: organization_id}
 
         # The contributorID in the CKAN organization was already updated before
         action_hlp = GetActionHelperMigration()
         action_hlp.return_val_actions['organization_list'] = [{
-            'id': organization_id, 'extras': [{'value': '["' + CONTRIBUTOR_ID_NEW + '"]', 'key': 'contributorID'}]}]
+            'id': organization_id,
+            'extras': [{'value': json.dumps(contributor_id_list), 'key': 'contributorID'}]}]
         action_hlp.build_mocks()
         mock_get_action.side_effect = action_hlp.mock_get_action
 
         utils.migrate_contributor_identifier(False)
 
-        mock_get_action.assert_has_calls([call('package_show')])
-        mock_get_action.assert_has_calls([call('package_update')])
+        mock_get_action.assert_has_calls([call('package_show'), call('organization_list')],
+                                         call('package_update'))
         self.assertEqual(mock_get_action.call_count, 3)
+
+        contributor_id_list.append('test_org_contrib_id')
+        # check if the extras field contains the correct value for the ContributorID
+        extras_list = action_hlp.updated_datasets[pkg_id]['extras']
+        assert len(extras_list) == 1
+        assert 'key' in extras_list[0] and extras_list[0]['key'] == 'contributorID'
+        six.assertCountEqual(self, json.loads(extras_list[0]['value']), contributor_id_list)
+
         mock_gather_ids.assert_called_once_with()

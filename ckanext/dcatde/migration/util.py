@@ -266,11 +266,11 @@ def addr_parse(address):
 
 def update_language_in(dataset, data_dict, key, desc_field):
     """Helper to update language country codes in the given data_dict,
-    where the languate attribute is in data_dict[key]."""
+    where the language attribute is in data_dict[key]."""
     prefix = u'http://publications.europa.eu/resource/authority/language/'
     try:
-        if not data_dict[key].startswith(prefix):
+        if data_dict.get(key) and not data_dict[key].startswith(prefix):
             language = pycountry.languages.get(alpha_2=data_dict[key])
             data_dict[key] = prefix + language.alpha_3.upper()
-    except KeyError:
-        log_error(dataset, 'INVALID: ' + desc_field + ': ' + data_dict[key])
+    except (KeyError, AttributeError):
+        log_error(dataset, 'INVALID: ' + desc_field + ': ' + data_dict.get(key))

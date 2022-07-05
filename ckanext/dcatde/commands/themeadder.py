@@ -28,7 +28,6 @@ class ThemeAdder(CkanCommand):
 
     def __init__(self, name):
         super(ThemeAdder, self).__init__(name)
-        self.admin_user = None
 
     def command(self):
         """Worker command doing the actual group additions."""
@@ -61,7 +60,7 @@ class ThemeAdder(CkanCommand):
             groups_str = '{}'
 
         govdata_groups = json.loads(groups_str)
-        create_groups(present_groups_keys,govdata_groups,self.admin_user)
+        create_groups(present_groups_keys, govdata_groups)
 
         if not self.omit_group_migration:
-            migrate_user_permissions(present_groups_keys, govdata_groups, self.admin_user)
+            migrate_user_permissions(present_groups_keys, govdata_groups)

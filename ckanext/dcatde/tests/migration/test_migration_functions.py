@@ -443,7 +443,7 @@ class TestMigrationFunctions(unittest.TestCase):
                 self._assert_dataset_len(res, 2)
                 self.assertIn(u'id', res)
                 self.assertDictContainsSubset({
-                    u'__extras': {u'license': u'dcatde-license-key'}
+                    u'license': u'dcatde-license-key'
                 }, res)
 
     def test_license_id_skip_unknown(self):
@@ -486,10 +486,8 @@ class TestMigrationFunctions(unittest.TestCase):
             self._assert_dataset_len(res, 2)
             self.assertIn(u'id', res)
             self.assertDictContainsSubset({
-                u'__extras': {
-                    u'licenseAttributionByText': u'Darf zu Testzwecken genutzt werden'
-                }
-                }, res)
+                u'licenseAttributionByText': u'Darf zu Testzwecken genutzt werden'
+            }, res)
 
         # test that attribute is removed in dataset->extras
         self.assertNotIn('terms_of_use', test_ds['extras'])
@@ -525,6 +523,7 @@ class TestMigrationFunctions(unittest.TestCase):
         test_ds = self._build_dataset_extras(u"language", u"de")
         test_ds[u'resources'] = [
             {'language': 'en'},
+            {'language': 'unknown'},  # invalid
             {'language': 'de'}
         ]
 
@@ -541,6 +540,11 @@ class TestMigrationFunctions(unittest.TestCase):
         }, res)
 
         res = test_ds[u'resources'][1]
+        self.assertDictContainsSubset({
+            u'language': 'unknown'
+        }, res)
+
+        res = test_ds[u'resources'][2]
         self.assertDictContainsSubset({
             u'language': u'http://publications.europa.eu/resource/authority/language/DEU'
         }, res)

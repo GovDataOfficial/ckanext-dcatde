@@ -4,9 +4,7 @@
 Paster command for the triple store.
 '''
 import sys
-from ckan import model
 from ckan.plugins.toolkit import CkanCommand
-from ckan.plugins import toolkit as tk
 from ckanext.dcatde.triplestore.fuseki_client import FusekiTriplestoreClient
 from ckanext.dcatde.commands.command_util import reindex, clean_triplestore_from_uris
 from ckanext.dcatde.validation.shacl_validation import ShaclValidator
@@ -41,7 +39,6 @@ class Triplestore(CkanCommand):
                                help='Use comma separated URI-values to specify which datasets ' \
                                     'should be deleted when running delete_datasets')
 
-        self.admin_user = None
         self.triplestore_client = None
         self.shacl_validation_client = None
         self.dry_run = True
@@ -56,16 +53,12 @@ class Triplestore(CkanCommand):
             sys.exit(1)
         cmd = self.args[0]
 
-        # Getting/Setting default site user
-        context = {'model': model, 'session': model.Session, 'ignore_auth': True}
-        self.admin_user = tk.get_action('get_site_user')(context, {})
-
         if cmd == 'reindex':
             self._check_options()
             # Initialize triple store client
             self.triplestore_client = FusekiTriplestoreClient()
             self.shacl_validation_client = ShaclValidator()
-            reindex(self.dry_run, self.triplestore_client, self.shacl_validation_client, self.admin_user)
+            reindex(self.dry_run, self.triplestore_client, self.shacl_validation_client)
         elif cmd == 'delete_datasets':
             self._check_options()
             self.triplestore_client = FusekiTriplestoreClient()

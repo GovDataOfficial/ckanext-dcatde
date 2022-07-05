@@ -790,17 +790,17 @@ class TestDCATde(unittest.TestCase):
                                   'https://www.example.com/')
 
         # resource checks
-        self.assertEqual(dist1['__extras'].get('plannedAvailability'),
+        self.assertEqual(dist1.get('plannedAvailability'),
                          'http://dcat-ap.de/def/plannedAvailability/experimental')
-        self.assertEqual(dist1['__extras'].get('licenseAttributionByText'),
+        self.assertEqual(dist1.get('licenseAttributionByText'),
                          u'Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2016')
         self.assertEqual(dist1.get('license'),
                          "http://dcat-ap.de/def/licenses/dl-by-de/2_0")
         self.assertEqual(dist1.get('size'), 685246)
 
-        self.assertEqual(dist2['__extras'].get('plannedAvailability'),
+        self.assertEqual(dist2.get('plannedAvailability'),
                          'http://dcat-ap.de/def/plannedAvailability/available')
-        self.assertEqual(dist2['__extras'].get('licenseAttributionByText'),
+        self.assertEqual(dist2.get('licenseAttributionByText'),
                          u'Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2015')
         self.assertEqual(dist2.get('license'),
                          "http://dcat-ap.de/def/licenses/dl-by-de/2_0")

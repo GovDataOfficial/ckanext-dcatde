@@ -5,7 +5,7 @@ ip=$(echo $IP_MASTER | tr -d '\r')
 
 if [ $? -eq 0 ]; then
   logger "Start GovData harvest job cleaner"
-  /usr/lib/ckan/env/bin/ckan --config=/etc/ckan/default/production.ini -k=true harvester clearsource-history
+  /usr/lib/ckan/env/bin/ckan --config=/etc/ckan/default/production.ini harvester source clear-history -k true
   logger "Finished GovData harvest job cleaner"
 else
   logger "Host isn't master host"

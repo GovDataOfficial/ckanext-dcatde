@@ -5,7 +5,6 @@ Paster command for migrating CKAN datasets from OGD to DCAT-AP.de.
 '''
 import sys
 
-from ckan import model
 from ckan.plugins.toolkit import CkanCommand
 from ckanext.dcatde.commands.command_util import (
     migrate_adms_identifier, migrate_contributor_identifier, migrate_datasets)
@@ -41,12 +40,6 @@ class DCATdeMigrateCommand(CkanCommand):
 
     def __init__(self, name):
         super(DCATdeMigrateCommand, self).__init__(name)
-
-    def create_context(self):
-        '''
-        Creates new context.
-        '''
-        return {'model': model, 'ignore_auth': True}
 
     def command(self):
         '''

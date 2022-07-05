@@ -51,11 +51,10 @@ class TestTripleStoreCommand(unittest.TestCase):
         mock_gather_ids.return_value = {}
         triplestore_client = FusekiTriplestoreClient()
         shacl_validation_client = ShaclValidator()
-        admin_user = dict(name='admin')
         dry_run = True
 
         #execute
-        utils.reindex(dry_run, triplestore_client, shacl_validation_client, admin_user)
+        utils.reindex(dry_run, triplestore_client, shacl_validation_client)
 
         #verify
         # not called, DRY-RUN
@@ -77,11 +76,10 @@ class TestTripleStoreCommand(unittest.TestCase):
         mock_gather_ids.return_value = dict(d1='org-1', d2='org-2')
         triplestore_client = FusekiTriplestoreClient()
         shacl_validation_client = ShaclValidator()
-        admin_user = dict(name='admin')
         dry_run = True
 
         #execute
-        utils.reindex(dry_run, triplestore_client, shacl_validation_client, admin_user)
+        utils.reindex(dry_run, triplestore_client, shacl_validation_client)
 
         #verify
         # not called, DRY-RUN
@@ -120,11 +118,10 @@ class TestTripleStoreCommand(unittest.TestCase):
 
         triplestore_client = FusekiTriplestoreClient()
         shacl_validation_client = ShaclValidator()
-        admin_user = dict(name='admin')
         dry_run = False
 
         #execute
-        utils.reindex(dry_run, triplestore_client, shacl_validation_client, admin_user)
+        utils.reindex(dry_run, triplestore_client, shacl_validation_client)
 
         #verify
         mock_triplestore_is_available.assert_called_once_with()
@@ -153,11 +150,10 @@ class TestTripleStoreCommand(unittest.TestCase):
         mock_gather_ids.return_value = dict(d1='org-1', d2='org-2')
         triplestore_client = FusekiTriplestoreClient()
         shacl_validation_client = ShaclValidator()
-        admin_user = dict(name='admin')
         dry_run = False
 
         #execute
-        utils.reindex(dry_run, triplestore_client, shacl_validation_client, admin_user)
+        utils.reindex(dry_run, triplestore_client, shacl_validation_client)
 
         #verify
         mock_triplestore_is_available.assert_called_once_with()

@@ -158,7 +158,6 @@ class TestThemeAdderCommand(unittest.TestCase):
         # prepare
         present_groups_dict = {}
         new_groups_dict = mock_jsonload('')
-        admin_user = None
 
         helper = GroupHelper()
         permissionhelper = GroupPermissionHelper()
@@ -167,7 +166,7 @@ class TestThemeAdderCommand(unittest.TestCase):
         mock_getaction.side_effect = action_hlp.mock_get_action
 
         # execute
-        utils.create_groups(present_groups_dict, new_groups_dict, admin_user)
+        utils.create_groups(present_groups_dict, new_groups_dict)
 
         # check if groups were added
         self._assert_groups_valid(helper)
@@ -182,7 +181,6 @@ class TestThemeAdderCommand(unittest.TestCase):
         # relevant
         present_groups_dict  = {'agri': '', 'intr': ''}
         new_groups_dict = mock_jsonload('')
-        admin_user = None
 
         helper = GroupHelper()
         permissionhelper = GroupPermissionHelper()
@@ -191,7 +189,7 @@ class TestThemeAdderCommand(unittest.TestCase):
         mock_getaction.side_effect = action_hlp.mock_get_action
 
         # execute
-        utils.create_groups(present_groups_dict , new_groups_dict, admin_user)
+        utils.create_groups(present_groups_dict , new_groups_dict)
 
         # check if nonpresent gropus were added
         self._assert_groups_valid(helper)
@@ -212,7 +210,6 @@ class TestThemeAdderCommand(unittest.TestCase):
         # prepare
         present_groups_dict  = mock_jsonload('')
         new_groups_dict = mock_jsonload('')
-        admin_user = None
 
         helper = GroupHelper()
         permissionhelper = GroupPermissionHelper()
@@ -221,7 +218,7 @@ class TestThemeAdderCommand(unittest.TestCase):
         mock_getaction.side_effect = action_hlp.mock_get_action
 
         # execute
-        utils.create_groups(present_groups_dict, new_groups_dict, admin_user)
+        utils.create_groups(present_groups_dict, new_groups_dict)
 
         # ensure no groups were added
         self.assertEqual(len(helper.get_groups()), 0,
@@ -231,14 +228,13 @@ class TestThemeAdderCommand(unittest.TestCase):
 
     def test_group_permission_migration(self, mock_getaction):
 
-        admin_user = None
         helper = GroupHelper()
         permissionhelper = GroupPermissionHelper()
         action_hlp = GetActionHelperThemeAdder(helper, permissionhelper)
 
         mock_getaction.side_effect = action_hlp.mock_get_action
 
-        utils.migrate_user_permissions(["old1", "old2"], ["new1", "new2"], admin_user)
+        utils.migrate_user_permissions(["old1", "old2"], ["new1", "new2"])
 
         calls = permissionhelper.get_calls()
         six.assertCountEqual(self, calls, [

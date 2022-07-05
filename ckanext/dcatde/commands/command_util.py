@@ -38,6 +38,17 @@ DEPRECATED_CONTRIBUTOR_IDS = {
     'http://dcat-ap.de/def/contributors/dieBundesbeauftragteFuerDenDatenschutzUndDieInformationsfreiheit':
     'http://dcat-ap.de/def/contributors/derBundesbeauftragteFuerDenDatenschutzUndDieInformationsfreiheit'}
 
+_context = None
+
+
+def _get_context():
+    global _context
+    if not _context:
+        user = tk.get_action(u'get_site_user')(
+            {u'model': model, u'ignore_auth': True}, {})
+        _context = {u'model': model, u'session': model.Session,
+                    u'user': user[u'name']}
+    return _context
 
 #######################################
 ###         migration utils         ###
@@ -52,7 +63,7 @@ def migrate_datasets(dry_run):
                 tk.config.get('ckanext.dcatde.urls.category_mapping'))
     # Check if all needed groups are present
     group_list = tk.get_action('group_list')
-    if not executor.check_group_presence(group_list(_create_context(), {})):
+    if not executor.check_group_presence(group_list(_get_context(), {})):
         return
 
     migration_util.get_migrator_log().info(
@@ -115,7 +126,7 @@ def migrate_contributor_identifier(dry_run):
     print("INFO: %s datasets found to check for contributor-ID. Total time: %s." % \
             (len(package_obj_to_update), str(endtime - starttime)))
 
-    organization_list = tk.get_action('organization_list')(_create_context(),
+    organization_list = tk.get_action('organization_list')(_get_context(),
                                                             {'all_fields': True, 'include_extras': True})
     updated_count = created_count = deprecated_count = 0
 
@@ -210,7 +221,7 @@ def _iterate_datasets(package_ids):
             message = str(progress_current) + " / " + str(progress_total) + "\n"
             sock.sendto(message.encode(), (UDP_IP, UDP_PORT))
 
-            dataset = package_show(_create_context(), {'id': dataset_id.strip()})
+            dataset = package_show(_get_context(), {'id': dataset_id.strip()})
 
             # ignore harvesters, which are in the list as well
             if dataset['type'] == 'harvest':
@@ -230,7 +241,7 @@ def _iterate_local_datasets():
     package_list = tk.get_action('package_list')
 
     # returns only active datasets (missing datasets with status "private" and "draft")
-    package_ids = package_list(_create_context(), {})
+    package_ids = package_list(_get_context(), {})
     # Query all private and draft packages except harvest packages
     query = model.Session.query(model.Package)\
         .filter(or_(model.Package.private.is_(True), model.Package.state == 'draft'))\
@@ -261,20 +272,13 @@ def _update_dataset(dataset, dry_run):
     if not dry_run:
         try:
             package_update = tk.get_action('package_update')
-            ctx = _create_context()
+            ctx = _get_context()
             ctx['schema'] = _get_update_package_schema()
             ctx['return_id_only'] = True
             package_update(ctx, dataset)
         except Exception:
             migration_util.get_migrator_log().exception(
                 migration_util.log_dataset_prefix(dataset) + 'could not update')
-
-
-def _create_context():
-    '''
-    Creates new context.
-    '''
-    return {'model': model, 'ignore_auth': True}
 
 
 def _get_update_package_schema():
@@ -296,7 +300,8 @@ def _get_update_package_schema():
 ###         themeadder utils        ###
 #######################################
 
-def create_groups(old_groups, new_groups, admin_user):
+
+def create_groups(old_groups, new_groups):
     for group_key in new_groups:
         if group_key not in old_groups:
             add_message = 'Adding group {group_key}.'.format(
@@ -311,31 +316,32 @@ def create_groups(old_groups, new_groups, admin_user):
             }
 
             _create_and_purge_group(
-                group_dict, admin_user
+                group_dict
             )
         else:
             skip_message = 'Skipping creation of group '
             skip_message = skip_message + "{group_key}, as it's already present."
             print((skip_message.format(group_key=group_key)))
 
-def _create_and_purge_group(group_dict, admin_user):
+
+def _create_and_purge_group(group_dict):
     '''
     Worker method for the actual group addition.
     For unpurged groups a purge happens prior.
     '''
 
     try:
-        tk.get_action('group_purge')(_create_context_with_user(admin_user), group_dict)
+        tk.get_action('group_purge')(_get_context(), group_dict)
     except NotFound:
         not_found_message = 'Group {group_name} not found, nothing to purge.'.format(
             group_name=group_dict['name']
         )
         print(not_found_message)
     finally:
-        tk.get_action('group_create')(_create_context_with_user(admin_user), group_dict)
+        tk.get_action('group_create')(_get_context(), group_dict)
 
 
-def migrate_user_permissions(old_groups, new_groups, admin_user):
+def migrate_user_permissions(old_groups, new_groups):
     '''
     Collects all users and their highest permission from old groups
     and sets them to new new groups.
@@ -346,7 +352,7 @@ def migrate_user_permissions(old_groups, new_groups, admin_user):
     userrights = ["member", "editor", "admin"]
 
     # crawl existing groups and fetch users with permission
-    groupdetails = tk.get_action('group_list')(_create_context_with_user(admin_user), {
+    groupdetails = tk.get_action('group_list')(_get_context(), {
         "include_users": True,
         "all_fields": True
     })
@@ -370,27 +376,19 @@ def migrate_user_permissions(old_groups, new_groups, admin_user):
                 user=username,
                 group=group,
                 role=role))
-            tk.get_action('group_member_create')(_create_context_with_user(admin_user), {
+            tk.get_action('group_member_create')(_get_context(), {
                 "id": group,
                 "username": username,
                 "role": role
             })
 
 
-def _create_context_with_user(admin_user):
-    if not admin_user:
-        # Getting/Setting default site user
-        context = {'model': model, 'session': model.Session, 'ignore_auth': True}
-        admin_user = tk.get_action('get_site_user')(context, {})
-
-    return {'user': admin_user['name']}
-
-
 #######################################
 ###        triplestore utils        ###
 #######################################
 
-def reindex(dry_run, triplestore_client, shacl_validation_client, admin_user):
+
+def reindex(dry_run, triplestore_client, shacl_validation_client):
     '''Deletes all datasets matching package search filter query.'''
     starttime = time.time()
     package_obj_to_reindex = dataset_utils.gather_dataset_ids(include_private=False)
@@ -413,7 +411,7 @@ def reindex(dry_run, triplestore_client, shacl_validation_client, admin_user):
                     # Reindex package
                     checkpoint_start = time.time()
                     uri = _update_package_in_triplestore(triplestore_client, shacl_validation_client,
-                                                         package_id, package_org, admin_user)
+                                                         package_id, package_org)
                     checkpoint_end = time.time()
                     print("DEBUG: Reindexed dataset with id %s. Time taken for reindex: %s." % \
                                 (package_id, str(checkpoint_end - checkpoint_start)))
@@ -456,18 +454,17 @@ def clean_triplestore_from_uris(dry_run, triplestore_client, uris_to_clean):
         print("INFO: TripleStore is not available. Skipping cleaning!")
 
 
-def _get_rdf(dataset_ref, admin_user):
+def _get_rdf(dataset_ref):
     '''Reads the RDF presentation of the dataset with the given ID.'''
-    context = {'user': admin_user['name']}
-    return tk.get_action('dcat_dataset_show')(context, {'id': dataset_ref, 'format': RDF_FORMAT_TURTLE})
+    return tk.get_action('dcat_dataset_show')(_get_context(),
+                                              {'id': dataset_ref, 'format': RDF_FORMAT_TURTLE})
 
 
-def _update_package_in_triplestore(triplestore_client, shacl_validation_client, package_id,
-                                   package_org, admin_user):
+def _update_package_in_triplestore(triplestore_client, shacl_validation_client, package_id, package_org):
     '''Updates the package with the given package ID in the triple store.'''
     uri = 'n/a'
     # Get uri of dataset
-    rdf = _get_rdf(package_id, admin_user)
+    rdf = _get_rdf(package_id)
     rdf_parser = RDFParser()
     rdf_parser.parse(rdf, RDF_FORMAT_TURTLE)
     # Should be only one dataset
