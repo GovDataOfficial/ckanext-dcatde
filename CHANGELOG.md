@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.6.6 2022-01-27
+
+* Deletes deprecated datasets in CKAN regardless of whether the dataset could previously be renamed or not 
+* Deletes deprecated datasets from triple store even if there is no owner org defined in the harvest source
+
 ## v4.6.4 2021-12-21
 
 * Adds the option `--keep-current=true` to the clear harvest jobs shell script.

@@ -1109,22 +1109,40 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_triplestore_delete_mqa.assert_called_once_with(existing_uris[0])
         mock_triplestore_delete_hi.assert_called_once_with(existing_uris[0])
 
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore_harvest_info')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore_mqa')
+    @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._get_existing_dataset_uris_from_triplestore')
     @patch('ckan.model.Package.get')
-    def test_delete_deprecated_datasets_from_triplestore_no_source_fail(self, mock_package_get, mock_get_uris):
-        """ Test behaviour if owner org is not found """
+    def test_delete_deprecated_datasets_from_triplestore_no_source(self, mock_package_get, mock_get_uris,
+            mock_triplestore_delete_ds, mock_triplestore_delete_mqa, mock_triplestore_delete_hi):
+        """
+        Test behaviour if owner org is not found: Deletes dataset from all triple stores as with owner org,
+        because owner org is only used for logging
+        """
 
         uris_db_marked_as_deleted = ["URI-3"]
         harvested_uris = ["URI-1", "URI-2", "URI-3"]
-        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', 'test-status')
+        existing_uris = ["URI-0", "URI-1", "URI-2"]
 
         mock_package_get.return_value = None
+        mock_get_uris.return_value = existing_uris
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', 'test-status')
 
+        mock_triplestore_is_available = Mock(name='triplestore-is-available')
+        mock_triplestore_is_available.return_value = True
         harvester = DCATdeRDFHarvester()
+        harvester.triplestore_client.is_available = mock_triplestore_is_available
+
         harvester._delete_deprecated_datasets_from_triplestore(harvested_uris, uris_db_marked_as_deleted,
                                                                harvest_obj)
 
-        mock_get_uris.assert_not_called()
+        mock_triplestore_is_available.assert_called_once_with()
+        mock_package_get.assert_called_once_with(harvest_obj.source.id)
+        mock_get_uris.assert_called_once_with(harvest_obj.source.id)
+        mock_triplestore_delete_ds.assert_called_once_with(existing_uris[0])
+        mock_triplestore_delete_mqa.assert_called_once_with(existing_uris[0])
+        mock_triplestore_delete_hi.assert_called_once_with(existing_uris[0])
 
     @patch('SPARQLWrapper.Wrapper.QueryResult.convert')
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.select_datasets_in_triplestore_harvest_info')

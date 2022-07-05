@@ -127,6 +127,38 @@ class TestHarvestUtils(unittest.TestCase):
             "Name was not updated")
 
     @patch('ckan.plugins.toolkit.get_action')
+    def test_rename_delete_dataset_with_id_if_name_updated(self, mock_get_action):
+        '''Tests if dataset with id deleted if name was not updated'''
+        mock_action_methods = Mock("action-methods")
+        # always return a pseudo-package from API methods
+        #mock_action_methods.return_value = {'id': 'test', 'name': 'Package'}
+        mock_action_methods.side_effect = [{'id': 'test', 'name': 'Package'},
+            Exception('Update action failed'),{'id': 'test', 'name': 'Package'}]
+        mock_get_action.return_value = mock_action_methods
+
+        HarvestUtils.rename_delete_dataset_with_id('test')
+
+        # check if the expected API calls were made (show to get the package name)
+        self.assertEqual(mock_get_action.call_count, 3)
+        mock_get_action.assert_any_call("package_show")
+        mock_get_action.assert_any_call("package_update")
+        mock_get_action.assert_any_call("package_delete")
+
+        self.assertEqual(mock_action_methods.call_count, 3)
+        expected_action_calls = []
+        # call with ID only (show)
+        expected_action_calls.append(
+            call(TestHarvestUtils._mock_api_context(),
+                 {'id': 'test'}))
+        # one call with a name (update)
+        expected_action_calls.append(
+            call(TestHarvestUtils._mock_api_context(),
+                 {'id': 'test', 'name': ANY}))
+        # and only ID again (delete)
+        expected_action_calls.append(expected_action_calls[0])
+        mock_action_methods.assert_has_calls(expected_action_calls)
+
+    @patch('ckan.plugins.toolkit.get_action')
     def test_handle_duplicates(self, mock_get_action):
         local_modified = '2017-08-14T10:00:00.000'
         remote_modified = '2017-08-15T10:00:00+02:00'

@@ -434,32 +434,29 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         '''
 
         # get owner org
+        owner_org = 'n/a'
         source_dataset = model.Package.get(harvest_job.source.id)
         if source_dataset and hasattr(source_dataset, 'owner_org'):
-            # Read URIs from harvest_info datastore
-            existing_uris = self._get_existing_dataset_uris_from_triplestore(harvest_job.source.id)
+            owner_org = source_dataset.owner_org
+        # Read URIs from harvest_info datastore
+        existing_uris = self._get_existing_dataset_uris_from_triplestore(harvest_job.source.id)
 
-            # compare existing with harvested URIs to see which URIs were not updated
-            existing_uris_unique = set(existing_uris)
-            harvested_uris_unique = set(harvested_uris)
-            uris_to_be_deleted = (existing_uris_unique - harvested_uris_unique) - set(uris_db_marked_deleted)
-            LOGGER.info(u'Found %s harvesting URIs in the triplestore belonging to organization %s ' \
-                        u'and harvest source id %s that are no longer provided.',
-                        len(uris_to_be_deleted), source_dataset.owner_org, harvest_job.source.id)
+        # compare existing with harvested URIs to see which URIs were not updated
+        existing_uris_unique = set(existing_uris)
+        harvested_uris_unique = set(harvested_uris)
+        uris_to_be_deleted = (existing_uris_unique - harvested_uris_unique) - set(uris_db_marked_deleted)
+        LOGGER.info(u'Found %s harvesting URIs in the triplestore belonging to organization %s ' \
+                    u'and harvest source id %s that are no longer provided.',
+                    len(uris_to_be_deleted), owner_org, harvest_job.source.id)
 
-            # delete deprecated datasets from triplestore
-            for dataset_uri in uris_to_be_deleted:
-                LOGGER.info(u'Delete <%s> from all triplestore datastores.', dataset_uri)
-                try:
-                    self._delete_dataset_in_triplestore_by_uri(dataset_uri)
-                except SPARQLWrapperException as ex:
-                    LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s',
-                                dataset_uri, ex)
-        else:
-            LOGGER.info(u'Harvest source %s, harvest job %s: "owner_org" NOT found. Cannot retrieve the ' \
-                        u'harvested URIs to the harvest source. Deprecated datasets which are not ' \
-                        u'stored in CKAN will not be deleted properly from the triplestore.',
-                        harvest_job.source.id, harvest_job.id)
+        # delete deprecated datasets from triplestore
+        for dataset_uri in uris_to_be_deleted:
+            LOGGER.debug(u'Delete <%s> from all triplestore datastores.', dataset_uri)
+            try:
+                self._delete_dataset_in_triplestore_by_uri(dataset_uri)
+            except SPARQLWrapperException as ex:
+                LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s',
+                            dataset_uri, ex)
 
     def _get_existing_dataset_uris_from_triplestore(self, owner_org_or_source_id):
         '''

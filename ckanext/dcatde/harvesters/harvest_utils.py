@@ -60,10 +60,8 @@ class HarvestUtils(object):
         """
         Renames the given packages to avoid name conflicts with
         deleted packages.
-        Returns the package IDs of the re-named packages.
         """
 
-        renamed_package_ids = []
         package_update = p.toolkit.get_action('package_update')
         for package_dict in deprecated_package_dicts:
             context = HarvestUtils.build_context()
@@ -72,11 +70,8 @@ class HarvestUtils(object):
             # Update package
             try:
                 package_update(context, package_dict)
-                renamed_package_ids.append(package_id)
             except Exception as exception:
                 LOGGER.error(u'Unable updating package %s: %s', package_id, exception)
-
-        return renamed_package_ids
 
     @staticmethod
     def delete_packages(package_ids):
@@ -104,13 +99,14 @@ class HarvestUtils(object):
     def rename_delete_dataset_with_id(package_id):
         """
         Deletes the package with package_id. Before deletion, the package is renamed to avoid
-        conflicts when adding new packages.
+        conflicts when adding new packages. If the renaming isn't successful the dataset will be
+        deleted anyway.
         """
         context = HarvestUtils.build_context()
         package_dict = p.toolkit.get_action('package_show')(context, {'id': package_id})
-        # rename and delete the package (renamed_ids contains the current package ID at most)
-        renamed_ids = HarvestUtils.rename_datasets_before_delete([package_dict])
-        HarvestUtils.delete_packages(renamed_ids)
+        # rename and delete the package
+        HarvestUtils.rename_datasets_before_delete([package_dict])
+        HarvestUtils.delete_packages([package_id])
 
     @staticmethod
     def compare_metadata_modified(remote_modified, local_modified):
