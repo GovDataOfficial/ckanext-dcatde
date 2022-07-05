@@ -28,7 +28,7 @@ class Extras(object):
             return 0
 
         if isinstance(self.extras, dict):
-            return len(self.extras.keys())
+            return len(list(self.extras.keys()))
 
         if isinstance(self.extras, list):
             return len(self.extras)

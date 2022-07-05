@@ -3,6 +3,7 @@
 """
 Query templates for SPARQL requests
 """
+# pylint: disable=pointless-string-statement
 
 from ckanext.dcatde.validation.shacl_validation import DQV, GOVDATA_MQA
 

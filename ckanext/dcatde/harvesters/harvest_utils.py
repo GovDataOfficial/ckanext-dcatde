@@ -275,9 +275,9 @@ def _set_or_update_latest_dataset(latest_local_dataset, modified_date_string, da
                  or modified_date > latest_local_dataset['date']):
             latest_local_dataset['id'] = dataset_id
             latest_local_dataset['date'] = modified_date
-    except Exception as exception:
+    except Exception as ex:
         # do nothing
-        pass
+        LOGGER.debug(u'Ignoring unexpected error while comparing and updating latest date. Details: %s', ex)
 
 
 def _parse_date(date_string):

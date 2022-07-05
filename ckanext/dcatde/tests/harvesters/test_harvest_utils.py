@@ -128,7 +128,7 @@ class TestHarvestUtils(unittest.TestCase):
         mock_action_methods.assert_has_calls(expected_action_calls)
 
         # Check if the function to update harvest objects (current=false) is called properly before delete
-        self.assertEquals(mock_query.call_count, 1)
+        self.assertEqual(mock_query.call_count, 1)
 
         # finally check if the name passed to the update call was different
         self.assertTrue(
@@ -176,7 +176,7 @@ class TestHarvestUtils(unittest.TestCase):
         mock_action_methods.assert_has_calls(expected_action_calls)
 
         # Check if the function to update harvest objects (current=false) is called properly before delete
-        self.assertEquals(mock_query.call_count, 1)
+        self.assertEqual(mock_query.call_count, 1)
 
     @patch('ckanext.dcatde.harvesters.harvest_utils.HarvestObject')
     @patch('ckanext.dcatde.harvesters.harvest_utils.model')
@@ -302,7 +302,7 @@ class TestHarvestUtils(unittest.TestCase):
         self.assertEqual(mock_package_delete_action.call_count, 1)
         mock_package_delete_action.assert_called_with(
             TestHarvestUtils._mock_api_context(), {'id': 'hasone-local'})
-        self.assertEquals(mock_query.call_count, 1)
+        self.assertEqual(mock_query.call_count, 1)
 
         # Prepare remote dataset, which has multiple duplicates
         mock_query.reset_mock()
@@ -379,7 +379,7 @@ class TestHarvestUtils(unittest.TestCase):
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
         mock_package_delete_action.assert_not_called()
-        self.assertEquals(mock_query.call_count, 1)
+        self.assertEqual(mock_query.call_count, 1)
 
         # Prepare remote dataset without timestamp, but same harvester - reject, because accepted no more
         mock_query.reset_mock()
@@ -398,7 +398,7 @@ class TestHarvestUtils(unittest.TestCase):
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
         mock_package_delete_action.assert_not_called()
-        self.assertEquals(mock_query.call_count, 1)
+        self.assertEqual(mock_query.call_count, 1)
 
         # Prepare remote dataset - and local dataset is newer, so reject this
         mock_query.reset_mock()
@@ -417,7 +417,7 @@ class TestHarvestUtils(unittest.TestCase):
         self.assertEqual(mock_get_action.call_count, 2)
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
         mock_package_delete_action.assert_not_called()
-        self.assertEquals(mock_query.call_count, 1)
+        self.assertEqual(mock_query.call_count, 1)
 
         # Prepare remote dataset has guid and remote dataset is newer, so accept it
         mock_query.reset_mock()
@@ -439,7 +439,7 @@ class TestHarvestUtils(unittest.TestCase):
         self.assertEqual(mock_package_delete_action.call_count, 1)
         mock_package_delete_action.assert_called_with(
             TestHarvestUtils._mock_api_context(), {'id': 'with-guid-local'})
-        self.assertEquals(mock_query.call_count, 1)
+        self.assertEqual(mock_query.call_count, 1)
 
         # Prepare remote dataset has an empty field identifier, so accept it
         mock_query.reset_mock()
@@ -477,7 +477,7 @@ class TestHarvestUtils(unittest.TestCase):
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
         mock_package_delete_action.assert_called_once_with(
             TestHarvestUtils._mock_api_context(), {'id': 'two-local'})
-        self.assertEquals(mock_query.call_count, 1)
+        self.assertEqual(mock_query.call_count, 1)
 
         # Prepare remote dataset without timestamp and local has none - reject - keep last modified local
         mock_query.reset_mock()
@@ -496,7 +496,7 @@ class TestHarvestUtils(unittest.TestCase):
         mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
         mock_package_delete_action.assert_called_once_with(
             TestHarvestUtils._mock_api_context(), {'id': 'two-local'})
-        self.assertEquals(mock_query.call_count, 1)
+        self.assertEqual(mock_query.call_count, 1)
 
     def test_compare_metadata_modified(self):
         # Remote date is newer than local date

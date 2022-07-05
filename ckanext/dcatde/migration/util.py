@@ -4,7 +4,9 @@ Migration helper functions
 import json
 import logging
 import re
-import urllib2
+
+import six
+from six.moves import urllib
 import pycountry
 import ckanext.dcatde.dataset_utils as ds_utils
 
@@ -20,7 +22,7 @@ def get_migrator_log():
 
 
 def log_warn(dataset, message):
-    get_migrator_log().warn(log_dataset_prefix(dataset) + message)
+    get_migrator_log().warning(log_dataset_prefix(dataset) + message)
 
 
 def log_error(dataset, message):
@@ -33,7 +35,7 @@ def load_json_mapping(url, errorhint, logger=None):
         logger = get_migrator_log()
     try:
         logger.debug("Trying to open: " + url)
-        return json.loads(urllib2.urlopen(url).read())
+        return json.loads(urllib.request.urlopen(url).read())
     except Exception:
         logger.error('Could not load ' + errorhint + ' mapping')
         return {}
@@ -93,7 +95,7 @@ def update_extras_json_list_data(dataset, extras_field, check_key, expected_val,
                 else:
                     del fld_list[index]
         if fld_list:
-            fld_content['value'] = unicode(json.dumps(fld_list, sort_keys=True))
+            fld_content['value'] = six.text_type(json.dumps(fld_list, sort_keys=True))
         else:
             # drop contacts if it became empty
             ds_utils.delete_extras_field(dataset, extras_field)
@@ -178,7 +180,7 @@ def unify_country_code(country):
 
     if country.lower() in country_mapping:
         return country_mapping[country.lower()].upper()
-    elif country.lower() in country_mapping.keys():
+    elif country.lower() in list(country_mapping.keys()):
         return country.upper()
     return country
 
@@ -187,7 +189,7 @@ def addr_parse(address):
     '''Takes an address string and returns a dict with appropriate fields.
     Everything which can't be mapped is stored in a field named "unknown".
     '''
-    addr_data = dict()
+    addr_data = {}
     split_char = ','
     if address.count(';') > address.count(','):
         split_char = ';'

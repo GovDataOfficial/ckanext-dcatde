@@ -54,8 +54,8 @@ class DatasetUtils(unittest.TestCase):
 
         res = gather_dataset_ids(include_private=True)
 
-        self.assertEquals(res, expected_result)
-        self.assertEquals(mock_query.call_count, 3)
+        self.assertEqual(res, expected_result)
+        self.assertEqual(mock_query.call_count, 3)
 
 
     def test_gather_dataset_ids_without_private_datasets(self, mock_model, mock_harvest_model, mock_aliased,
@@ -77,6 +77,6 @@ class DatasetUtils(unittest.TestCase):
 
         res = gather_dataset_ids(include_private=False)
 
-        self.assertEquals(res, expected_result)
-        self.assertEquals(return_query.getCallCount(), 1)
-        self.assertEquals(mock_query.call_count, 3)
+        self.assertEqual(res, expected_result)
+        self.assertEqual(return_query.getCallCount(), 1)
+        self.assertEqual(mock_query.call_count, 3)

@@ -3,7 +3,7 @@ Commoun utils for dataset dicts
 """
 import json
 
-from ckan.lib.base import model
+from ckan import model
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import or_, and_, not_
 import ckanext.harvest.model as harvest_model
@@ -67,7 +67,7 @@ def insert_resource_extra(resource_dict, key, value):
     """
 
     if '__extras' not in resource_dict:
-        resource_dict['__extras'] = dict()
+        resource_dict['__extras'] = {}
 
     resource_dict['__extras'][key] = value
 

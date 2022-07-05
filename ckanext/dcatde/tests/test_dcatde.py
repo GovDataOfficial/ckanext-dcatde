@@ -8,6 +8,7 @@ import rdflib
 import json
 import pprint
 import pkg_resources
+import six
 
 from ckantoolkit.tests import helpers
 from rdflib import Graph, URIRef, Literal, BNode
@@ -123,8 +124,8 @@ class TestDCATde(unittest.TestCase):
             raise TypeError('values must be type of list')
         values_found = []
         for obj in self.graph.objects(ref, predicate):
-            if unicode(obj) in values:
-                values_found.append(unicode(obj))
+            if six.text_type(obj) in values:
+                values_found.append(six.text_type(obj))
 
         self.assertTrue(len(values_found) == len(values),
                         "Not all expected values were found in graph. remaining: {}".format(
@@ -135,7 +136,7 @@ class TestDCATde(unittest.TestCase):
         This assumes that the extras value is serialized as string."""
         item = self._get_value_from_extras(extras, key)
         content = json.loads(item)
-        self.assertItemsEqual(content, expected)
+        six.assertCountEqual(self, content, expected)
 
     def _assert_extras_dict_serialized(self, extras, key, expected):
         """ check if the extras field with the given key contains the expected dict

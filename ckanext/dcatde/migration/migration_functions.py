@@ -3,8 +3,8 @@ Migration functions for all fields that are migrated.
 '''
 import inspect
 import json
-
-import ckanext.dcatde.migration.util as util
+import six
+from ckanext.dcatde.migration import util
 import ckanext.dcatde.dataset_utils as ds_utils
 from ckanext.dcatde.dataset_utils import EXTRA_KEY_HARVESTED_PORTAL
 
@@ -24,7 +24,7 @@ class MigrationFunctionExecutor(object):
     def _get_license_mapping(self, license_mapping_url):
         '''Loads the license mapping from the given file URl'''
         file_content = util.load_json_mapping(license_mapping_url, "license")
-        result = dict()
+        result = {}
 
         if 'list' in file_content:
             for item in file_content['list']:
@@ -42,7 +42,7 @@ class MigrationFunctionExecutor(object):
         Returns True if all groups are found, and False otherwise.'''
         for group in self.functions.new_groups:
             if group not in ckan_group_dict:
-                util.get_migrator_log().error(u'Group ' + unicode(group)
+                util.get_migrator_log().error(u'Group ' + six.text_type(group)
                                               + u' not found. Did you run the '
                                               + u' theme adder command?')
                 return False
@@ -120,27 +120,27 @@ class MigrationFunctions(object):
                                                  field, True)
 
                 sr_value_dict.pop('text', None)
-                spatial_reference['value'] = unicode(json.dumps(sr_value_dict,
+                spatial_reference['value'] = six.text_type(json.dumps(sr_value_dict,
                                                                 sort_keys=True))
 
     def groups(self, dataset):
         if 'groups' in dataset:
             for group_name in [n['name'] for n in dataset['groups']]:  # iterate list of groupnames
-                if group_name in self.category_mapping.keys():
+                if group_name in list(self.category_mapping.keys()):
                     themes = self.category_mapping[group_name]
 
                     # remove old group_name
                     util.delete_group(dataset, group_name)
 
                     # transform single strings to lists with one argument
-                    if isinstance(themes, basestring):
+                    if isinstance(themes, six.string_types):
                         themes = [themes]
 
                     if themes is not None:
                         for theme in themes:
                             dataset['groups'].append({'id': theme, 'name': theme})
                 elif group_name not in self.new_groups:
-                    util.log_error(dataset, u'INVALID: non-OGD-Category found: ' + unicode(group_name))
+                    util.log_error(dataset, u'INVALID: non-OGD-Category found: ' + six.text_type(group_name))
 
     def temporal_coverage_from(self, dataset):
         '''temporal_coverage_from -> temporal_start'''
@@ -269,13 +269,14 @@ class MigrationFunctions(object):
             return
 
         # key == OGD value and value == DCAT URI
-        if license_id_data in self.license_mapping.keys():
+        if license_id_data in list(self.license_mapping.keys()):
              # OGD value is present. Map it accordingly.
             license_id_dcat = self.license_mapping[license_id_data]
             dataset['license_id'] = license_id_dcat
-        elif license_id_data not in self.license_mapping.values():
+        elif license_id_data not in list(self.license_mapping.values()):
             # Invalid value, neither OGD nor DCAT
-            util.log_error(dataset, u"license_id '" + unicode(license_id_data) + u"' not part of the mapping")
+            util.log_error(dataset, u"license_id '{}' not part of the mapping".format(
+                six.text_type(license_id_data)))
             return
 
         # At this point, a valid DCAT license is present in dataset['license_id'].
@@ -283,7 +284,7 @@ class MigrationFunctions(object):
         if resources is not None:
             for resource in resources:
                 if '__extras' not in resource:
-                    resource['__extras'] = dict()
+                    resource['__extras'] = {}
 
                 resource['__extras'][u'license'] = dataset['license_id']
 
@@ -302,7 +303,7 @@ class MigrationFunctions(object):
             if text and resources:
                 for resource in resources:
                     if '__extras' not in resource:
-                        resource['__extras'] = dict()
+                        resource['__extras'] = {}
                     resource['__extras'][u'licenseAttributionByText'] = text
 
     def dates_role_veroeffentlicht(self, dataset):

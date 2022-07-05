@@ -9,17 +9,17 @@ class TestExtras(unittest.TestCase):
 
     def test_extras_len_works_as_expected(self):
         extras = Extras([])
-        self.assertEquals(0, extras.len())
+        self.assertEqual(0, extras.len())
 
         extras = Extras({'dates': 'foo', 'bar': 'baz'})
-        self.assertEquals(2, extras.len())
+        self.assertEqual(2, extras.len())
 
         extras = Extras([
             {'key': 'one', 'value': [1]},
             {'key': 'two', 'value': [2]},
             {'key': 'three', 'value': [3]},
         ])
-        self.assertEquals(3, extras.len())
+        self.assertEqual(3, extras.len())
 
     def test_returns_false_on_empty_extras(self):
         extras = Extras([])
@@ -114,7 +114,7 @@ class TestExtras(unittest.TestCase):
 
     def test_returns_value_on_flat_list(self):
         extras = Extras({'dates': 'foo', 'bar': 'baz'})
-        self.assertEquals('foo', extras.value('dates'))
+        self.assertEqual('foo', extras.value('dates'))
 
     def test_returns_expected_values(self):
         extras_in = [{
@@ -157,7 +157,7 @@ class TestExtras(unittest.TestCase):
         extras = Extras(extras_in)
 
         for extra in extras_in:
-            self.assertEquals(extra['value'], extras.value(extra['key']))
+            self.assertEqual(extra['value'], extras.value(extra['key']))
 
     def test_returns_value_on_flat_list_with_dict(self):
         extras = Extras({
@@ -165,14 +165,14 @@ class TestExtras(unittest.TestCase):
                 'license_id': 'some-license'
             }
         })
-        self.assertEquals(
+        self.assertEqual(
             {'license_id': 'some-license'},
             extras.value('terms_of_use')
         )
 
     def test_returns_default_on_flat_list(self):
         extras = Extras({'dates': 'foo', 'bar': 'baz'})
-        self.assertEquals('Default', extras.value('foo', 'Default'))
+        self.assertEqual('Default', extras.value('foo', 'Default'))
 
     @raises(KeyError)
     def test_raises_error_when_key_not_found_on_flat_list(self):
@@ -184,7 +184,7 @@ class TestExtras(unittest.TestCase):
             {'key': 'foo', 'value': 'foo-value'},
             {'key': 'baz', 'value': 'baz-value'},
         ])
-        self.assertEquals('foo-value', extras.value('foo'))
+        self.assertEqual('foo-value', extras.value('foo'))
 
     def test_returns_value_on_dict_list_nested(self):
         extras = Extras([
@@ -200,14 +200,14 @@ class TestExtras(unittest.TestCase):
             'zoo': 'zoo-value',
         }
 
-        self.assertEquals(expected_value, extras.value('foo'))
+        self.assertEqual(expected_value, extras.value('foo'))
 
     def test_returns_default_on_dict_list(self):
         extras = Extras([
             {'key': 'foo', 'value': 'foo-value'},
             {'key': 'bar', 'value': 'baz'},
         ])
-        self.assertEquals('OhNo', extras.value('baz', 'OhNo'))
+        self.assertEqual('OhNo', extras.value('baz', 'OhNo'))
 
     @raises(KeyError)
     def test_raises_error_when_key_not_found_on_dict_list(self):
@@ -222,7 +222,7 @@ class TestExtras(unittest.TestCase):
     def test_update_on_flat_list_works_as_expected(self):
         extras = Extras({'dates': 'foo', 'bar': 'baz', 'some': 'thing'})
         self.assertTrue(extras.update('some', 'one'))
-        self.assertEquals('one', extras.value('some'))
+        self.assertEqual('one', extras.value('some'))
 
     def test_update_on_dict_list_works_as_expected(self):
         extras = Extras([
@@ -230,7 +230,7 @@ class TestExtras(unittest.TestCase):
             {'key': 'label', 'value': 'dot'},
         ])
         self.assertTrue(extras.update('label', 'doubledot'))
-        self.assertEquals('doubledot', extras.value('label'))
+        self.assertEqual('doubledot', extras.value('label'))
 
     def test_original_groups_are_updated_as_expected(self):
         extras_in = [{
@@ -273,13 +273,13 @@ class TestExtras(unittest.TestCase):
         extras = Extras(extras_in)
 
         self.assertTrue(extras.update('original_groups', ['group one', 'group two']))
-        self.assertEquals(2, len(extras.value('original_groups')))
+        self.assertEqual(2, len(extras.value('original_groups')))
 
     def upsert_on_flat_list_works_as_expected(self):
         extras = Extras({'dates': 'foo', 'bar': 'baz', 'some': 'thing'})
         self.assertTrue(extras.update('new', 'kid', True))
-        self.assertEquals('kid', extras.value('new'))
-        self.assertEquals(4, extras.len())
+        self.assertEqual('kid', extras.value('new'))
+        self.assertEqual(4, extras.len())
 
     def upsert_on_dict_list_works_as_expected(self):
         extras = Extras([
@@ -287,8 +287,8 @@ class TestExtras(unittest.TestCase):
             {'key': 'two', 'value': 2},
         ])
         self.assertTrue(extras.update('three', 3, True))
-        self.assertEquals(3, extras.value('three'))
-        self.assertEquals(3, extras.len())
+        self.assertEqual(3, extras.value('three'))
+        self.assertEqual(3, extras.len())
 
     def upsert_on_empty_dict_list_works_as_expected(self):
         extras = Extras()
@@ -299,10 +299,10 @@ class TestExtras(unittest.TestCase):
         }]
 
         self.assertTrue(extras.update('three', 3, True))
-        self.assertEquals(3, extras.value('three'))
-        self.assertEquals(1, extras.len())
+        self.assertEqual(3, extras.value('three'))
+        self.assertEqual(1, extras.len())
 
-        self.assertEquals(expected_extras, extras.get())
+        self.assertEqual(expected_extras, extras.get())
 
     def test_alternates_structure_as_expected(self):
         extras = Extras([
@@ -322,8 +322,8 @@ class TestExtras(unittest.TestCase):
             expected_value,
         )
 
-        self.assertEquals(expected_value, extras.value('terms_of_use'))
-        self.assertEquals(1, len(extras.value('terms_of_use')))
+        self.assertEqual(expected_value, extras.value('terms_of_use'))
+        self.assertEqual(1, len(extras.value('terms_of_use')))
 
     def test_returns_modified_extras(self):
         extras = Extras([
@@ -352,7 +352,7 @@ class TestExtras(unittest.TestCase):
             }]},
         ]
 
-        self.assertEquals(expected_extras, extras.get())
+        self.assertEqual(expected_extras, extras.get())
 
     def returns_modified_sector(self):
         extras = Extras([
@@ -361,12 +361,12 @@ class TestExtras(unittest.TestCase):
         ])
 
         self.assertTrue(extras.update('sector', 'privat'))
-        self.assertEquals('privat', extras.value('sector'))
+        self.assertEqual('privat', extras.value('sector'))
 
     def test_removes_on_flat_list(self):
         extras = Extras({'dates': 'foo', 'bar': 'baz', 'some': 'thing'})
         self.assertTrue(extras.remove('bar'))
-        self.assertEquals(2, extras.len())
+        self.assertEqual(2, extras.len())
 
     def test_removes_on_dict_list(self):
         extras = Extras([
@@ -374,4 +374,4 @@ class TestExtras(unittest.TestCase):
             {'key': 'two', 'value': 2},
         ])
         self.assertTrue(extras.remove('two'))
-        self.assertEquals(1, extras.len())
+        self.assertEqual(1, extras.len())

@@ -2,7 +2,8 @@
 
 import unittest
 
-from ckanext.dcatde.commands.themeadder import ThemeAdder as ThemeAdderCommand
+import six
+import ckanext.dcatde.commands.command_util as utils
 import ckanext.dcatde.tests.commands.common_helpers as helpers
 from mock import patch, Mock
 
@@ -128,24 +129,19 @@ class GroupPermissionHelper:
 
 
 @patch("ckan.plugins.toolkit.get_action")
-@patch("ckan.lib.cli.CkanCommand._load_config")
-@patch("ckanapi.LocalCKAN")
 @patch("json.loads", mock_jsonload)
 class TestThemeAdderCommand(unittest.TestCase):
     """Test class for the dcatde default theme adder"""
-
-    def setUp(self):
-        self.cmd = ThemeAdderCommand(name='ThemeAdderTest')
 
     def _assert_groups_valid(self, helper):
         """Checks if the groups for which the GroupHelper was called are present
         in the test data set."""
         for group in helper.get_groups():
-            self.assertTrue(group in mock_jsonload('').keys(),
+            self.assertTrue(group in list(mock_jsonload('').keys()),
                             "Nonexisting group was added: " + group)
 
         for group in helper.get_purged():
-            self.assertTrue(group in mock_jsonload('').keys(),
+            self.assertTrue(group in list(mock_jsonload('').keys()),
                             "purge was called for nonexisting group: " + group)
 
     def _assert_purge_and_add(self, helper, group_key):
@@ -156,13 +152,13 @@ class TestThemeAdderCommand(unittest.TestCase):
         self.assertTrue(group_key in helper.get_purged(),
                         "Purge not called for: " + group_key)
 
-    def test_add_nonexisting_groups(self, mock_ckanapi_LocalCKAN,
-                                    mock_super_load_config,
-                                    mock_getaction):
+    def test_add_nonexisting_groups(self, mock_getaction):
         """Adds all groups assuming they are not present"""
+
         # prepare
-        self.cmd.args = []
-        mock_ckanapi_LocalCKAN.return_value = mock_local_ckan_api({})
+        present_groups_dict = {}
+        new_groups_dict = mock_jsonload('')
+        admin_user = None
 
         helper = GroupHelper()
         permissionhelper = GroupPermissionHelper()
@@ -171,27 +167,22 @@ class TestThemeAdderCommand(unittest.TestCase):
         mock_getaction.side_effect = action_hlp.mock_get_action
 
         # execute
-        self.cmd.command()
+        utils.create_groups(present_groups_dict, new_groups_dict, admin_user)
 
-        # ensure config was loaded
-        mock_super_load_config.assert_called_once_with()
-
-        # check if gropus were added
+        # check if groups were added
         self._assert_groups_valid(helper)
 
         for group_key in mock_jsonload(''):
             self._assert_purge_and_add(helper, group_key)
 
-    def test_add_with_existing_groups(self, mock_ckanapi_LocalCKAN,
-                                      mock_super_load_config,
-                                      mock_getaction):
+    def test_add_with_existing_groups(self, mock_getaction):
         """Adds all groups assuming some are present"""
-        # prepare
-        self.cmd.args = []
+
         # use a string map for simulating present groups, as only keys are
         # relevant
-        testmap = {'agri': '', 'intr': ''}
-        mock_ckanapi_LocalCKAN.return_value = mock_local_ckan_api(testmap)
+        present_groups_dict  = {'agri': '', 'intr': ''}
+        new_groups_dict = mock_jsonload('')
+        admin_user = None
 
         helper = GroupHelper()
         permissionhelper = GroupPermissionHelper()
@@ -200,33 +191,28 @@ class TestThemeAdderCommand(unittest.TestCase):
         mock_getaction.side_effect = action_hlp.mock_get_action
 
         # execute
-        self.cmd.command()
-
-        # ensure config was loaded
-        mock_super_load_config.assert_called_once_with()
+        utils.create_groups(present_groups_dict , new_groups_dict, admin_user)
 
         # check if nonpresent gropus were added
         self._assert_groups_valid(helper)
 
-        for group_key in filter(lambda k: k not in testmap, mock_jsonload('')):
+        for group_key in [k for k in mock_jsonload('') if k not in present_groups_dict]:
             self._assert_purge_and_add(helper, group_key)
 
         # and make sure the present groups were not touched
-        for group_key in testmap:
+        for group_key in present_groups_dict :
             self.assertFalse(group_key in helper.get_groups(),
                              "Group added although present: " + group_key)
             self.assertFalse(group_key in helper.get_purged(),
                              "Group purged although present: " + group_key)
 
-    def test_add_all_groups_present(self, mock_ckanapi_LocalCKAN,
-                                    mock_super_load_config,
-                                    mock_getaction):
+    def test_add_all_groups_present(self, mock_getaction):
         """Calls the adder assuming all groups are already existing"""
+
         # prepare
-        self.cmd.args = []
-        # As only keys are relevant, we can use our test data as group list
-        mock_ckanapi_LocalCKAN.return_value = mock_local_ckan_api(
-            mock_jsonload(''))
+        present_groups_dict  = mock_jsonload('')
+        new_groups_dict = mock_jsonload('')
+        admin_user = None
 
         helper = GroupHelper()
         permissionhelper = GroupPermissionHelper()
@@ -235,10 +221,7 @@ class TestThemeAdderCommand(unittest.TestCase):
         mock_getaction.side_effect = action_hlp.mock_get_action
 
         # execute
-        self.cmd.command()
-
-        # ensure config was loaded
-        mock_super_load_config.assert_called_once_with()
+        utils.create_groups(present_groups_dict, new_groups_dict, admin_user)
 
         # ensure no groups were added
         self.assertEqual(len(helper.get_groups()), 0,
@@ -246,20 +229,19 @@ class TestThemeAdderCommand(unittest.TestCase):
         self.assertEqual(len(helper.get_purged()), 0,
                          "Groups were purged although present")
 
-    def test_group_permission_migration(self, mock_ckanapi_LocalCKAN,
-                                        mock_super_load_config,
-                                        mock_getaction):
+    def test_group_permission_migration(self, mock_getaction):
 
+        admin_user = None
         helper = GroupHelper()
         permissionhelper = GroupPermissionHelper()
         action_hlp = GetActionHelperThemeAdder(helper, permissionhelper)
 
         mock_getaction.side_effect = action_hlp.mock_get_action
 
-        self.cmd.migrate_user_permissions(["old1", "old2"], ["new1", "new2"])
+        utils.migrate_user_permissions(["old1", "old2"], ["new1", "new2"], admin_user)
 
         calls = permissionhelper.get_calls()
-        self.assertListEqual(calls, [
+        six.assertCountEqual(self, calls, [
             {
                 "id": "new1",
                 "username": "user1",
@@ -270,19 +252,19 @@ class TestThemeAdderCommand(unittest.TestCase):
                 "role": "member"
             }, {
                 "id": "new1",
-                "username": "user3",
-                "role": "editor"
+                "username": "user2",
+                "role": "admin"
             }, {
                 "id": "new2",
-                "username": "user3",
-                "role": "editor"
+                "username": "user2",
+                "role": "admin"
             }, {
                 "id": "new1",
-                "username": "user2",
-                "role": "admin"
+                "username": "user3",
+                "role": "editor"
             }, {
                 "id": "new2",
-                "username": "user2",
-                "role": "admin"
+                "username": "user3",
+                "role": "editor"
             }
-        ], "calls do not match")
+        ])

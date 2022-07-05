@@ -3,6 +3,7 @@
 import json
 import unittest
 
+import six
 import pkg_resources
 from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from SPARQLWrapper.Wrapper import QueryResult
@@ -71,18 +72,14 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     def _assert_resource_licenses(self, harvest_obj, expected_first, expected_second):
         updated_content = json.loads(harvest_obj.content)
         updated_resources = updated_content.get('resources')
-        self.assertEquals(updated_resources[0]['license'], expected_first)
-        self.assertEquals(updated_resources[1]['license'], expected_second)
+        self.assertEqual(updated_resources[0]['license'], expected_first)
+        self.assertEqual(updated_resources[1]['license'], expected_second)
 
     @staticmethod
     def _get_max_rdf(item_name="metadata_max"):
         data = pkg_resources.resource_string(__name__,
                                              "../resources/%s.rdf" % item_name)
         return data
-
-    @staticmethod
-    def _get_uris_from_rdf(rdf_parser):
-        return rdf_parser._datasets()
 
     @staticmethod
     def _get_rdf(uri):
@@ -112,9 +109,9 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
             object_list = []
             for s, p, o in graph_from_mock_args.triples((None, None, None)):
                 self.assertIn(s, [URIRef(uri) for uri in uris])
-                self.assertEquals(p, FOAF.knows)
+                self.assertEqual(p, FOAF.knows)
                 object_list.append(o)
-            self.assertItemsEqual(object_list, [Literal(owner_org), Literal(harvest_source_id)])
+            six.assertCountEqual(self, object_list, [Literal(owner_org), Literal(harvest_source_id)])
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_metadata_on_import(self, mock_super_import):
@@ -136,7 +133,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # check if the extras field is set properly
         for extra in updated_content.get('extras'):
             if extra['key'] == 'metadata_harvested_portal':
-                self.assertEquals(extra['value'], 'testportal')
+                self.assertEqual(extra['value'], 'testportal')
                 return
 
         self.fail("extras.metadata_harvested_portal was not set")
@@ -152,7 +149,6 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         # check
         self._assert_resource_licenses(harvest_obj, u'http://dcat-ap.de/def/licenses/other-closed', u'foo')
-
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_add_contributor_id_field_in_ckan_dataset_if_missing(self, mock_super_import):
@@ -176,7 +172,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         contrib = next((extra for extra in updated_content.get('extras') if extra['key'] == 'contributorID'),
                        None)
         self.assertIsNotNone(contrib)
-        self.assertEquals(contrib['value'], json.dumps(expected_contributor_id))
+        self.assertEqual(contrib['value'], json.dumps(expected_contributor_id))
 
         mock_super_import.assert_called_once_with(harvest_obj)
 
@@ -625,10 +621,10 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # check if no errors are returned
-        self.assertEquals(len(error_msgs), 0)
-        uri = rdf_parser._datasets().next()
+        self.assertEqual(len(error_msgs), 0)
+        uri = six.next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset
@@ -689,10 +685,10 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # check if no errors are returned
-        self.assertEquals(len(error_msgs), 0)
-        uri = rdf_parser._datasets().next()
+        self.assertEqual(len(error_msgs), 0)
+        uri = six.next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset
@@ -754,10 +750,10 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # check if no errors are returned
-        self.assertEquals(len(error_msgs), 0)
-        uri = rdf_parser._datasets().next()
+        self.assertEqual(len(error_msgs), 0)
+        uri = six.next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset
@@ -813,10 +809,10 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # error should be returned
-        self.assertEquals(len(error_msgs), 1)
-        uri = rdf_parser._datasets().next()
+        self.assertEqual(len(error_msgs), 1)
+        uri = six.next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # Dataset should be removed, but not created again
@@ -858,9 +854,9 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, harvest_obj)
 
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # check if no errors are returned
-        self.assertEquals(len(error_msgs), 0)
+        self.assertEqual(len(error_msgs), 0)
         mock_triplestore_is_available.assert_called_once_with()
         # create dataset should not be called
         mock_fuseki_create_data.assert_not_called()
@@ -897,9 +893,9 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, harvest_obj)
 
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # check if no errors are returned
-        self.assertEquals(len(error_msgs), 0)
+        self.assertEqual(len(error_msgs), 0)
         mock_triplestore_is_available.assert_not_called()
         # create dataset should not be called
         mock_fuseki_create_data.assert_not_called()
@@ -946,25 +942,25 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, harvest_obj)
 
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # check if no errors are returned
-        self.assertEquals(len(error_msgs), 0)
+        self.assertEqual(len(error_msgs), 0)
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called twice
-        self.assertEquals(mock_fuseki_delete_data.call_count, len(uris))
+        self.assertEqual(mock_fuseki_delete_data.call_count, len(uris))
         # check if create dataset was called twice
-        self.assertEquals(mock_fuseki_create_data.call_count, len(uris))
+        self.assertEqual(mock_fuseki_create_data.call_count, len(uris))
         # check if shacl validator was called twice
-        self.assertEquals(mock_shacl_validate.call_count, len(uris))
+        self.assertEqual(mock_shacl_validate.call_count, len(uris))
         # check if delete dataset was called twice
-        self.assertEquals(mock_fuseki_delete_data_mqa.call_count, len(uris))
+        self.assertEqual(mock_fuseki_delete_data_mqa.call_count, len(uris))
         # check if create dataset was called twice
-        self.assertEquals(mock_fuseki_create_data_mqa.call_count, len(uris))
+        self.assertEqual(mock_fuseki_create_data_mqa.call_count, len(uris))
         # check if delete dataset was called twice
-        self.assertEquals(mock_fuseki_delete_hi.call_count, len(uris))
+        self.assertEqual(mock_fuseki_delete_hi.call_count, len(uris))
         # check if create dataset was called twice
-        self.assertEquals(mock_fuseki_create_hi.call_count, len(uris))
+        self.assertEqual(mock_fuseki_create_hi.call_count, len(uris))
 
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore_harvest_info')
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.create_dataset_in_triplestore_harvest_info')
@@ -1017,35 +1013,35 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # There should be two errors
-        self.assertEquals(len(error_msgs), 2)
+        self.assertEqual(len(error_msgs), 2)
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # all datasets should be deleted
-        self.assertEquals(mock_fuseki_delete_data.call_count, len(uris))
+        self.assertEqual(mock_fuseki_delete_data.call_count, len(uris))
         # only datsets 3 and 4 should be imported
-        self.assertEquals(mock_fuseki_create_data.call_count, 2)
+        self.assertEqual(mock_fuseki_create_data.call_count, 2)
         mock_fuseki_create_data.assert_any_call(ANY, uris[2])
         mock_fuseki_create_data.assert_any_call(ANY, uris[3])
         # check if shacle validator was called for datasets 3 and 4
-        self.assertEquals(mock_shacl_validate.call_count, 2)
+        self.assertEqual(mock_shacl_validate.call_count, 2)
         mock_shacl_validate.assert_any_call(ANY, uris[2], org_id, config['contributorID'])
         mock_shacl_validate.assert_any_call(ANY, uris[3], org_id, config['contributorID'])
         # check if delete mqa storage called for all datasets
-        self.assertEquals(mock_fuseki_delete_data_mqa.call_count, len(uris))
+        self.assertEqual(mock_fuseki_delete_data_mqa.call_count, len(uris))
         for uri in uris:
             mock_fuseki_delete_data_mqa.assert_any_call(uri)
         # check if MQA result storage is handled correctly for datsets 3 and 4
-        self.assertEquals(mock_fuseki_create_data_mqa.call_count, 2)
+        self.assertEqual(mock_fuseki_create_data_mqa.call_count, 2)
         mock_fuseki_create_data_mqa.assert_any_call(mock_validate_result, uris[2])
         mock_fuseki_create_data_mqa.assert_any_call(mock_validate_result, uris[3])
         # check if delete harvest_info was called.
-        self.assertEquals(mock_fuseki_delete_hi.call_count, len(uris))
+        self.assertEqual(mock_fuseki_delete_hi.call_count, len(uris))
         for uri in uris:
             mock_fuseki_delete_hi.assert_any_call(uri)
         # check if create harvest_info was called.
-        self.assertEquals(mock_fuseki_create_hi.call_count, 2)
+        self.assertEqual(mock_fuseki_create_hi.call_count, 2)
         mock_fuseki_create_hi.assert_any_call(ANY, uris[2])
         mock_fuseki_create_hi.assert_any_call(ANY, uris[3])
         # check if create harvest_info was called with correct parameters
@@ -1083,13 +1079,13 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         rdf_parser_return, error_msgs = harvester.after_parsing(rdf_parser, harvest_obj)
 
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # check that one error is returned
-        self.assertEquals(len(error_msgs), 1)
+        self.assertEqual(len(error_msgs), 1)
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset.
-        mock_fuseki_delete_data.assert_called_once_with(rdf_parser._datasets().next())
+        mock_fuseki_delete_data.assert_called_once_with(six.next(rdf_parser._datasets()))
         # create dataset should not be called
         mock_fuseki_create_data.assert_not_called()
         mock_shacl_validate.assert_not_called()
@@ -1131,10 +1127,10 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # check that one error is returned
-        self.assertEquals(len(error_msgs), 1)
-        uri = rdf_parser._datasets().next()
+        self.assertEqual(len(error_msgs), 1)
+        uri = six.next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset.
@@ -1194,13 +1190,13 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         mock_model_get.assert_called_once_with(harvest_obj.source.id)
         # the parser should not have changed
-        self.assertEquals(rdf_parser_return, rdf_parser)
+        self.assertEqual(rdf_parser_return, rdf_parser)
         # There should be zero errors
-        self.assertEquals(len(error_msgs), 0)
+        self.assertEqual(len(error_msgs), 0)
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # all datasets should be deleted
-        self.assertEquals(mock_fuseki_delete_data.call_count, len(uris))
+        self.assertEqual(mock_fuseki_delete_data.call_count, len(uris))
         mock_fuseki_delete_data.assert_any_call(uris[0])
         mock_fuseki_delete_data.assert_any_call(uris[1])
         # only datset 1 should be imported
@@ -1208,13 +1204,13 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # check if shacle validator was called for dataset 0
         mock_shacl_validate.assert_called_once_with(ANY, uris[0], org_id, config['contributorID'])
         # check if delete mqa storage called for all datasets
-        self.assertEquals(mock_fuseki_delete_data_mqa.call_count, len(uris))
+        self.assertEqual(mock_fuseki_delete_data_mqa.call_count, len(uris))
         mock_fuseki_delete_data_mqa.assert_any_call(uris[0])
         mock_fuseki_delete_data_mqa.assert_any_call(uris[1])
         # check if MQA result storage is handled correctly for datsets 0
         mock_fuseki_create_data_mqa.assert_called_once_with(mock_validate_result, uris[0])
         # check if delete harvest_info was called.
-        self.assertEquals(mock_fuseki_delete_hi.call_count, len(uris))
+        self.assertEqual(mock_fuseki_delete_hi.call_count, len(uris))
         mock_fuseki_delete_hi.assert_any_call(uris[0])
         mock_fuseki_delete_hi.assert_any_call(uris[1])
         # check if create harvest_info was called.
@@ -1460,7 +1456,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         mock_select_datatsets_ts.assert_called_once_with(GET_URIS_FROM_HARVEST_INFO_QUERY % {
             'owner_org_or_source_id': test_owner_org})
-        self.assertEquals(result, expected_result)
+        self.assertEqual(result, expected_result)
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.HarvestObject')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._delete_deprecated_datasets_from_triplestore')
@@ -1490,9 +1486,9 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         object_ids = harvester._mark_datasets_for_deletion(harvested_uris, harvest_obj)
 
         # the values should be compared, but the side_effect isn't working
-        self.assertEquals(object_ids, [harvest_object_id for x in uris_db_marked_as_deleted])
-        self.assertEquals(mock_harvest_object.call_count, len(uris_db_marked_as_deleted))
+        self.assertEqual(object_ids, [harvest_object_id for x in uris_db_marked_as_deleted])
+        self.assertEqual(mock_harvest_object.call_count, len(uris_db_marked_as_deleted))
         # subquery, query, 2 x update harvest_obj
-        self.assertEquals(mock_query.call_count, 4)
+        self.assertEqual(mock_query.call_count, 4)
         mock_delete_deprecated_datasets.assert_called_once_with(
             set(harvested_uris), set(uris_db_marked_as_deleted), harvest_obj)

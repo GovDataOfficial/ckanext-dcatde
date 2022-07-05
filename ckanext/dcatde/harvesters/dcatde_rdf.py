@@ -6,15 +6,14 @@ DCAT-AP.de RDF Harvester module.
 import json
 import logging
 import time
-
-import pylons
+import six
 from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import FOAF
 from ckan import model
 from ckan import plugins as p
 from ckan.logic import UnknownValidator
-from ckan.plugins import toolkit
+from ckan.plugins import toolkit as tk
 from ckanext.dcat.exceptions import RDFParserException
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
@@ -64,8 +63,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             source_dataset = model.Package.get(harvest_job.source.id)
             owner_org = None
             if not source_dataset or not hasattr(source_dataset, 'owner_org'):
-                LOGGER.warn(u'There is no organization specified in the harvest source. SHACL validation ' \
-                            u'will be deactivated!')
+                LOGGER.warning(u'There is no organization specified in the harvest source. SHACL validation '\
+                               u'will be deactivated!')
             else:
                 owner_org = source_dataset.owner_org
 
@@ -101,14 +100,14 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                         if owner_org or contributor_id:
                             self._validate_dataset_rdf_graph(uri, rdf_graph, owner_org, contributor_id)
                     else:
-                        LOGGER.warn(u'Could not find triples to URI %s. Updating is not possible.', uri)
+                        LOGGER.warning(u'Could not find triples to URI %s. Updating is not possible.', uri)
                 except SPARQLWrapperException as exception:
                     LOGGER.error(u'Unexpected error while deleting dataset with URI %s from TripleStore: %s',
                                  uri, exception)
                     error_messages.append(u'Error while deleting dataset from TripleStore: %s' % exception)
                 except Exception as exception:
-                    LOGGER.warn(u'Unexpected error or error while graph serialization: %s. Skipping ' \
-                                u'dataset with URI %s.', exception, uri)
+                    LOGGER.warning(u'Unexpected error or error while graph serialization: %s. Skipping ' \
+                                   u'dataset with URI %s.', exception, uri)
                     error_messages.append(u'Unexpected error or error while graph serialization: %s' \
                                           % exception)
             LOGGER.debug(u'Finished updating triplestore.')
@@ -155,11 +154,11 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         self.shacl_validator_client = ShaclValidator()
 
         self.licenses_upgrade = {}
-        license_file = pylons.config.get('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping')
+        license_file = tk.config.get('ckanext.dcatde.urls.dcat_licenses_upgrade_mapping')
         if license_file:
             self.licenses_upgrade = load_json_mapping(license_file, "DCAT License upgrade mapping", LOGGER)
         try:
-            self.email_validator = toolkit.get_validator('email_validator')
+            self.email_validator = tk.get_validator('email_validator')
         except UnknownValidator:
             pass
 
@@ -197,7 +196,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
     @staticmethod
     def _get_fallback_license():
         ''' Get fallback licence from config '''
-        fallback = pylons.config.get('ckanext.dcatde.harvest.default_license',
+        fallback = tk.config.get('ckanext.dcatde.harvest.default_license',
                                      'http://dcat-ap.de/def/licenses/other-closed')
         return fallback
 
@@ -251,7 +250,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         LOGGER.debug('Time for query harvest source related datasets : %s',
                      str(checkpoint_end - checkpoint_start))
 
-        guids_in_db = guid_to_package_id.keys()
+        guids_in_db = list(guid_to_package_id.keys())
 
         # Get objects/datasets to delete (ie in the DB but not in the source)
         guids_in_source_unique = set(guids_in_source)
@@ -313,10 +312,10 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                 new_license = self.licenses_upgrade.get(current_license, '')
                 if new_license == '':
                     LOGGER.info(log_prefix + u' has a deprecated or unknown license {0}. '\
-                        u'Keeping old value.'.format(current_license))
+                                u'Keeping old value.'.format(current_license))
                 elif current_license != new_license:
                     LOGGER.info(log_prefix + u' had old license {0}. '\
-                        u'Updated value to recent DCAT list.'.format(current_license))
+                                u'Updated value to recent DCAT list.'.format(current_license))
                     resource[RES_EXTRA_KEY_LICENSE] = new_license
         # write changes back to harvest object content
         harvest_object.content = json.dumps(package)
@@ -365,8 +364,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         status = self._get_object_extra(harvest_object, 'status')
         if status == 'delete':
             if not harvest_object.package_id:
-                LOGGER.warn(u'Harvest object with status delete contains no package id for guid %s',
-                            harvest_object.guid)
+                LOGGER.warning(u'Harvest object with status delete contains no package id for guid %s',
+                               harvest_object.guid)
                 return False
             HarvestUtils.rename_delete_dataset_with_id(harvest_object.package_id)
             self._delete_dataset_in_triplestore(harvest_object)
@@ -384,7 +383,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                                 u'no resources.', harvest_object.guid)
                     info_deleted_local_dataset = ' Local dataset without resources deleted.'
                 else:
-                    LOGGER.warn(
+                    LOGGER.warning(
                         u'Not deleting package with GUID %s, because more than one dataset was found!',
                         harvest_object.guid
                     )
@@ -418,7 +417,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             config_obj = json.loads(cfg)
             if CONFIG_PARAM_HARVESTED_PORTAL in config_obj:
                 harvested_portal = config_obj[CONFIG_PARAM_HARVESTED_PORTAL]
-                if not isinstance(harvested_portal, basestring):
+                if not isinstance(harvested_portal, six.string_types):
                     raise ValueError('%s must be a string' % CONFIG_PARAM_HARVESTED_PORTAL)
             else:
                 raise KeyError('%s is not set in config.' % CONFIG_PARAM_HARVESTED_PORTAL)
@@ -437,17 +436,17 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                 package_id = harvest_object.package_id
                 LOGGER.debug(u'Start deleting dataset with ID %s from triplestore.', package_id)
                 context = {'user': self._get_user_name()}
-                rdf = toolkit.get_action('dcat_dataset_show')(context, {'id': package_id})
+                rdf = tk.get_action('dcat_dataset_show')(context, {'id': package_id})
                 rdf_parser = RDFParser()
                 rdf_parser.parse(rdf)
                 # Should be only one dataset
                 uri = next(rdf_parser._datasets(), None)
                 self._delete_dataset_in_triplestore_by_uri(uri)
         except RDFParserException as ex:
-            LOGGER.warn(u'Error while parsing the RDF file for dataset with ID %s: %s',
+            LOGGER.warning(u'Error while parsing the RDF file for dataset with ID %s: %s',
                         package_id, ex)
         except SPARQLWrapperException as ex:
-            LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s', uri, ex)
+            LOGGER.warning(u'Error while deleting dataset with URI %s from triplestore: %s', uri, ex)
 
     def _delete_dataset_in_triplestore_by_uri(self, uri):
         '''
@@ -501,8 +500,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             try:
                 self._delete_dataset_in_triplestore_by_uri(dataset_uri)
             except SPARQLWrapperException as ex:
-                LOGGER.warn(u'Error while deleting dataset with URI %s from triplestore: %s',
-                            dataset_uri, ex)
+                LOGGER.warning(u'Error while deleting dataset with URI %s from triplestore: %s',
+                               dataset_uri, ex)
 
     def _get_existing_dataset_uris_from_triplestore(self, owner_org_or_source_id):
         '''
@@ -512,10 +511,13 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         try:
             query = GET_URIS_FROM_HARVEST_INFO_QUERY % {'owner_org_or_source_id': owner_org_or_source_id}
             raw_response = self.triplestore_client.select_datasets_in_triplestore_harvest_info(query)
-            response = raw_response.convert()
-            for res in response["results"]["bindings"]:
-                if "s" in res:
-                    existing_uris.append(res["s"]["value"])
+            if raw_response:
+                response = raw_response.convert()
+                for res in response["results"]["bindings"]:
+                    if "s" in res:
+                        existing_uris.append(res["s"]["value"])
+            else:
+                LOGGER.info(u'Get no dataset IDs from harvest info: %s', owner_org_or_source_id)
         except SPARQLWrapperException as exception:
             LOGGER.error(u'Unexpected error while querying harvest info from triplestore: %s', exception)
         return existing_uris

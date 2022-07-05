@@ -5,7 +5,8 @@
 import logging
 import os
 
-import pylons
+import six
+from ckan.plugins import toolkit as tk
 import requests
 from SPARQLWrapper import SPARQLWrapper, POST, JSON
 from ckanext.dcatde.triplestore.sparql_query_templates import DELETE_DATASET_BY_URI_SPARQL_QUERY
@@ -69,7 +70,8 @@ class FusekiTriplestoreClient(object):
         if status_code == 200:
             LOGGER.debug(u'Dataset in triple store successfully deleted')
         else:
-            LOGGER.warn(u'Error! Deleting dataset URI %s response status != 200: %s', uri, str(status_code))
+            LOGGER.warning(u'Error! Deleting dataset URI %s response status != 200: %s', uri,
+                           str(status_code))
 
     def create_dataset_in_triplestore(self, graph, uri):
         """
@@ -103,7 +105,7 @@ class FusekiTriplestoreClient(object):
             return
         LOGGER.debug(u'Creating new dataset in triplestore. Datastore name: %s, Dataset with URI %s',
                      datastore_name, uri)
-        if isinstance(graph, unicode):
+        if isinstance(graph, six.string_types):
             graph = graph.encode('utf-8')
 
         headers = {'Content-Type': content_type}
@@ -112,7 +114,8 @@ class FusekiTriplestoreClient(object):
         if status_code == 200:
             LOGGER.debug(u'Dataset in triple store successfully created')
         else:
-            LOGGER.warn(u'Error! Creating dataset URI %s response status != 200: %s', uri, str(status_code))
+            LOGGER.warning(u'Error! Creating dataset URI %s response status != 200: %s', uri,
+                           str(status_code))
 
     def select_datasets_in_triplestore_harvest_info(self, query):
         """
@@ -128,7 +131,7 @@ class FusekiTriplestoreClient(object):
         """
         if not datastore_name:
             LOGGER.debug(u'No datastore name is given! Skipping...')
-            return
+            return None
         sparql_wrapper = SPARQLWrapper(self._get_query_endpoint(datastore_name))
         sparql_wrapper.setQuery(query)
         sparql_wrapper.setMethod(POST)
@@ -148,11 +151,12 @@ class FusekiTriplestoreClient(object):
                     LOGGER.debug(u'Fuseki is available.')
                     return True
                 else:
-                    LOGGER.warn(u'Fuseki responded to ping with HTTP-Status %s! Skip updating data in ' \
-                                u'Triplestore, because fuseki is not available!', str(response.status_code))
+                    LOGGER.warning(u'Fuseki responded to ping with HTTP-Status %s! Skip updating data in ' \
+                                   u'Triplestore, because fuseki is not available!',
+                                   str(response.status_code))
             except requests.exceptions.RequestException as ex:
-                LOGGER.warn(u'Exception occurred while connecting to Fuseki. Skip updating data in ' \
-                            u'Triplestore, because fuseki is not available! Details: %s', ex)
+                LOGGER.warning(u'Exception occurred while connecting to Fuseki. Skip updating data in ' \
+                               u'Triplestore, because fuseki is not available! Details: %s', ex)
         return False
 
     def _get_update_endpoint(self, datastore_name):
@@ -174,21 +178,21 @@ class FusekiTriplestoreClient(object):
     @staticmethod
     def _get_fuseki_config():
         """ Read URLs for Fuseki from the config """
-        fuseki_base_url = pylons.config.get('ckanext.dcatde.fuseki.triplestore.url')
-        datastore_name_default = pylons.config.get('ckanext.dcatde.fuseki.triplestore.name')
-        datastore_name_shacl_validation = pylons.config.get('ckanext.dcatde.fuseki.shacl.store.name')
-        datastore_name_harvest_info = pylons.config.get('ckanext.dcatde.fuseki.harvest.info.name')
+        fuseki_base_url = tk.config.get('ckanext.dcatde.fuseki.triplestore.url')
+        datastore_name_default = tk.config.get('ckanext.dcatde.fuseki.triplestore.name')
+        datastore_name_shacl_validation = tk.config.get('ckanext.dcatde.fuseki.shacl.store.name')
+        datastore_name_harvest_info = tk.config.get('ckanext.dcatde.fuseki.harvest.info.name')
         if fuseki_base_url:
             LOGGER.info(u'Found Fuseki URL in config. TripleStore support is basically activated.')
             if not datastore_name_default:
-                LOGGER.warn(u'Default datastore name NOT found! Saving datasets in the TripleStore is ' \
-                            u'DISABLED.')
+                LOGGER.warning(u'Default datastore name NOT found! Saving datasets in the TripleStore is ' \
+                            'DISABLED.')
             if not datastore_name_shacl_validation:
-                LOGGER.warn(u'SHACL datastore name NOT found! Saving validation reports in the ' \
-                            u'TripleStore is DISABLED.')
+                LOGGER.warning(u'SHACL datastore name NOT found! Saving validation reports in the ' \
+                               u'TripleStore is DISABLED.')
             if not datastore_name_harvest_info:
-                LOGGER.warn(u'Harvest info datastore name NOT found! Deprecated datasets which are not ' \
-                            u'stored in CKAN will not be deleted properly from the triplestore.')
+                LOGGER.warning(u'Harvest info datastore name NOT found! Deprecated datasets which are not ' \
+                               u'stored in CKAN will not be deleted properly from the triplestore.')
         else:
             LOGGER.info(u'Cannot read Fuseki URL from config: %s. TripleStore support is deactivated.')
         return (fuseki_base_url, datastore_name_default, datastore_name_shacl_validation,

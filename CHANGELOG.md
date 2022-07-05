@@ -1,5 +1,9 @@
 # Changelog
 
+## v5.1.0 2022-04-07
+
+* Support for Python 3
+
 ## v5.0.1 2022-03-31
 
 * Updates ckanext-harvest to version 1.3.4

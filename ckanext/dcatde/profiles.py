@@ -2,6 +2,7 @@
 # -*- coding: utf8 -*-
 import json
 import re
+import six
 
 from ckan import model
 from ckan.lib.munge import _munge_to_length
@@ -171,7 +172,7 @@ class DCATdeProfile(RDFProfile):
         Ensures that the given value string has no tel: prefix.
         '''
         if value:
-            return unicode(value).replace(PREFIX_TEL, u'')
+            return six.text_type(value).replace(PREFIX_TEL, u'')
         else:
             return value
 
@@ -231,7 +232,7 @@ class DCATdeProfile(RDFProfile):
             for distribution in self.g.objects(dataset_ref, DCAT.distribution):
                 for resource_dict in dataset_dict.get('resources', []):
                     # Match distribution in graph and distribution in ckan-dict
-                    if unicode(distribution) == resource_dict.get('uri'):
+                    if six.text_type(distribution) == resource_dict.get('uri'):
                         for key, predicate in (
                                 ('licenseAttributionByText', dcatde_namespace.licenseAttributionByText),
                                 ('plannedAvailability', dcatde_namespace.plannedAvailability)
@@ -265,7 +266,7 @@ class DCATdeProfile(RDFProfile):
             groups = []
 
         for obj in self.g.objects(dataset_ref, DCAT.theme):
-            current_theme = unicode(obj)
+            current_theme = six.text_type(obj)
 
             if current_theme.startswith(dcat_theme_prefix):
                 group = current_theme.replace(dcat_theme_prefix, '').lower()
@@ -280,7 +281,7 @@ class DCATdeProfile(RDFProfile):
         g = self.g
 
         # bind namespaces to have readable names in RDF Document
-        for prefix, namespace in namespaces.iteritems():
+        for prefix, namespace in six.iteritems(namespaces):
             g.bind(prefix, namespace)
 
         # Simple additional fields
@@ -339,18 +340,18 @@ class DCATdeProfile(RDFProfile):
             'zip': VCARD.hasPostalCode,
             'country': VCARD.hasCountryName
         }
-        for vc_name in vcard_mapping:
+        for vc_name, vcard_predicate in vcard_mapping.items():
             vcard_fld = self._get_dataset_value(dataset_dict, 'maintainer_' + vc_name)
             if vcard_fld:
                 contact_point = self._get_or_create_contact_point(dataset_dict, dataset_ref)
-                g.add((contact_point, vcard_mapping[vc_name], Literal(vcard_fld)))
+                g.add((contact_point, vcard_predicate, Literal(vcard_fld)))
 
         # Groups
         groups = self._get_dataset_value(dataset_dict, 'groups')
         for group in groups:
-            group_name_in_dict = group['name']
-            if group_name_in_dict:
-                g.add((dataset_ref, DCAT.theme, CleanedURIRef(dcat_theme_prefix + group_name_in_dict.upper())))
+            group_name = group['name']
+            if group_name:
+                g.add((dataset_ref, DCAT.theme, CleanedURIRef(dcat_theme_prefix + group_name.upper())))
 
         # used_datasets
         items = [
@@ -362,7 +363,7 @@ class DCATdeProfile(RDFProfile):
         for resource_dict in dataset_dict.get('resources', []):
             for distribution in g.objects(dataset_ref, DCAT.distribution):
                 # Match distribution in graph and distribution in ckan-dict
-                if unicode(distribution) == resource_uri(resource_dict):
+                if six.text_type(distribution) == resource_uri(resource_dict):
                     items = [
                         ('licenseAttributionByText', DCATDE.licenseAttributionByText, None, Literal),
                         ('plannedAvailability', DCATDE.plannedAvailability, None, URIRef)
@@ -378,5 +379,5 @@ class DCATdeProfile(RDFProfile):
 def _munge_tag(tag):
     '''Cleans a given tag from special characters.'''
     tag = tag.lower().strip()
-    tag = re.sub(ur'[^a-zA-ZÄÖÜäöüß0-9 \-_\.]', '', tag).replace(' ', '-')
+    tag = re.sub(u'[^a-zA-ZÄÖÜäöüß0-9 \\-_\\.]', '', tag).replace(' ', '-')
     return _munge_to_length(tag, model.MIN_TAG_LENGTH, model.MAX_TAG_LENGTH)

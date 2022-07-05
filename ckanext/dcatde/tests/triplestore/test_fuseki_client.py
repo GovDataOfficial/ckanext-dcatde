@@ -40,7 +40,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
 
         is_available_return = client.is_available()
 
-        self.assertEquals(is_available_return, False)
+        self.assertEqual(is_available_return, False)
 
     @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', FUSEKI_HARVEST_DS_NAME)
     @helpers.change_config('ckanext.dcatde.fuseki.triplestore.name', FUSEKI_BASE_DS_NAME)
@@ -55,7 +55,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
 
         is_available_return = client.is_available()
 
-        self.assertEquals(is_available_return, False)
+        self.assertEqual(is_available_return, False)
 
     @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', FUSEKI_HARVEST_DS_NAME)
     @helpers.change_config('ckanext.dcatde.fuseki.triplestore.name', FUSEKI_BASE_DS_NAME)
@@ -70,7 +70,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
 
         is_available_return = client.is_available()
 
-        self.assertEquals(is_available_return, True)
+        self.assertEqual(is_available_return, True)
 
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.is_available')
     @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', FUSEKI_HARVEST_DS_NAME)
@@ -85,10 +85,10 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         client = FusekiTriplestoreClient()
         fuseki_base_url, ds_name_default, ds_name_shacl, ds_name_harvest = client._get_fuseki_config()
 
-        self.assertEquals(ds_name_harvest, FUSEKI_HARVEST_DS_NAME)
-        self.assertEquals(ds_name_shacl, FUSEKI_SHACL_DS_NAME)
-        self.assertEquals(ds_name_default, FUSEKI_BASE_DS_NAME)
-        self.assertEquals(fuseki_base_url, FUSEKI_BASE_URL)
+        self.assertEqual(ds_name_harvest, FUSEKI_HARVEST_DS_NAME)
+        self.assertEqual(ds_name_shacl, FUSEKI_SHACL_DS_NAME)
+        self.assertEqual(ds_name_default, FUSEKI_BASE_DS_NAME)
+        self.assertEqual(fuseki_base_url, FUSEKI_BASE_URL)
 
     @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', FUSEKI_HARVEST_DS_NAME)
     @helpers.change_config('ckanext.dcatde.fuseki.triplestore.name', FUSEKI_BASE_DS_NAME)
@@ -103,7 +103,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
 
         is_available_return = client.is_available()
 
-        self.assertEquals(is_available_return, False)
+        self.assertEqual(is_available_return, False)
 
     @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', None)
     @helpers.change_config('ckanext.dcatde.fuseki.shacl.store.name', None)
@@ -129,19 +129,19 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
 
         client = FusekiTriplestoreClient()
 
-        self.assertEquals(
+        self.assertEqual(
             client._get_update_endpoint(FUSEKI_BASE_DS_NAME), '{}/update'.format(FUSEKI_ENDPOINT_URL))
-        self.assertEquals(
+        self.assertEqual(
             client._get_data_endpoint(FUSEKI_BASE_DS_NAME), '{}/data'.format(FUSEKI_ENDPOINT_URL))
-        self.assertEquals(
+        self.assertEqual(
             client._get_query_endpoint(FUSEKI_BASE_DS_NAME), '{}/query'.format(FUSEKI_ENDPOINT_URL))
-        self.assertEquals(
+        self.assertEqual(
             client._get_update_endpoint(FUSEKI_SHACL_DS_NAME), '{}/update'.format(FUSEKI_SHACL_ENDPOINT_URL))
-        self.assertEquals(
+        self.assertEqual(
             client._get_data_endpoint(FUSEKI_SHACL_DS_NAME), '{}/data'.format(FUSEKI_SHACL_ENDPOINT_URL))
-        self.assertEquals(
+        self.assertEqual(
             client._get_query_endpoint(FUSEKI_SHACL_DS_NAME), '{}/query'.format(FUSEKI_SHACL_ENDPOINT_URL))
-        self.assertEquals(client._get_ping_endpoint(), '{}/$/ping'.format(FUSEKI_BASE_URL))
+        self.assertEqual(client._get_ping_endpoint(), '{}/$/ping'.format(FUSEKI_BASE_URL))
 
     @helpers.change_config('ckanext.dcatde.fuseki.harvest.info.name', FUSEKI_HARVEST_DS_NAME)
     @helpers.change_config('ckanext.dcatde.fuseki.triplestore.name', FUSEKI_BASE_DS_NAME)
@@ -261,7 +261,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         client.delete_dataset_in_triplestore(test_uri)
 
         # set_query() is called in SPARQLWrapper-init() as well, so we can't check for called_once
-        self.assertEquals(mock_sparql_set_query.call_count, 2)
+        self.assertEqual(mock_sparql_set_query.call_count, 2)
         mock_sparql_set_query.assert_called_with(DELETE_DATASET_BY_URI_SPARQL_QUERY % {'uri': str(test_uri)})
         mock_sparql_query.assert_called_once_with()
 
@@ -281,7 +281,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         client.delete_dataset_in_triplestore_mqa(test_uri)
 
         # set_query() is called in SPARQLWrapper-init() as well, so we can't check for called_once
-        self.assertEquals(mock_sparql_set_query.call_count, 2)
+        self.assertEqual(mock_sparql_set_query.call_count, 2)
         mock_sparql_set_query.assert_called_with(
             DELETE_VALIDATION_REPORT_BY_URI_SPARQL_QUERY % {'uri': str(test_uri)})
         mock_sparql_query.assert_called_once_with()
@@ -302,7 +302,7 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
         client.delete_dataset_in_triplestore_harvest_info(test_uri)
 
         # set_query() is called in SPARQLWrapper-init() as well, so we can't check for called_once
-        self.assertEquals(mock_sparql_set_query.call_count, 2)
+        self.assertEqual(mock_sparql_set_query.call_count, 2)
         mock_sparql_set_query.assert_called_with(
             DELETE_DATASET_FROM_HARVEST_INFO_QUERY % {'uri': str(test_uri)})
         mock_sparql_query.assert_called_once_with()
@@ -340,6 +340,6 @@ class TestFusekiTriplestoreClient(unittest.TestCase):
 
         client = FusekiTriplestoreClient()
         result = client.select_datasets_in_triplestore_harvest_info(test_query)
-        self.assertEquals(result, mock_response)
+        self.assertEqual(result, mock_response)
         mock_sparql_query.assert_called_once_with()
         mock_sparql_set_query.assert_called_with(test_query)

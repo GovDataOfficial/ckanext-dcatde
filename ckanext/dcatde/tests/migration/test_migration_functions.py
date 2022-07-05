@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 
 import unittest
+import six
 import ckanext.dcatde.migration.migration_functions as mf
 
 
@@ -70,9 +71,9 @@ class TestMigrationFunctions(unittest.TestCase):
 
         return self._build_dataset_extras(
             u'dates',
-            u'[{"role": "' + role + u'",' +
+            u'[{"role": "' + role + '",' +
             u' "date": "2016-04-01T00:00:00"' +
-            u'}' + additional_entry + u']')
+            u'}' + additional_entry + ']')
 
     def _assert_dataset_len(self, dataset, length):
         '''
@@ -110,9 +111,9 @@ class TestMigrationFunctions(unittest.TestCase):
         '''
         real_val = self._assert_extras_key(dataset, key)
         self.assertTrue(real_val == value,
-                        u'expected value "' + unicode(value)
-                        + u'", but was "' + unicode(real_val)
-                        + u'" for key ' + unicode(key))
+                        u'expected value "' + six.text_type(value)
+                        + u'", but was "' + six.text_type(real_val)
+                        + u'" for key ' + six.text_type(key))
 
     def _assert_extras_other_unaffected(self, dataset):
         '''

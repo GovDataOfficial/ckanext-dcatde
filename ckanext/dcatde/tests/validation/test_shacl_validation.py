@@ -25,7 +25,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         """ Tests if _get_validator_config() return the correct values """
 
         endpoint_base_url, validation_profile = ShaclValidator._get_validator_config()
-        self.assertEquals(endpoint_base_url, VALIDATOR_API_URL)
+        self.assertEqual(endpoint_base_url, VALIDATOR_API_URL)
 
 
     @helpers.change_config('ckanext.dcatde.shacl.validator.profile.type', VALIDATION_PROFILE)
@@ -33,7 +33,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         """ Tests if _get_validator_config() returns None if no valid endpoint is available """
 
         endpoint_base_url, validation_profile = ShaclValidator._get_validator_config()
-        self.assertEquals(endpoint_base_url, None)
+        self.assertEqual(endpoint_base_url, None)
 
 
     @helpers.change_config('ckanext.dcatde.shacl_validator.api_url', VALIDATOR_API_URL)
@@ -41,7 +41,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         """ Tests if _get_validator_config() returns None if no valid profile is available """
 
         endpoint_base_url, validation_profile = ShaclValidator._get_validator_config()
-        self.assertEquals(validation_profile, None)
+        self.assertEqual(validation_profile, None)
 
 
     def test_validate_fail_no_url(self):
@@ -49,7 +49,7 @@ class TestShaclValidatorClient(unittest.TestCase):
 
         client = ShaclValidator()
         result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID)
-        self.assertEquals(result, None)
+        self.assertEqual(result, None)
 
 
     @patch('ckanext.dcatde.validation.shacl_validation.ShaclValidator._get_validator_config')
@@ -60,7 +60,7 @@ class TestShaclValidatorClient(unittest.TestCase):
 
         client = ShaclValidator()
         result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID)
-        self.assertEquals(result, None)
+        self.assertEqual(result, None)
 
 
     @patch('ckanext.dcatde.validation.shacl_validation.ShaclValidator._get_validator_config')
@@ -74,7 +74,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         client = ShaclValidator()
         result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID)
 
-        self.assertEquals(result, None)
+        self.assertEqual(result, None)
 
 
     @patch('ckanext.dcatde.validation.shacl_validation.ShaclValidator._get_validator_config')
@@ -92,7 +92,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         client = ShaclValidator()
         result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID, contributor_id)
 
-        self.assertEquals(result, expected_repsonse)
+        self.assertEqual(result, expected_repsonse)
 
     @patch('ckanext.dcatde.validation.shacl_validation.ShaclValidator._get_validator_config')
     @patch('ckanext.dcatde.validation.shacl_validation.requests.post')
@@ -110,7 +110,7 @@ class TestShaclValidatorClient(unittest.TestCase):
         client = ShaclValidator()
         result = client.validate(TEST_QUERY, DATASET_TEST_URI, TEST_ORGANIZATION_ID)
 
-        self.assertEquals(result, expected_repsonse)
+        self.assertEqual(result, expected_repsonse)
 
 
     def test_get_report_query(self):
@@ -130,7 +130,7 @@ class TestShaclValidatorClient(unittest.TestCase):
             }}""".format(dataset_uri=DATASET_TEST_URI, owner_org=TEST_ORGANIZATION_ID)
 
         report_query = ShaclValidator._get_report_query(DATASET_TEST_URI, TEST_ORGANIZATION_ID, None)
-        self.assertEquals(report_query, expected_value)
+        self.assertEqual(report_query, expected_value)
 
     def test_get_report_query_with_contributor_id(self):
         """ Tests if get_report_query() returns the expected Query with contributorID """
@@ -154,4 +154,4 @@ class TestShaclValidatorClient(unittest.TestCase):
 
         report_query = ShaclValidator._get_report_query(
             DATASET_TEST_URI, TEST_ORGANIZATION_ID, contributor_id)
-        self.assertEquals(report_query, expected_value)
+        self.assertEqual(report_query, expected_value)

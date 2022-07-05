@@ -3,9 +3,8 @@
 """SHACL validation utility"""
 
 import logging
-from urlparse import urljoin
-
-import pylons
+from six.moves.urllib.parse import urljoin
+from ckan.plugins import toolkit as tk
 from rdflib.namespace import Namespace
 import requests
 
@@ -19,6 +18,7 @@ GOVDATA_MQA = Namespace("http://govdata.de/mqa/#")
 
 
 class ShaclValidator(object):
+    # pylint: disable=R0903
     """Validates RDF graphs using the DCAT-AP.de SHACL validator service"""
 
     def __init__(self):
@@ -43,8 +43,9 @@ class ShaclValidator(object):
                 if req.status_code == requests.codes.ok:
                     result = req.text
             except requests.exceptions.RequestException as ex:
-                LOGGER.warn(u'Exception occurred while connecting to SHACL validator. Skip validating data ' \
-                            u'with the SHACL validator, because validator is not available! Details: %s', ex)
+                LOGGER.warning(u'Exception occurred while connecting to SHACL validator. Skip validating ' \
+                               u'data with the SHACL validator, because validator is not available! ' \
+                               u'Details: %s', ex)
         else:
             LOGGER.debug('Skip validating data with the SHACL validator, because validator is not available!')
 
@@ -77,15 +78,15 @@ class ShaclValidator(object):
     def _get_validator_config():
         """Gets the URL to the SHACL validator API"""
 
-        endpoint_base_url = pylons.config.get('ckanext.dcatde.shacl_validator.api_url')
-        profile_type = pylons.config.get('ckanext.dcatde.shacl.validator.profile.type')
+        endpoint_base_url = tk.config.get('ckanext.dcatde.shacl_validator.api_url')
+        profile_type = tk.config.get('ckanext.dcatde.shacl.validator.profile.type')
 
         if endpoint_base_url and not profile_type:
-            LOGGER.warn(u'Invalid configuration of SHACL validator. Profile type is missing! SHACL ' \
-                        u'validation support is deactivated.')
+            LOGGER.warning(u'Invalid configuration of SHACL validator. Profile type is missing! SHACL ' \
+                           u'validation support is deactivated.')
         elif profile_type and not endpoint_base_url:
-            LOGGER.warn(u'Invalid configuration of SHACL validator. Base URL is missing! SHACL validation ' \
-                        u'support is deactivated.')
+            LOGGER.warning(u'Invalid configuration of SHACL validator. Base URL is missing! SHACL ' \
+                           u'validation support is deactivated.')
         elif endpoint_base_url and profile_type:
             LOGGER.info(u'Found SHACL validator URL and validation profile in config. SHACL validation ' \
                         u'support is activated.')
