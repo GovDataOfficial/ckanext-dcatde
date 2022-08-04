@@ -17,6 +17,7 @@ import ckanext.dcatde.dataset_utils as ds_utils
 # copied from ckanext.dcat.profiles
 DCT = Namespace("http://purl.org/dc/terms/")
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
+DCATAP = Namespace("http://data.europa.eu/r5r/")
 ADMS = Namespace("http://www.w3.org/ns/adms#")
 VCARD = Namespace("http://www.w3.org/2006/vcard/ns#")
 FOAF = Namespace("http://xmlns.com/foaf/0.1/")
@@ -38,6 +39,7 @@ namespaces = {
     # copied from ckanext.dcat.profiles
     'dct': DCT,
     'dcat': DCAT,
+    'dcatap': DCATAP,
     'adms': ADMS,
     'vcard': VCARD,
     'foaf': FOAF,
@@ -230,9 +232,11 @@ class DCATdeProfile(RDFProfile):
 
             # Add additional distribution fields
             for distribution in self.g.objects(dataset_ref, DCAT.distribution):
+                distribution_ref = six.text_type(distribution)
                 for resource_dict in dataset_dict.get('resources', []):
-                    # Match distribution in graph and distribution in ckan-dict
-                    if six.text_type(distribution) == resource_dict.get('uri'):
+                    # Match distribution in graph and distribution in resource dict
+                    if resource_dict and (distribution_ref == resource_dict.get('uri')) or \
+                            (distribution_ref == resource_dict.get('distribution_ref')):
                         for key, predicate in (
                                 ('licenseAttributionByText', dcatde_namespace.licenseAttributionByText),
                                 ('plannedAvailability', dcatde_namespace.plannedAvailability)
@@ -246,10 +250,11 @@ class DCATdeProfile(RDFProfile):
         self._parse_contact(dataset_dict, dataset_ref, DCT.contributor, 'contributor', True)
         self._parse_contact(dataset_dict, dataset_ref, DCT.creator, 'author', False)
 
-        # Simple additional fields to DCAT-AP 1.1
+        # Simple additional fields to DCAT-AP
         for key, predicate in (
                 ('metadata_original_html', DCAT.landingPage),
-                ('granularity', DCAT.granularity)
+                ('granularity', DCAT.granularity),
+                ('availability', DCATAP.availability)
                 ):
             value = self._object_value(dataset_ref, predicate)
             if value:
@@ -289,7 +294,8 @@ class DCATdeProfile(RDFProfile):
             ('qualityProcessURI', DCATDE.qualityProcessURI, None, URIRef),
             ('metadata_original_html', DCAT.landingPage, None, URIRef),
             ('politicalGeocodingLevelURI', DCATDE.politicalGeocodingLevelURI, None, URIRef),
-            ('granularity', DCAT.granularity, None, URIRefOrLiteral)
+            ('granularity', DCAT.granularity, None, URIRefOrLiteral),
+            ('availability', DCATAP.availability, None, URIRefOrLiteral)
         ]
         self._add_triples_from_dict(dataset_dict, dataset_ref, items)
 
@@ -361,15 +367,13 @@ class DCATdeProfile(RDFProfile):
 
         # Enhance Distributions
         for resource_dict in dataset_dict.get('resources', []):
-            for distribution in g.objects(dataset_ref, DCAT.distribution):
-                # Match distribution in graph and distribution in ckan-dict
-                if six.text_type(distribution) == resource_uri(resource_dict):
-                    items = [
-                        ('licenseAttributionByText', DCATDE.licenseAttributionByText, None, Literal),
-                        ('plannedAvailability', DCATDE.plannedAvailability, None, URIRef)
-                    ]
-                    self._add_triples_from_dict(resource_dict, distribution, items)
+            distribution = CleanedURIRef(resource_uri(resource_dict))
 
+            items = [
+                ('licenseAttributionByText', DCATDE.licenseAttributionByText, None, Literal),
+                ('plannedAvailability', DCATDE.plannedAvailability, None, URIRef)
+            ]
+            self._add_triples_from_dict(resource_dict, distribution, items)
 
     def graph_from_catalog(self, catalog_dict, catalog_ref):
         """ Creates a Catalog representation, will not be used for now """

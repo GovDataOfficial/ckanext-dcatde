@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.3.0 2022-08-04
+
+* Improves the referencing of distribution when adding DCAT-AP.de properties
+* Adds support for property dcatap:availability in class dcat:Dataset
+* Updates ckanext-dcat to version 1.3.0
+
 ## v5.2.0 2022-05-31
 
 * Updates ckanext-harvest to version 1.4.0 and ckanext-dcat to version 1.2.0

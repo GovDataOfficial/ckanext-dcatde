@@ -25,6 +25,7 @@ class TestDCATde(unittest.TestCase):
     # copied from ckanext.dcat.profiles
     DCT = Namespace("http://purl.org/dc/terms/")
     DCAT = Namespace("http://www.w3.org/ns/dcat#")
+    DCATAP = Namespace("http://data.europa.eu/r5r/")
     ADMS = Namespace("http://www.w3.org/ns/adms#")
     VCARD = Namespace("http://www.w3.org/2006/vcard/ns#")
     FOAF = Namespace("http://xmlns.com/foaf/0.1/")
@@ -48,6 +49,7 @@ class TestDCATde(unittest.TestCase):
         # copied from ckanext.dcat.profiles
         'dct': DCT,
         'dcat': DCAT,
+        'dcatap': DCATAP,
         'adms': ADMS,
         'vcard': VCARD,
         'foaf': FOAF,
@@ -269,6 +271,7 @@ class TestDCATde(unittest.TestCase):
                 "version_notes": "adms:versionNotes",
                 "dcat_type": "dct:type",
                 "granularity": "dcat:granularity",
+                "availability": "http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE",
 
                 "author_url": "nocheck",
                 "author_type": "nocheck",
@@ -489,6 +492,12 @@ class TestDCATde(unittest.TestCase):
                 self.assertEqual(adminnodes, 1, self.LOCN.adminUnitL2 + " not present")
             else:
                 self.fail("No valid spatial blocks found.")
+
+        # availability
+        object_list = [x for x in self.graph.objects(dataset_ref, self.DCATAP.availability)]
+        self.assertEqual(len(object_list), 1, "dcatap:availability not found.")
+        expected_availability = URIRef('http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE')
+        self.assertEqual(expected_availability, object_list[0], '{!r} not found in {}'.format(expected_availability, object_list))
 
         # lists in extras
         self._assert_list(dataset_ref, self.DCT.language,
@@ -764,8 +773,13 @@ class TestDCATde(unittest.TestCase):
             # dcat:granularity
             self._assert_extras_string(extras, 'granularity',
                                       'http://publications.europa.eu/resource/authority/frequency/MONTHLY')
+
+            # dcatap:availability
+            self._assert_extras_string(extras, 'availability',
+                                      'http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE')
         else:
             self.assertEqual(len([x for x in extras if x["key"] == 'granularity']), 0)
+            self.assertEqual(len([x for x in extras if x["key"] == 'availability']), 0)
 
         # dcatde:politicalGeocodingURI
         self._assert_extras_list_serialized(
@@ -926,6 +940,51 @@ class TestDCATde(unittest.TestCase):
             self.assertIn(
                 u'Das ist eine deutsche Beschreibung der Distribution',
                 res.get('description'))
+
+    def test_parse_dataset_distribution_without_uri(self):
+
+        license_attribution_by_text = u'Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, 2016'
+        planned_availability = u"http://dcat-ap.de/def/plannedAvailability/available"
+        data = u'''<?xml version="1.0" encoding="utf-8" ?>
+        <rdf:RDF
+         xmlns:dct="http://purl.org/dc/terms/"
+         xmlns:dcat="http://www.w3.org/ns/dcat#"
+         xmlns:dcatde="http://dcat-ap.de/def/dcatde/"
+         xmlns:schema="http://schema.org/"
+         xmlns:time="http://www.w3.org/2006/time"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+        <dcat:Dataset rdf:about="http://example.org">
+            <dcat:distribution>
+                <dcat:Distribution>
+                    <dcat:accessURL rdf:resource="http://geodienste.hamburg.de/darf_nicht_die_gleiche_url_wie_downloadurl_sein_da_es_sonst_nicht_angezeigt_wird"/>
+                    <dct:description>Das ist eine deutsche Beschreibung der Distribution</dct:description>
+                    <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2017-02-27</dct:issued>
+                    <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
+                    <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2017-03-07T10:00:00</dct:modified>
+                    <dcatde:licenseAttributionByText>{by_text}</dcatde:licenseAttributionByText>
+                    <dcatde:plannedAvailability rdf:resource="{planned_availability}"/>
+                </dcat:Distribution>
+            </dcat:distribution>
+        </dcat:Dataset>
+        </rdf:RDF>
+        '''.format(by_text=license_attribution_by_text, planned_availability=planned_availability)
+
+        p = self._default_parser_dcatde()
+
+        p.parse(data)
+
+        datasets = [d for d in p.datasets()]
+        self.assertEqual(len(datasets), 1)
+        dataset = datasets[0]
+
+        # Resources
+        resources = dataset.get('resources')
+        self.assertEqual(len(resources), 1)
+        resource_dict = resources[0]
+
+        assert resource_dict.get('licenseAttributionByText') == license_attribution_by_text
+        assert resource_dict.get('plannedAvailability') == planned_availability
 
     def test_parse_dataset_dct_format_iana_uri(self):
         resources = self._build_and_parse_format_mediatype_graph(
