@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.4.0 2022-09-12
+
+* Fixes string assertion error with Python 2
+* Fixes test for invalid URIRef
+* Internal changes: Switches Python environment from Python 3.6 to Python 3.8
+
 ## v5.3.0 2022-08-04
 
 * Improves the referencing of distribution when adding DCAT-AP.de properties

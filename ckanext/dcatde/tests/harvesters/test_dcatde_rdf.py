@@ -979,12 +979,11 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         datasets are imported.
         """
         # prepare
-        uris = [URIRef("http://example.org/datasets/1"), URIRef("http://example.org/datasets/2"),
+        uris = [URIRef("http:// this is invalid"), URIRef("http://example.org/datasets/2"),
                 URIRef("http://example.org/datasets/3"), URIRef("http://example.org/datasets/4")]
         g = Graph()
         for uri in uris:
             g.add((uri, RDF.type, self.DCAT.Dataset))
-        g.add((uris[0], RDF.about, URIRef("http:// this is invalid")))
         invalid_res = URIRef("http://example.org/datasets/2/resource/{not-valid")
         g.add((invalid_res, RDF.type, self.DCAT.Distribution))
         g.add((uris[1], self.DCAT.distribution, invalid_res))
