@@ -100,8 +100,8 @@ def dcatde_themeadder(args):
 
     try:
         groups_str = urllib.request.urlopen(groups_file).read()
-    except Exception as e:
-        print(e)
+    except Exception as ex:
+        print(ex)
         print('Could not load group config file!')
         groups_str = '{}'
 

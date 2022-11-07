@@ -44,7 +44,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
     p.implements(IDCATRDFHarvester)
 
     # -- begin IDCATRDFHarvester implementation --
-    # pylint: disable=C0111,W0613,R0201,C0103
+    # pylint: disable=missing-function-docstring,unused-argument
     def before_download(self, url, harvest_job):
         return url, []
 
@@ -141,7 +141,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         except ValueError:
             pass
         return package_schema
-    # pylint: enable=C0111,W0613,R0201,C0103
+    # pylint: enable=missing-function-docstring,unused-argument
     # -- end IDCATRDFHarvester implementation --
 
     def __init__(self, name='dcatde_rdf'):
@@ -220,7 +220,6 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         # the harvest objects. This allows cleaning the harvest data without loosing the
         # dataset mappings.
         # Build a subquery to get all active packages having a GUID first
-        # pylint: disable=E1101
         subquery = model.Session.query(model.PackageExtra.value, model.Package.id) \
             .join(model.Package, model.Package.id == model.PackageExtra.package_id)\
             .filter(model.Package.state == model.State.ACTIVE) \
@@ -236,7 +235,6 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             .filter(model.PackageExtra.state == model.State.ACTIVE) \
             .filter(model.PackageExtra.key == EXTRA_KEY_HARVESTED_PORTAL) \
             .filter(model.PackageExtra.value == portal)
-        # pylint: enable=E1101
 
         checkpoint_start = time.time()
         guid_to_package_id = {}

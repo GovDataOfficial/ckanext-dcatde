@@ -14,14 +14,14 @@ from ckanext.dcatde.commands.command_util import create_groups, migrate_user_per
 
 
 class ThemeAdder(CkanCommand):
-    # pylint: disable=R0903
+    # pylint: disable=too-few-public-methods
     """
     Adds a default set of groups to the current CKAN instance.
 
     Usage: dcatde_themeadder [omit-group-migration]
     """
 
-    summary = __doc__.split('\n')[0]
+    summary = __doc__.split('\n', maxsplit=1)[0]
     usage = __doc__
 
     omit_group_migration = False

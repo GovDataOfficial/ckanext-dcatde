@@ -43,7 +43,7 @@ class TestDCATde(unittest.TestCase):
     INVALID_TAG_SHORT = u';;a'
     VALID_TAG = {'name': u'some-in.valid-tagäß'}
 
-    dcat_theme_prefix = "http://publications.europa.eu/resource/authority/data-theme/"
+    DCAT_THEME_PREFIX = "http://publications.europa.eu/resource/authority/data-theme/"
 
     namespaces = {
         # copied from ckanext.dcat.profiles
@@ -462,7 +462,7 @@ class TestDCATde(unittest.TestCase):
 
         # groups, tags
         self._assert_list(dataset_ref, self.DCAT.theme,
-                         [self.dcat_theme_prefix + x["name"] for x in dataset_dict["groups"]])
+                         [self.DCAT_THEME_PREFIX + x["name"] for x in dataset_dict["groups"]])
         self._assert_list(dataset_ref, self.DCAT.keyword,
                          [x["name"] for x in dataset_dict["tags"]])
 
@@ -1273,6 +1273,117 @@ class TestDCATde(unittest.TestCase):
         self._assert_extras_string(extras, 'maintainer_street', u'Hauptstraße 1')
         self._assert_extras_string(extras, 'maintainer_zip', u'12345')
         self._assert_extras_string(extras, 'maintainer_country', u'Deutschland')
+
+    def test_dataset_contact_point_vcard_multiple_nodes_matched_name(self):
+
+        # prepare
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contacts = [
+            {'name': 'Herr Dr. Michael Schröder', 'url': 'http://michaelschroeder.de'},
+            {'name': 'Herr Dr. Max Mustermann', 'url': 'http://maxmustermann.de'}]
+
+        for contact in contacts:
+            contact_point = BNode()
+            g.add((contact_point, RDF.type, self.VCARD.Organization))
+            self._add_vcard_property_with_hasvalue(
+                g, contact_point, self.VCARD.hasFN, Literal(contact['name']))
+            self._add_vcard_property_with_hasvalue(
+                g, contact_point, self.VCARD.hasURL, Literal(contact['url']))
+            g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        # execute
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+
+        extras = dataset.get('extras')
+
+        # test if contact has been matched using name
+        contact_name_value = self._get_value_from_extras(extras, 'contact_name')
+        maintainer_url_value = self._get_value_from_extras(extras, 'maintainer_url')
+        for contact in contacts:
+            if contact_name_value == contact['name']:
+                self.assertEqual(contact['url'], maintainer_url_value)
+
+
+    def test_dataset_contact_point_vcard_multiple_nodes_matched_email(self):
+
+        # prepare
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contacts = [
+            {'email': 'michael.schroeder@bue.hamburg.de', 'url': 'http://michaelschroeder.de'},
+            {'email': 'max_mustermann@bue.hamburg.de', 'url': 'http://maxmustermann.de'}]
+
+        for contact in contacts:
+            contact_point = BNode()
+            g.add((contact_point, RDF.type, self.VCARD.Organization))
+            self._add_vcard_property_with_hasvalue(
+                g, contact_point, self.VCARD.hasEmail, Literal(contact['email']))
+            self._add_vcard_property_with_hasvalue(
+                g, contact_point, self.VCARD.hasURL, Literal(contact['url']))
+            g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        # execute
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+
+        extras = dataset.get('extras')
+
+        # test if contact has been matched using email
+        contact_email_value = self._get_value_from_extras(extras, 'contact_email')
+        maintainer_url_value = self._get_value_from_extras(extras, 'maintainer_url')
+        for contact in contacts:
+            if contact_email_value == contact['email']:
+                self.assertEqual(contact['url'], maintainer_url_value)
+
+    def test_dataset_contact_point_vcard_multiple_nodes_matched_uri(self):
+
+        # prepare
+        g = Graph()
+
+        dataset_ref = URIRef("http://example.org/datasets/1")
+        g.add((dataset_ref, RDF.type, self.DCAT.Dataset))
+
+        contacts = [
+            {'uri': 'http://example.org/contactpoint/1', 'tel': '+490522-22222-22'},
+            {'uri': 'http://example.org/contactpoint/2', 'tel': '+490533-33333-33'}]
+
+        for contact in contacts:
+            contact_point = URIRef(contact['uri'])
+            g.add((contact_point, RDF.type, self.VCARD.Organization))
+            self._add_vcard_property_with_hasvalue(
+                g, contact_point, self.VCARD.hasTelephone, Literal(contact['tel']))
+            g.add((dataset_ref, self.DCAT.contactPoint, contact_point))
+
+        # execute
+        p = self._default_parser_dcatde()
+
+        p.g = g
+
+        dataset = [d for d in p.datasets()][0]
+
+        extras = dataset.get('extras')
+
+
+        # test if contact has been matched using uri
+        contact_uri_value = self._get_value_from_extras(extras, 'contact_uri')
+        maintainer_tel_value = self._get_value_from_extras(extras, 'maintainer_tel')
+        for contact in contacts:
+            if contact_uri_value == contact['uri']:
+                self.assertEqual(contact['tel'], maintainer_tel_value)
 
     def test_parse_dataset_remove_mailto_from_email(self):
         g = Graph()

@@ -88,7 +88,7 @@ def insert(dataset_dict, key, value, isextra):
 def gather_dataset_ids(include_private=True):
     """Collects all dataset ids to reindex."""
     package_obj_found = {}
-    # pylint: disable=E1101
+    # pylint: disable=no-member
     # read orgs related to a harvest source
     subquery_harvest_orgs = model.Session.query(model.Group.id).distinct() \
         .join(model.Package, model.Package.owner_org == model.Group.id) \
@@ -115,7 +115,7 @@ def gather_dataset_ids(include_private=True):
                               .exists()))))
     if not include_private:
         query = query.filter(model.Package.private.is_(False))
-    # pylint: enable=E1101
+    # pylint: enable=no-member
 
     for row in query:
         package_obj_found[row[0]] = row[1]

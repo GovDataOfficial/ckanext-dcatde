@@ -27,7 +27,7 @@ class DCATdeMigrateCommand(CkanCommand):
     Connect with "nc -ul 5005" on the same machine to receive status updates.
     '''
 
-    summary = __doc__.split('\n')[0]
+    summary = __doc__.split('\n', maxsplit=1)[0]
     usage = __doc__
 
     # constants for different migration modes

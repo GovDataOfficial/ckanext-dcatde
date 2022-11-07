@@ -1,5 +1,10 @@
 # Changelog
 
+## v5.6.0 2022-11-03
+
+* Fixes correlation when parsing additionally contact point properties
+* Updates pylint configuration to latest version and fixes several warnings
+
 ## v5.5.0 2022-10-20
 
 * Adds support for property dct:references in class dcat:Dataset

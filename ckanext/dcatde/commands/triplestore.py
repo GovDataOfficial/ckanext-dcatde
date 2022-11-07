@@ -13,7 +13,7 @@ RDF_FORMAT_TURTLE = 'turtle'
 
 
 class Triplestore(CkanCommand):
-    # pylint: disable=R0903
+    # pylint: disable=too-few-public-methods
     '''Interacts with the triple store, e.g. reindex data.
 
     Usage:
@@ -27,7 +27,7 @@ class Triplestore(CkanCommand):
 
         '''
 
-    summary = __doc__.split('\n')[0]
+    summary = __doc__.split('\n', maxsplit=1)[0]
     usage = __doc__
 
     def __init__(self, name):

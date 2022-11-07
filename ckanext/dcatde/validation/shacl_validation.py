@@ -18,7 +18,7 @@ GOVDATA_MQA = Namespace("http://govdata.de/mqa/#")
 
 
 class ShaclValidator(object):
-    # pylint: disable=R0903
+    # pylint: disable=too-few-public-methods
     """Validates RDF graphs using the DCAT-AP.de SHACL validator service"""
 
     def __init__(self):

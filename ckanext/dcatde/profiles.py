@@ -33,7 +33,7 @@ DCATDE_1_0 = Namespace("http://dcat-ap.de/def/dcatde/1_0/")
 DCATDE_1_0_1 = Namespace("http://dcat-ap.de/def/dcatde/1.0.1/")
 DCATDE = Namespace("http://dcat-ap.de/def/dcatde/")
 
-dcat_theme_prefix = "http://publications.europa.eu/resource/authority/data-theme/"
+DCAT_THEME_PREFIX = "http://publications.europa.eu/resource/authority/data-theme/"
 
 namespaces = {
     # copied from ckanext.dcat.profiles
@@ -113,30 +113,63 @@ class DCATdeProfile(RDFProfile):
         """ Adds a Contact of type VCARD from the graph to the dataset dict.
         All items are stored in the extras dict of the dataset with the given prefix."""
 
-        contact = self._object(dataset_ref, predicate)
-        contact_url = self._get_vcard_property_value(contact, VCARD.hasURL)
-        ds_utils.insert(dataset_dict, prefix + '_url', contact_url, True)
+        for contact in self.g.objects(dataset_ref, predicate):
 
-        contact_tel = self._get_vcard_property_value(contact, VCARD.hasTelephone)
-        ds_utils.insert(dataset_dict, prefix + '_tel', self._without_tel(contact_tel), True)
+            contact_url = self._get_vcard_property_value(contact, VCARD.hasURL)
+            ds_utils.insert(dataset_dict, prefix + '_url', contact_url, True)
 
-        # If hasAddress object contains, use it to read address values from there
-        obj_with_address_values = contact
-        address = self._object(contact, VCARD.hasAddress)
-        if address:
-            obj_with_address_values = address
-        contact_street = self._get_vcard_property_value(
-            obj_with_address_values, VCARD.hasStreetAddress, VCARD['street-address'])
-        ds_utils.insert(dataset_dict, prefix + '_street', contact_street, True)
-        contact_city = self._get_vcard_property_value(
-            obj_with_address_values, VCARD.hasLocality, VCARD.locality)
-        ds_utils.insert(dataset_dict, prefix + '_city', contact_city, True)
-        contact_zip = self._get_vcard_property_value(
-            obj_with_address_values, VCARD.hasPostalCode, VCARD['postal-code'])
-        ds_utils.insert(dataset_dict, prefix + '_zip', contact_zip, True)
-        contact_country = self._get_vcard_property_value(
-            obj_with_address_values, VCARD.hasCountryName, VCARD['country-name'])
-        ds_utils.insert(dataset_dict, prefix + '_country', contact_country, True)
+            contact_tel = self._get_vcard_property_value(contact, VCARD.hasTelephone)
+            ds_utils.insert(dataset_dict, prefix + '_tel', self._without_tel(contact_tel), True)
+
+            # If hasAddress object contains, use it to read address values from there
+            obj_with_address_values = contact
+            address = self._object(contact, VCARD.hasAddress)
+            if address:
+                obj_with_address_values = address
+            contact_street = self._get_vcard_property_value(
+                obj_with_address_values, VCARD.hasStreetAddress, VCARD['street-address'])
+            ds_utils.insert(dataset_dict, prefix + '_street', contact_street, True)
+            contact_city = self._get_vcard_property_value(
+                obj_with_address_values, VCARD.hasLocality, VCARD.locality)
+            ds_utils.insert(dataset_dict, prefix + '_city', contact_city, True)
+            contact_zip = self._get_vcard_property_value(
+                obj_with_address_values, VCARD.hasPostalCode, VCARD['postal-code'])
+            ds_utils.insert(dataset_dict, prefix + '_zip', contact_zip, True)
+            contact_country = self._get_vcard_property_value(
+                obj_with_address_values, VCARD.hasCountryName, VCARD['country-name'])
+            ds_utils.insert(dataset_dict, prefix + '_country', contact_country, True)
+
+            if self._is_contact_in_dict(dataset_dict, contact):
+                break
+
+    def _is_contact_in_dict(self, dataset_dict, contact_obj):
+
+        contact_details = self._get_contact_details(contact_obj)
+
+        contact_uri = ds_utils.get_extras_field(dataset_dict, 'contact_uri')
+
+        if contact_uri and contact_details['uri'] == contact_uri:
+            return True
+        else:
+            contact_email = ds_utils.get_extras_field(dataset_dict, 'contact_email')
+            contact_name = ds_utils.get_extras_field(dataset_dict, 'contact_name')
+
+            return (contact_details['email'] == contact_email or
+                        contact_details['name'] == contact_name)
+        return False
+
+    def _get_contact_details(self, contact_obj):
+
+        contact = {}
+
+        contact['uri'] = (str(contact_obj) if isinstance(contact_obj,
+                                                         URIRef) else '')
+
+        contact['name'] = self._get_vcard_property_value(contact_obj, VCARD.hasFN, VCARD.fn)
+
+        contact['email'] = self._without_mailto(self._get_vcard_property_value(contact_obj, VCARD.hasEmail))
+
+        return contact
 
     def _get_or_create_contact_point(self, dataset_dict, dataset_ref):
         """
@@ -209,19 +242,19 @@ class DCATdeProfile(RDFProfile):
                     ds_utils.set_extras_field(dataset_dict, key, value)
 
             # geocodingText and legalbasisText got renamed after 1.0, so assign the respective names
-            legalbasisTextProperty = dcatde_namespace.legalBasis
-            geocodingTextProperty = dcatde_namespace.geocodingDescription
+            legalbasis_text = dcatde_namespace.legalBasis
+            geocoding_text = dcatde_namespace.geocodingDescription
 
             if (dcatde_namespace == DCATDE_1_0):
-                legalbasisTextProperty = DCATDE_1_0.legalbasisText
-                geocodingTextProperty = DCATDE_1_0.geocodingText
+                legalbasis_text = DCATDE_1_0.legalbasisText
+                geocoding_text = DCATDE_1_0.geocodingText
 
             # List fields
             for key, predicate, in (
                    ('contributorID', dcatde_namespace.contributorID),
                    ('politicalGeocodingURI', dcatde_namespace.politicalGeocodingURI),
-                   ('legalbasisText', legalbasisTextProperty),
-                   ('geocodingText', geocodingTextProperty),
+                   ('legalbasisText', legalbasis_text),
+                   ('geocodingText', geocoding_text),
                    ('references', DCT.references),
                    ):
                 values = self._object_value_list(dataset_ref, predicate)
@@ -274,8 +307,8 @@ class DCATdeProfile(RDFProfile):
         for obj in self.g.objects(dataset_ref, DCAT.theme):
             current_theme = six.text_type(obj)
 
-            if current_theme.startswith(dcat_theme_prefix):
-                group = current_theme.replace(dcat_theme_prefix, '').lower()
+            if current_theme.startswith(DCAT_THEME_PREFIX):
+                group = current_theme.replace(DCAT_THEME_PREFIX, '').lower()
                 groups.append({'id': group, 'name': group})
 
         dataset_dict['groups'] = groups
@@ -359,7 +392,7 @@ class DCATdeProfile(RDFProfile):
         for group in groups:
             group_name = group['name']
             if group_name:
-                g.add((dataset_ref, DCAT.theme, CleanedURIRef(dcat_theme_prefix + group_name.upper())))
+                g.add((dataset_ref, DCAT.theme, CleanedURIRef(DCAT_THEME_PREFIX + group_name.upper())))
 
         # used_datasets
         items = [

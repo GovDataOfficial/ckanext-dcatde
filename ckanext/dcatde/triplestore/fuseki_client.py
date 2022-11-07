@@ -60,6 +60,8 @@ class FusekiTriplestoreClient(object):
         """
         Delete a dataset in the triplestore
         :param uri: the uri of the dataset
+        :param query_template: the query template which will be used for the SPARQL query
+        :param datastore_name: the datastore name which will be requested
         """
         if not datastore_name:
             LOGGER.debug(u'No datastore name is given! Skipping...')
@@ -77,6 +79,7 @@ class FusekiTriplestoreClient(object):
         """
         Create a new dataset in the triplestore
         :param graph: the dataset as rdf graph
+        :param uri: the uri of the dataset
         """
         self._create_dataset_in_triplestore_base(graph, uri, self.ds_name_default, CONTENT_TYPE_TURTLE)
 
@@ -84,6 +87,7 @@ class FusekiTriplestoreClient(object):
         """
         Create a new dataset in the triplestore
         :param graph: the dataset as rdf graph
+        :param uri: the uri of the dataset
         """
         self._create_dataset_in_triplestore_base(graph, uri, self.ds_name_shacl_validation,
                                                  CONTENT_TYPE_RDF_XML)
@@ -92,6 +96,7 @@ class FusekiTriplestoreClient(object):
         """
         Create a new dataset in the triplestore
         :param graph: the dataset as rdf graph
+        :param uri: the uri of the dataset
         """
         self._create_dataset_in_triplestore_base(graph, uri, self.ds_name_harvest_info, CONTENT_TYPE_RDF_XML)
 
@@ -99,6 +104,9 @@ class FusekiTriplestoreClient(object):
         """
         Create a new dataset in the triplestore
         :param graph: the dataset as rdf graph
+        :param uri: the uri of the dataset
+        :param datastore_name: the datastore name which will be requested
+        :param content_type: the Content-Type for the request, should corresponding with the graph
         """
         if not datastore_name:
             LOGGER.debug(u'No datastore name is given! Skipping...')
@@ -120,6 +128,7 @@ class FusekiTriplestoreClient(object):
     def select_datasets_in_triplestore_harvest_info(self, query):
         """
         Execute the query in the harvest_info datastore. Return the result.
+        :param query: the query to execute
         """
         return self._select_datasets_in_triplestore_base(query, self.ds_name_harvest_info)
 
@@ -127,7 +136,7 @@ class FusekiTriplestoreClient(object):
         """
         Create a new dataset in the triplestore
         :param query: query of the sparql request
-        :param datastore_name: name of the dtastore
+        :param datastore_name: name of the datastore
         """
         if not datastore_name:
             LOGGER.debug(u'No datastore name is given! Skipping...')
@@ -160,15 +169,24 @@ class FusekiTriplestoreClient(object):
         return False
 
     def _get_update_endpoint(self, datastore_name):
-        """ Returns the URL for the /update endpoint"""
+        """
+        Returns the URL for the /update endpoint
+        :param datastore_name: name of the datastore
+        """
         return os.path.join(self.fuseki_base_url, datastore_name, '') + UPDATE_ENDPOINT
 
     def _get_data_endpoint(self, datastore_name):
-        """ Returns the URL for the /data endpoint"""
+        """
+        Returns the URL for the /data endpoint
+        :param datastore_name: name of the datastore
+        """
         return os.path.join(self.fuseki_base_url, datastore_name, '') + DATA_ENDPOINT
 
     def _get_query_endpoint(self, datastore_name):
-        """ Returns the URL for the /query endpoint"""
+        """
+        Returns the URL for the /query endpoint
+        :param datastore_name: name of the datastore
+        """
         return os.path.join(self.fuseki_base_url, datastore_name, '') + QUERY_ENDPOINT
 
     def _get_ping_endpoint(self):
