@@ -1,5 +1,9 @@
 # Changelog
 
+## v5.5.0 2022-10-20
+
+* Adds support for property dct:references in class dcat:Dataset
+
 ## v5.4.0 2022-09-12
 
 * Fixes string assertion error with Python 2

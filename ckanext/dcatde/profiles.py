@@ -222,6 +222,7 @@ class DCATdeProfile(RDFProfile):
                    ('politicalGeocodingURI', dcatde_namespace.politicalGeocodingURI),
                    ('legalbasisText', legalbasisTextProperty),
                    ('geocodingText', geocodingTextProperty),
+                   ('references', DCT.references),
                    ):
                 values = self._object_value_list(dataset_ref, predicate)
                 if values:
@@ -304,7 +305,8 @@ class DCATdeProfile(RDFProfile):
             ('contributorID', DCATDE.contributorID, None, URIRefOrLiteral),
             ('politicalGeocodingURI', DCATDE.politicalGeocodingURI, None, URIRef),
             ('legalbasisText', DCATDE.legalBasis, None, Literal),
-            ('geocodingText', DCATDE.geocodingDescription, None, Literal)
+            ('geocodingText', DCATDE.geocodingDescription, None, Literal),
+            ('references', DCT.references, None, URIRefOrLiteral)
         ]
         self._add_list_triples_from_dict(dataset_dict, dataset_ref, items)
 

@@ -165,5 +165,6 @@
     <dcat:keyword>Thematische Karte</dcat:keyword>
     <dcat:granularity rdf:resource="http://publications.europa.eu/resource/authority/frequency/MONTHLY"/>
     <dcatap:availability rdf:resource="http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE"/>
+    <dct:references rdf:resource="https://musterdatenkatalog.de/def/musterdatensatz/abfallwirtschaft/abfallkalender"/>
   </dcat:Dataset>
 </rdf:RDF>

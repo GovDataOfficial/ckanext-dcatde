@@ -272,6 +272,7 @@ class TestDCATde(unittest.TestCase):
                 "dcat_type": "dct:type",
                 "granularity": "dcat:granularity",
                 "availability": "http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE",
+                "references": ["https://musterdatenkatalog.de/def/musterdatensatz/abfallwirtschaft/abfallkalender", "test_references_literal"],
 
                 "author_url": "nocheck",
                 "author_type": "nocheck",
@@ -520,6 +521,8 @@ class TestDCATde(unittest.TestCase):
                          self._get_value_from_extras(extras, "legalbasisText"))
         self._assert_list(dataset_ref, self.DCATDE.contributorID,
                          self._get_value_from_extras(extras, "contributorID"))
+        self._assert_list(dataset_ref, self.DCT.references,
+                         self._get_value_from_extras(extras, "references"))
 
         # resources
         resource = dataset_dict["resources"][0]
@@ -777,6 +780,11 @@ class TestDCATde(unittest.TestCase):
             # dcatap:availability
             self._assert_extras_string(extras, 'availability',
                                       'http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE')
+
+            # dct:references
+            self._assert_extras_list_serialized(extras, 'references',
+                                           ['https://musterdatenkatalog.de/def/musterdatensatz/abfallwirtschaft/abfallkalender'])
+
         else:
             self.assertEqual(len([x for x in extras if x["key"] == 'granularity']), 0)
             self.assertEqual(len([x for x in extras if x["key"] == 'availability']), 0)
