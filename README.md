@@ -35,7 +35,7 @@ It is tested that ckanext-dcatde is working well with the release `v1.2.0` of ck
 
 6. Add the following parameter to your CKAN configuration file to activate the additional profile for DCAT-AP.de:
 
-       ckanext.dcat.rdf.profiles = euro_dcat_ap dcatap_de
+       ckanext.dcat.rdf.profiles = euro_dcat_ap_2 dcatap_de
 
 ## RDF DCAT-AP.de Harvester
 If the plugin `dcatde_rdf_harvester` is activated an additional source type `DCAT-AP.de RDF Harvester` is selectable.

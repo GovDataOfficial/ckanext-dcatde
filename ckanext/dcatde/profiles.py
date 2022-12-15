@@ -211,6 +211,18 @@ class DCATdeProfile(RDFProfile):
         else:
             return value
 
+    def _iterate_distribution_resource_dict(self, dataset_ref, dataset_dict):
+        '''
+        Iterates over all distributions and resources and returns all matching objects.
+        '''
+        for distribution in self.g.objects(dataset_ref, DCAT.distribution):
+            distribution_ref = six.text_type(distribution)
+            for resource_dict in dataset_dict.get('resources', []):
+                # Match distribution in graph and distribution in resource dict
+                if resource_dict and (distribution_ref == resource_dict.get('uri')) or \
+                        (distribution_ref == resource_dict.get('distribution_ref')):
+                    yield distribution, resource_dict
+
     def parse_dataset(self, dataset_dict, dataset_ref):
         """ Transforms DCAT-AP.de-Data to CKAN-Dictionary """
 
@@ -255,7 +267,6 @@ class DCATdeProfile(RDFProfile):
                    ('politicalGeocodingURI', dcatde_namespace.politicalGeocodingURI),
                    ('legalbasisText', legalbasis_text),
                    ('geocodingText', geocoding_text),
-                   ('references', DCT.references),
                    ):
                 values = self._object_value_list(dataset_ref, predicate)
                 if values:
@@ -265,19 +276,15 @@ class DCATdeProfile(RDFProfile):
             self._parse_contact(dataset_dict, dataset_ref, dcatde_namespace.maintainer, 'maintainer', False)
 
             # Add additional distribution fields
-            for distribution in self.g.objects(dataset_ref, DCAT.distribution):
-                distribution_ref = six.text_type(distribution)
-                for resource_dict in dataset_dict.get('resources', []):
-                    # Match distribution in graph and distribution in resource dict
-                    if resource_dict and (distribution_ref == resource_dict.get('uri')) or \
-                            (distribution_ref == resource_dict.get('distribution_ref')):
-                        for key, predicate in (
-                                ('licenseAttributionByText', dcatde_namespace.licenseAttributionByText),
-                                ('plannedAvailability', dcatde_namespace.plannedAvailability)
-                        ):
-                            value = self._object_value(distribution, predicate)
-                            if value:
-                                resource_dict[key] = value
+            for distribution, resource_dict in self._iterate_distribution_resource_dict(
+                dataset_ref, dataset_dict):
+                for key, predicate in (
+                        ('licenseAttributionByText', dcatde_namespace.licenseAttributionByText),
+                        ('plannedAvailability', dcatde_namespace.plannedAvailability)
+                ):
+                    value = self._object_value(distribution, predicate)
+                    if value:
+                        resource_dict[key] = value
         # -- end loop over dcatde namespaces --
 
         # additions in other namespaces than DCATDE
@@ -293,6 +300,53 @@ class DCATdeProfile(RDFProfile):
             value = self._object_value(dataset_ref, predicate)
             if value:
                 ds_utils.set_extras_field(dataset_dict, key, value)
+        # List fields
+        for key, predicate, in (
+               ('references', DCT.references),
+               ):
+            values = self._object_value_list(dataset_ref, predicate)
+            if values:
+                ds_utils.set_extras_field(dataset_dict, key, json.dumps(values))
+
+        # Add additional distribution fields
+        for distribution, resource_dict in self._iterate_distribution_resource_dict(
+            dataset_ref, dataset_dict):
+            # Access services
+            access_service_list = []
+
+            for access_service in self.g.objects(distribution, DCAT.accessService):
+                access_service_dict = {}
+
+                #  Simple values
+                for key, predicate in (
+                        ('availability', DCATAP.availability),
+                        ('title', DCT.title),
+                        ('endpoint_description', DCAT.endpointDescription),
+                        ('license', DCT.license),
+                        ('licenseAttributionByText', DCATDE.licenseAttributionByText), # current version
+                        ('access_rights', DCT.accessRights),
+                        ('description', DCT.description),
+                        ):
+                    value = self._object_value(access_service, predicate)
+                    if value:
+                        access_service_dict[key] = value
+                #  List values
+                for key, predicate in (
+                        ('endpoint_url', DCAT.endpointURL),
+                        ('serves_dataset', DCAT.servesDataset),
+                        ):
+                    values = self._object_value_list(access_service, predicate)
+                    if value:
+                        access_service_dict[key] = values
+
+                # Access service URI (explicitly show the missing ones)
+                access_service_dict['uri'] = (str(access_service)
+                        if isinstance(access_service, URIRef)
+                        else '')
+                access_service_list.append(access_service_dict)
+
+            if access_service_list:
+                resource_dict['access_services'] = json.dumps(access_service_list)
 
         # dcat:contactPoint
         # TODO: dcat-ap adds the values to extras.contact_... . Maybe better than maintainer?
@@ -409,6 +463,54 @@ class DCATdeProfile(RDFProfile):
                 ('plannedAvailability', DCATDE.plannedAvailability, None, URIRef)
             ]
             self._add_triples_from_dict(resource_dict, distribution, items)
+
+            # Override modified date, if necessary
+            if self._get_dict_value(resource_dict, 'last_modified') and \
+                    not self._get_dict_value(resource_dict, 'modified'):
+                # remove existing values to prevent duplicates
+                g.remove((distribution, DCT.modified, None))
+                # add new value
+                items = [
+                    ('last_modified', DCT.modified, None, Literal),
+                ]
+                self._add_date_triples_from_dict(resource_dict, distribution, items)
+
+            try:
+                access_service_list = json.loads(self._get_dict_value(resource_dict, 'access_services', '[]'))
+                # Access service
+                for access_service_dict in access_service_list:
+
+                    access_service_uri = access_service_dict.get('uri')
+                    if access_service_uri:
+                        access_service_node = CleanedURIRef(access_service_uri)
+                    else:
+                        access_service_node = BNode()
+
+                    self.g.add((distribution, DCAT.accessService, access_service_node))
+
+                    self.g.add((access_service_node, RDF.type, DCAT.DataService))
+
+                     #  Simple values
+                    items = [
+                        ('availability', DCATAP.availability, None, URIRefOrLiteral),
+                        ('license', DCT.license, None, URIRefOrLiteral),
+                        ('licenseAttributionByText', DCATDE.licenseAttributionByText, None, Literal),
+                        ('access_rights', DCT.accessRights, None, URIRefOrLiteral),
+                        ('title', DCT.title, None, Literal),
+                        ('endpoint_description', DCAT.endpointDescription, None, Literal),
+                        ('description', DCT.description, None, Literal),
+                    ]
+
+                    self._add_triples_from_dict(access_service_dict, access_service_node, items)
+
+                    #  Lists
+                    items = [
+                        ('endpoint_url', DCAT.endpointURL, None, URIRefOrLiteral),
+                        ('serves_dataset', DCAT.servesDataset, None, URIRefOrLiteral),
+                    ]
+                    self._add_list_triples_from_dict(access_service_dict, access_service_node, items)
+            except ValueError:
+                pass
 
     def graph_from_catalog(self, catalog_dict, catalog_ref):
         """ Creates a Catalog representation, will not be used for now """

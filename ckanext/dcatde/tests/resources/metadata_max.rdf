@@ -51,6 +51,18 @@
             <spdx:checksumValue rdf:datatype="http://www.w3.org/2001/XMLSchema#hexBinary">5bcc814127be171c75595d419f371c74c9cf041419c45d6e8d2c789e5c303b47</spdx:checksumValue>
           </spdx:Checksum>
         </spdx:checksum>
+        <dcat:accessService>
+          <dcat:DataService>
+            <dcatap:availability rdf:resource="http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE"/>
+            <dct:title>Sparql-end Point</dct:title>
+            <dcat:endpointURL rdf:resource="http://publications.europa.eu/webapi/rdf/sparql"/>
+            <dct:description>This SPARQL end point allow to directly query the EU Whoiswho content (organization / membership / person)</dct:description>
+            <dcat:endpointDescription>SPARQL url description</dcat:endpointDescription>
+            <dct:license rdf:resource="http://publications.europa.eu/resource/authority/licence/COM_REUSE"/>
+            <dcatde:licenseAttributionByText>License text</dcatde:licenseAttributionByText>
+            <dct:accessRights rdf:resource="http://publications.europa.eu/resource/authority/access-right/PUBLIC"/>
+          </dcat:DataService>
+        </dcat:accessService>
       </dcat:Distribution>
     </dcat:distribution>
     <dcatde:geocodingDescription>Hamburg</dcatde:geocodingDescription>

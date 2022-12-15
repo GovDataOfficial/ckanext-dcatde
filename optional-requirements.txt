@@ -1,2 +1,1 @@
-ckanext-harvest==1.4.0
-cryptography<3.4 # newer versions have only wheels for Python >= 3.7
+ckanext-harvest==1.4.1

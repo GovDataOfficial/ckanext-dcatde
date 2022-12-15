@@ -1,5 +1,14 @@
 # Changelog
 
+## v5.8.0 2022-12-15
+
+* Updates ckanext-dcat to version 1.4.0
+* Remove pinning version for cryptography dependency
+* Updates ckanext-harvest to version 1.4.1
+* Adds support for property dcat:accessService in class dcat:Distribution
+* Add last_modified as fallback value to resource modified date
+* Add support for property dcatde:licenseAttributionByText in class dcat:DataService
+
 ## v5.6.0 2022-11-03
 
 * Fixes correlation when parsing additionally contact point properties
