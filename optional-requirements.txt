@@ -1,1 +1,1 @@
-ckanext-harvest==1.4.1
+ckanext-harvest==1.4.2

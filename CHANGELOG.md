@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.9.0 2023-01-23
+
+* Fixes tests for Python 2
+* Updates ckanext-harvest to version 1.4.2
+* Adds support for Python 3.9
+
 ## v5.8.0 2022-12-15
 
 * Updates ckanext-dcat to version 1.4.0

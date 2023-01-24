@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 import re
 import unittest
 import rdflib
@@ -262,9 +265,11 @@ class BaseParseTest(unittest.TestCase):
         resource_dict = resources[0]
 
         access_services = resource_dict.get('access_services')
-        self.assertEqual(len(json.loads(access_services)), 2)
+        access_services_list = json.loads(access_services)
+        self.assertEqual(len(access_services_list), 2)
 
-        self.assertEqual(access_services, json.dumps(expected_access_services))
+        for access_service in expected_access_services:
+            self.assertTrue(access_service in access_services_list)
 
 class BaseSerializeTest(unittest.TestCase):
 
@@ -544,7 +549,7 @@ class BaseSerializeTest(unittest.TestCase):
     def _assert_values_list(self, object, predicate, values):
         obj_list = [x for x in self.graph.objects(object, predicate)]
         self.assertEqual(len(obj_list), len(values))
-        self.assertCountEqual(obj_list, values,
+        six.assertCountEqual(self, obj_list, values,
                         "Not all expected values were found in graph. remaining: {}".format(
                             str.join(', ', list(set(values) - set(obj_list)))))
 

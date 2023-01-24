@@ -112,7 +112,7 @@ class MigrationFunctions(object):
 
         if sr_value is not None:
             # Convert string representation of dictionary to actual dictionary
-            sr_value_dict = json.loads(sr_value, encoding='utf-8')
+            sr_value_dict = json.loads(sr_value)
             field = sr_value_dict.get('text')
 
             if field is not None:

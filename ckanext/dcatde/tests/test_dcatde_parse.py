@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 import json
 
 from rdflib import Graph, URIRef, Literal, BNode

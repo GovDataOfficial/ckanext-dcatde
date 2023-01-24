@@ -64,7 +64,7 @@ def get_extras_json_list_data(dataset, extras_field, check_key, expected_val):
     fld_content = ds_utils.get_extras_field(dataset, extras_field)
 
     if fld_content is not None:
-        fld_list = json.loads(fld_content['value'], encoding='utf-8')
+        fld_list = json.loads(fld_content['value'])
         for entry in fld_list:
             if entry.get(check_key) == expected_val:
                 return entry
@@ -84,7 +84,7 @@ def update_extras_json_list_data(dataset, extras_field, check_key, expected_val,
     fld_content = ds_utils.get_extras_field(dataset, extras_field)
 
     if fld_content is not None:
-        fld_list = json.loads(fld_content['value'], encoding='utf-8')
+        fld_list = json.loads(fld_content['value'])
 
         for index, entry in enumerate(fld_list):
             if entry.get(check_key) == expected_val:
