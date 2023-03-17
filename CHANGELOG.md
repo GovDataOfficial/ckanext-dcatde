@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.11.0 2023-03-16
+
+* Improves duplicate detection: Adds support for setting a priority to the harvester configuration. The
+  remote dataset is imported if the modified dates of the remote and local dataset are equal and for the
+  harvester of the remote dataset was specified a higher priority than for the harvester of the local dataset.
+
 ## v5.9.0 2023-01-23
 
 * Fixes tests for Python 2

@@ -15,13 +15,14 @@ from ckan import model
 from ckan.model import Session, PACKAGE_NAME_MAX_LENGTH
 import ckan.plugins as p
 from ckanext.dcatde.extras import Extras
-from ckanext.harvest.model import HarvestObject
+from ckanext.harvest.model import HarvestObject, HarvestSource
 
 
 LOGGER = logging.getLogger(__name__)
 
 # TODO: class methods from ckanext-govdatade. Refactor such that they only occur here
 
+DEFAULT_PRIORITY = 0
 NAME_RANDOM_STRING_LENGTH = 5
 NAME_DELETED_SUFFIX = "-deleted"
 NAME_MAX_LENGTH = PACKAGE_NAME_MAX_LENGTH - NAME_RANDOM_STRING_LENGTH - len(NAME_DELETED_SUFFIX)
@@ -111,21 +112,28 @@ class HarvestUtils(object):
         HarvestUtils.delete_packages([package_id])
 
     @staticmethod
-    def compare_metadata_modified(remote_modified, local_modified):
-        '''
-        Compares the modified datetimes of the metadata. Returns True if the remote date (first parameter)
-        is newer.
-        '''
-        remote_dt = _parse_date(remote_modified)
-        local_dt = _parse_date(local_modified)
-        if remote_dt <= local_dt:
-            return False
+    def compare_harvester_priorities(local_harvester_config, remote_harvester_config):
+        """
+        Reads the priorities from the harvester-configs and compares them. If the local dataset
+        has a higher priority the remote dataset won't be imported.
+        """
+        local_priority = DEFAULT_PRIORITY
+        remote_priority = DEFAULT_PRIORITY
+        if "priority" in local_harvester_config:
+            local_priority = _parse_priority(local_harvester_config["priority"])
+        if "priority" in remote_harvester_config:
+            remote_priority = _parse_priority(remote_harvester_config["priority"])
 
-        return True
+        if remote_priority > local_priority:
+            return True
+        return False # skip import
 
     @staticmethod
     def handle_duplicates(harvest_object):
-        '''Compares new dataset with existing and checks, if a dataset should be imported.'''
+        '''
+        Checks if the dataset of a harvest_object already exists. If so then check which dataset to keep.
+        Returns True if the remote dataset should be imported, otherwise False.
+        '''
 
         harvest_object_content = harvest_object.content
         harvester_title = harvest_object.source.title
@@ -154,78 +162,11 @@ class HarvestUtils(object):
                                      u'Identifier %s. Import accepted for dataset %s.',
                                      harvester_title, method_prefix, orig_id, remote_dataset_name)
                         return True
-                    else:
-                        # other dataset with the same identifier was found
-                        LOGGER.debug(u'[%s] %sFound duplicate entries with Identifier %s for dataset %s.',
-                                     harvester_title, method_prefix, orig_id, remote_dataset_name)
-                        remote_is_latest = True
-                        local_dataset_has_modified = False
-                        latest_local_dataset = {}
-                        if not remote_dataset_extras.key(EXTRAS_KEY_DCT_MODIFIED):
-                            remote_is_latest = False
 
-                        # compare modified date with all local datasets
-                        for local_dataset in local_search_result['results']:
-                            local_dataset_extras = Extras(local_dataset['extras'])
-
-                            if local_dataset_extras.key(EXTRAS_KEY_DCT_MODIFIED):
-                                local_dataset_has_modified = True
-                                # notice the local dataset with the latest date
-                                _set_or_update_latest_dataset(
-                                    latest_local_dataset,
-                                    local_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED),
-                                    local_dataset['id'])
-                                # compare dct:modified if remote and local dataset contain the field
-                                # "modified" and remote dataset is still not detected as older
-                                if remote_is_latest and remote_dataset_extras.key(EXTRAS_KEY_DCT_MODIFIED):
-                                    remote_is_latest = HarvestUtils.compare_metadata_modified(
-                                        remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED),
-                                        local_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED)
-                                    )
-
-                        if remote_is_latest:
-                            # Import accepted. Delete all local datasets with the same identifier.
-                            LOGGER.debug(u'[%s] %sRemote dataset with Identifier %s is the latest. '\
-                                         u'Modified date: %s. Import accepted for dataset %s.',
-                                         harvester_title, method_prefix, orig_id,
-                                         remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED),
-                                         remote_dataset_name)
-                            packages_deleted = _delete_packages_keep(local_search_result['results'])
-                            LOGGER.debug(u'[%s]: %sDeleted packages: %s', harvester_title,
-                                         method_prefix, ','.join(packages_deleted))
-                            return True
-                        elif local_dataset_has_modified:
-                            # Skip import. Delete local datasets, but keep the dataset with latest date in
-                            # the field "modified".
-                            LOGGER.info(u'[%s] %sRemote dataset with Identifier %s is NOT the latest. '\
-                                        u'Modified date: %s. Keep local dataset with ' \
-                                        u'latest date in field "modified". Skipping import for dataset %s!',
-                                        harvester_title, method_prefix, orig_id,
-                                        remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED, 'n/a'),
-                                        remote_dataset_name)
-                            packages_deleted = _delete_packages_keep(
-                                local_search_result['results'], latest_local_dataset)
-                            LOGGER.debug(u'%sDeleted packages: %s', method_prefix, ','.join(packages_deleted))
-                        else:
-                            # Skip import, because remote dataset and no other local dataset contains the
-                            # field "modified". Delete local datasets, but keep the dataset last modified in
-                            # database.
-                            LOGGER.info(
-                                u'[%s] %sFound duplicate entries with the value "%s" in field "identifier", '\
-                                u'but remote and local datasets does not contain a modified date. ' \
-                                u'Keep local dataset last modified in database. Skipping import for %s!',
-                                harvester_title, method_prefix, orig_id, remote_dataset_name)
-                            last_modified_local_dataset = {}
-                            for local_dataset in local_search_result['results']:
-                                # notice the local dataset with the latest date
-                                _set_or_update_latest_dataset(
-                                    last_modified_local_dataset,
-                                    local_dataset.get('metadata_modified', None),
-                                    local_dataset['id'])
-                            packages_deleted = _delete_packages_keep(
-                                local_search_result['results'], last_modified_local_dataset)
-                            LOGGER.debug(u'[%s] %sDeleted packages: %s', harvester_title, method_prefix,
-                                         ','.join(packages_deleted))
+                    # The dataset already exists. Check if the remote dataset should be imported.
+                    return HarvestUtils.handle_datasets_with_same_id(harvester_title, orig_id,
+                            remote_dataset_name, remote_dataset_extras, local_search_result,
+                        harvest_object.source.config)
                 except Exception as exception:
                     LOGGER.error(exception)
             else:
@@ -238,10 +179,136 @@ class HarvestUtils(object):
             return True
         return False
 
+    @staticmethod
+    def compare_duplicates(remote_is_latest, harvester_title, local_search_result, latest_local_dataset,
+                            remote_dataset_extras, harvest_source_config):
+        '''
+        Compares local dataset(s) and the remote dataset to see which one should be kept.
+        Checks for modified dates and if they are the same checks for priority.
+        Returns a triple (remote_is_latest, local_dataset_has_modified, priority_checked) and
+        remote_is_latest=True if the remote should be imported.
+        '''
+        method_prefix = 'compare_duplicates: '
+        local_dataset_has_modified = False
+        priority_checked = False
+        # compare modified date with all local datasets
+        for local_dataset in local_search_result['results']:
+            local_dataset_extras = Extras(local_dataset['extras'])
+
+            if local_dataset_extras.key(EXTRAS_KEY_DCT_MODIFIED):
+                local_dataset_has_modified = True
+                # notice the local dataset with the latest date
+                _set_or_update_latest_dataset(
+                    latest_local_dataset,
+                    local_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED),
+                    local_dataset['id'])
+                # compare dct:modified if remote and local dataset contain the field
+                # "modified" and remote dataset is still not detected as older
+                if remote_is_latest and remote_dataset_extras.key(EXTRAS_KEY_DCT_MODIFIED):
+                    remote_dt = _parse_date(remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED))
+                    local_dt = _parse_date(local_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED))
+                    if remote_dt < local_dt:
+                        # remote dataset is older: keep local
+                        LOGGER.debug(u'[%s] %sFound a newer dataset in CKAN: skip import.',
+                                        harvester_title, method_prefix)
+                        remote_is_latest = False
+                    elif remote_dt == local_dt:
+                        # same timestamp for both: check priority then
+                        LOGGER.debug(u'[%s] %sCompare priorities of datasets.', harvester_title,
+                            method_prefix)
+                        harvest_source_object = _get_harvester_config_from_db(local_dataset_extras.value(
+                            "harvest_source_id"))
+                        # continue if for some reason harvester-source is not available
+                        if harvest_source_object:
+                            priority_checked = True
+                            remote_is_latest = HarvestUtils.compare_harvester_priorities(
+                                json.loads(harvest_source_object.config),
+                                json.loads(harvest_source_config))
+                    if not remote_is_latest:
+                        # remote dataset should not be imported
+                        break
+        return remote_is_latest, local_dataset_has_modified, priority_checked
+
+    @staticmethod
+    def handle_datasets_with_same_id(harvester_title, orig_id, remote_dataset_name,
+                                    remote_dataset_extras, local_search_result, harvest_source_config):
+        '''
+        Checks if the remote or the local dataset should be kept. Delete the other dataset(s).
+        Returns True if remote is the latest one and should be imported, otherwise False.
+        '''
+        method_prefix = 'handle_datasets_with_same_id: '
+        try:
+            # other dataset with the same identifier was found
+            LOGGER.debug(u'[%s] %sFound duplicate entries with Identifier %s for dataset %s.',
+                            harvester_title, method_prefix, orig_id, remote_dataset_name)
+            remote_is_latest = True
+            latest_local_dataset = {}
+            if not remote_dataset_extras.key(EXTRAS_KEY_DCT_MODIFIED):
+                remote_is_latest = False
+
+            remote_is_latest, local_dataset_has_modified, priority_checked = HarvestUtils.compare_duplicates(
+                remote_is_latest, harvester_title, local_search_result, latest_local_dataset,
+                remote_dataset_extras, harvest_source_config)
+
+            if remote_is_latest:
+                # Import accepted. Delete all local datasets with the same identifier.
+                LOGGER.debug(u'[%s] %sRemote dataset with Identifier %s is the latest. '\
+                                u'Modified date: %s. Import accepted for dataset %s.',
+                                harvester_title, method_prefix, orig_id,
+                                remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED),
+                                remote_dataset_name)
+                packages_deleted = _delete_packages_keep(local_search_result['results'])
+                LOGGER.debug(u'[%s]: %sDeleted packages: %s', harvester_title,
+                             method_prefix, ','.join(packages_deleted))
+                return True
+            elif local_dataset_has_modified:
+                # Skip import. Delete local datasets, but keep the dataset with latest date in
+                # the field "modified".
+                LOGGER.info(u'[%s] %sRemote dataset with Identifier %s is NOT the latest. '\
+                            u'Modified date: %s. Keep local dataset with ' \
+                            u'latest date in field "modified". Priority checked: %s Skipping import for '\
+                            u'dataset %s!',
+                            harvester_title, method_prefix, orig_id,
+                            remote_dataset_extras.value(EXTRAS_KEY_DCT_MODIFIED, 'n/a'), priority_checked,
+                            remote_dataset_name)
+                packages_deleted = _delete_packages_keep(
+                    local_search_result['results'], latest_local_dataset)
+                LOGGER.debug(u'[%s] %sDeleted packages: %s', harvester_title, method_prefix,
+                             ','.join(packages_deleted))
+            else:
+                # Skip import, because remote dataset and no other local dataset contains the
+                # field "modified". Delete local datasets, but keep the dataset last modified in
+                # database.
+                LOGGER.info(
+                    u'[%s] %sFound duplicate entries with the value "%s" in field "identifier", '\
+                    u'but remote and local datasets does not contain a modified date. ' \
+                    u'Keep local dataset last modified in database. Skipping import for %s!',
+                    harvester_title, method_prefix, orig_id, remote_dataset_name)
+                last_modified_local_dataset = {}
+                for local_dataset in local_search_result['results']:
+                    # notice the local dataset with the latest date
+                    _set_or_update_latest_dataset(
+                        last_modified_local_dataset,
+                        local_dataset.get('metadata_modified', None),
+                        local_dataset['id'])
+                packages_deleted = _delete_packages_keep(
+                    local_search_result['results'], last_modified_local_dataset)
+                LOGGER.debug(u'[%s] %sDeleted packages: %s', harvester_title, method_prefix,
+                             ','.join(packages_deleted))
+        except Exception as exception:
+            LOGGER.error(exception)
+        return False
+
+def _get_harvester_config_from_db(harvester_source_id):
+    '''
+    Searches for a HarvestSource by a harvester source id and returns it.
+    '''
+    return model.Session.query(HarvestSource).filter(HarvestSource.id == harvester_source_id).first()
+
 
 def _mark_harvest_objects_as_not_current(package_ids_to_delete):
     '''
-    Mark harvest objects with the given package ids as not current.
+    Marks harvest objects with the given package ids as not current.
     '''
     model.Session.query(HarvestObject) \
                 .filter(HarvestObject.current.is_(True)) \
@@ -251,7 +318,7 @@ def _mark_harvest_objects_as_not_current(package_ids_to_delete):
 
 def _delete_packages_keep(local_dataset_list, dataset_to_keep=None):
     '''
-    Delete all packages within the given list, except the package with the ID in "dataset_to_keep".
+    Deletes all packages within the given list, except the package with the ID in "dataset_to_keep".
     '''
     package_ids_to_delete = set()
     for local_dataset in local_dataset_list:
@@ -282,9 +349,21 @@ def _set_or_update_latest_dataset(latest_local_dataset, modified_date_string, da
 
 def _parse_date(date_string):
     '''
-    Parse a date string to a date object and add the time zone UTC if no time zone info exists.
+    Parses a date string to a date object and adds the time zone UTC if no time zone info exists.
     '''
     date_obj = parse_date(date_string)
     if date_obj.tzinfo is None:
         date_obj = date_obj.replace(tzinfo=pytz.UTC)
     return date_obj
+
+
+def _parse_priority(value):
+    '''
+    Parse the value to int. Return Default value if not possible.
+    '''
+    try:
+        return int(value)
+    except ValueError:
+        method_prefix = "parsePriority: "
+        LOGGER.warn(u'[%s] Parsing an invalid priority: " %s ". Use default priority.', method_prefix, value)
+        return DEFAULT_PRIORITY

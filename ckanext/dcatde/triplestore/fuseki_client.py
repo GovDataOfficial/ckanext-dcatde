@@ -113,7 +113,7 @@ class FusekiTriplestoreClient(object):
             return
         LOGGER.debug(u'Creating new dataset in triplestore. Datastore name: %s, Dataset with URI %s',
                      datastore_name, uri)
-        if isinstance(graph, six.string_types):
+        if isinstance(graph, six.text_type):
             graph = graph.encode('utf-8')
 
         headers = {'Content-Type': content_type}
