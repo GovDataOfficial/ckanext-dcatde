@@ -16,7 +16,16 @@ For the RDF harvester, [ckanext-harvest](https://github.com/ckan/ckanext-harvest
 
 3. Install the extension on your virtualenv:
 
+       # use project on GitHub
        (pyenv) $ pip install -e git+git://github.com/GovDataOfficial/ckanext-dcatde.git#egg=ckanext-dcatde
+       (pyenv) $ cd src/ckanext-dcatde
+       (pyenv) $ pip install -r base-requirements.txt -f requirements
+       (pyenv) $ python setup.py develop
+
+   or
+
+       # use project on Open CoDE
+       (pyenv) $ pip install -e git+git://gitlab.opencode.de/fitko/govdata/ckanext-dcatde.git#egg=ckanext-dcatde
        (pyenv) $ cd src/ckanext-dcatde
        (pyenv) $ pip install -r base-requirements.txt -f requirements
        (pyenv) $ python setup.py develop
