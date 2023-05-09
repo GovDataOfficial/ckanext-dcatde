@@ -6,3 +6,4 @@ lazy-object-proxy!=1.7.0 # Python 2.7 requirement is wrong
 factory-boy>=2
 pytest-cov
 pytest-ckan
+pytest-factoryboy

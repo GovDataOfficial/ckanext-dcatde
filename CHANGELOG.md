@@ -1,5 +1,9 @@
 # Changelog
 
+## v5.13.0 2023-05-04
+
+* Adds support for CKAN 2.10.0
+
 ## v5.11.0 2023-03-16
 
 * Improves duplicate detection: Adds support for setting a priority to the harvester configuration. The

@@ -34,17 +34,17 @@ DEPRECATED_CONTRIBUTOR_IDS = {
     'http://dcat-ap.de/def/contributors/bundesamtFuerMaterialforschungUndPruefung':
     'http://dcat-ap.de/def/contributors/bundesanstaltFuerMaterialforschungUndPruefung'}
 
-_context = None
+_user = None
 
 
 def _get_context():
-    global _context
-    if not _context:
-        user = tk.get_action(u'get_site_user')(
+    global _user
+    if not _user:
+        _user = tk.get_action(u'get_site_user')(
             {u'model': model, u'ignore_auth': True}, {})
-        _context = {u'model': model, u'session': model.Session,
-                    u'user': user[u'name']}
-    return _context
+    context = {u'model': model, u'session': model.Session,
+               u'user': _user[u'name']}
+    return context
 
 #######################################
 ###         migration utils         ###
