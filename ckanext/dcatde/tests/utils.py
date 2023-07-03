@@ -11,7 +11,7 @@ import six
 from rdflib import Graph, URIRef, Literal, BNode
 from rdflib.namespace import Namespace, RDF
 from ckanext.dcat.processors import RDFParser
-from ckanext.dcat.profiles import EuropeanDCATAPProfile
+from ckanext.dcat.profiles import EuropeanDCATAP2Profile
 from ckanext.dcatde.profiles import DCATdeProfile
 from ckanext.dcat.profiles import (DCAT, DCT, ADMS, LOCN, SKOS, GSP, RDFS,
                                     VCARD, FOAF, VCARD)
@@ -182,95 +182,6 @@ class BaseParseTest(unittest.TestCase):
                 res.get('description'),
                 u'Das ist eine deutsche Beschreibung der Distribution %s (%s)' % (number, lang_string))
 
-    def _get_access_services_graph_from_dict(self, access_service_list):
-        service_graph = ''
-        for access_service_dict in access_service_list:
-            #Lists
-            endpoint_urls = access_service_dict.get('endpoint_url', [])
-            endpoint_url_string = ''
-            for endpoint_url in  endpoint_urls:
-                endpoint_url_string += ('<dcat:endpointURL rdf:resource="{ds_endpointURL}"/>'
-                                        .format(ds_endpointURL = endpoint_url))
-
-
-            serves_datasets = access_service_dict.get('serves_dataset', [])
-            serves_dataset_string = ''
-            for serves_dataset in  serves_datasets:
-                serves_dataset_string += ('<dcat:servesDataset rdf:resource="{ds_servesDataset}"/>'
-                                          .format(ds_servesDataset = serves_dataset))
-
-            data = '''
-            <dcat:accessService>
-                <dcat:DataService>
-                    <dcatap:availability rdf:resource="{ds_availability}"/>
-                    <dct:title>{ds_title}</dct:title>
-                    {ds_endpointURL}
-                    <dct:description>{ds_description}</dct:description>
-                    <dcat:endpointDescription>{ds_endpointDescription}</dcat:endpointDescription>
-                    <dct:license>{ds_license}</dct:license>
-                    <dcatde:licenseAttributionByText>{ds_licenseAttributionByText}</dcatde:licenseAttributionByText>
-                    <dct:accessRights>{ds_accessRights}</dct:accessRights>
-                    {ds_servesDataset}
-                </dcat:DataService>
-            </dcat:accessService>
-            '''.format(ds_availability = access_service_dict.get('availability'),
-                       ds_title = access_service_dict.get('title'), ds_endpointURL = endpoint_url_string,
-                       ds_description = access_service_dict.get('description'), ds_endpointDescription = access_service_dict.get('endpoint_description'),
-                       ds_accessRights = access_service_dict.get('access_rights'), ds_license = access_service_dict.get('license'),
-                       ds_licenseAttributionByText = access_service_dict.get('licenseAttributionByText'),ds_servesDataset = serves_dataset_string)
-
-            service_graph += data
-
-        return service_graph
-
-    def _run_parse_access_service(self, expected_access_services):
-        
-        ### prepare ###
-        access_services_graph = self._get_access_services_graph_from_dict(expected_access_services)
-
-        data = '''<?xml version="1.0" encoding="utf-8" ?>
-        <rdf:RDF
-         xmlns:dct="http://purl.org/dc/terms/"
-         xmlns:dcat="http://www.w3.org/ns/dcat#"
-         xmlns:dcatap="http://data.europa.eu/r5r/"
-         xmlns:dcatde="http://dcat-ap.de/def/dcatde/"
-         xmlns:schema="http://schema.org/"
-         xmlns:time="http://www.w3.org/2006/time"
-         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-        <dcat:Dataset rdf:about="http://example.org">
-            <dcat:distribution>
-                <dcat:Distribution rdf:about="https://data.some.org/catalog/datasets/9df8df51-63db-37a8-e044-0003ba9b0d98/1">
-                    <dct:description>Das ist eine deutsche Beschreibung der Distribution</dct:description>
-                    <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
-                    {access_services}
-                </dcat:Distribution>
-            </dcat:distribution>
-        </dcat:Dataset>
-        </rdf:RDF>
-        '''.format(access_services = access_services_graph)
-
-        ## execute ###
-        p = self._default_parser_dcatde()
-
-        p.parse(data)
-
-        datasets = [d for d in p.datasets()]
-        self.assertEqual(len(datasets), 1)
-        dataset = datasets[0]
-
-        ### assert ###
-        resources = dataset.get('resources')
-        self.assertEqual(len(resources), 1)
-        resource_dict = resources[0]
-
-        access_services = resource_dict.get('access_services')
-        access_services_list = json.loads(access_services)
-        self.assertEqual(len(access_services_list), 2)
-
-        for access_service in expected_access_services:
-            self.assertTrue(access_service in access_services_list)
-
 class BaseSerializeTest(unittest.TestCase):
 
     predicate_pattern = re.compile("[a-zA-Z]:[a-zA-Z]")
@@ -372,26 +283,14 @@ class BaseSerializeTest(unittest.TestCase):
                 "hash": 24,
                 "access_services": json.dumps([
                     {
-                        "availability": "http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE",
+                        "access_service_ref" :"N4344f368651b4ec884b83dc09aad9f19",
                         "title": "Sparql-end Point 1",
-                        "endpoint_description": "SPARQL url description 1",
-                        "license": "http://publications.europa.eu/resource/authority/licence/COM_REUSE",
-                        "licenseAttributionByText": "License text",
-                        "access_rights": "http://publications.europa.eu/resource/authority/access-right/PUBLIC",
-                        "description": "This SPARQL end point allow to directly query the EU Whoiswho content 1",
-                        "endpoint_url": ["http://publications.europa.eu/webapi/rdf/sparql"],
-                        "serves_dataset": ["http://data.europa.eu/88u/dataset/eu-whoiswho-the-official-directory-of-the-european-union"]
+                        "licenseAttributionByText": "License text 1"
                     },
                     {
-                        "availability": "http://publications.europa.eu/resource/authority/planned-availability/EXPERIMENTAL",
+                        "access_service_ref" :"N4344f368651b4ec884b83dc09aad9f20",
                         "title": "Sparql-end Point 2",
-                        "endpoint_description": "SPARQL url description 2",
-                        "license": "http://publications.europa.eu/resource/authority/licence/CC_BY",
-                        "licenseAttributionByText": "License text 2",
-                        "access_rights": "http://publications.europa.eu/resource/authority/access-right/OP_DATPRO",
-                        "description": "This SPARQL end point allow to directly query the EU Whoiswho content 2",
-                        "endpoint_url": ["http://publications.europa.eu/webapi/rdf/sparql"],
-                        "serves_dataset": ["http://data.europa.eu/88u/dataset/eu-whoiswho-the-official-directory-of-the-european-union"]
+                        "licenseAttributionByText": "License text 2"
                     }
                 ]),
 
@@ -488,7 +387,7 @@ class BaseSerializeTest(unittest.TestCase):
         self.graph = rdflib.Graph()
         dataset_ref = URIRef("http://example.org/datasets/1")
 
-        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat = EuropeanDCATAP2Profile(self.graph, False)
         dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
@@ -521,7 +420,7 @@ class BaseSerializeTest(unittest.TestCase):
         self.graph = rdflib.Graph()
         dataset_ref = URIRef("http://testuri/")
 
-        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat = EuropeanDCATAP2Profile(self.graph, False)
         dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
@@ -545,17 +444,6 @@ class BaseSerializeTest(unittest.TestCase):
         self.assertEqual(len(obj_list), 1, "{} not found.".format(predicate))
         self.assertTrue(obj_list[0] == value,
                         '{!r} not found in {}'.format(value, obj_list))
-
-    def _assert_values_list(self, object, predicate, values):
-        obj_list = [x for x in self.graph.objects(object, predicate)]
-        self.assertEqual(len(obj_list), len(values))
-        six.assertCountEqual(self, obj_list, values,
-                        "Not all expected values were found in graph. remaining: {}".format(
-                            str.join(', ', list(set(values) - set(obj_list)))))
-
-    def _get_typed_list(self, list, datatype):
-        """ returns the list with the given rdf type """
-        return [datatype(x) for x in list]
 
 def _get_value_from_extras(extras, key):
     """ retrieves a value from the key-value representation used in extras dict """

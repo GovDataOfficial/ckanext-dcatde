@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-import rdflib
 import json
 import six
 
+import rdflib
+
 from rdflib import Graph, URIRef, Literal, BNode
-from ckanext.dcat.profiles import (EuropeanDCATAPProfile, DCAT, DCT, ADMS, LOCN, SKOS, GSP, RDFS,
+from ckanext.dcat.profiles import (EuropeanDCATAP2Profile, DCAT, DCT, ADMS, LOCN, SKOS, GSP, RDFS,
                                     VCARD, FOAF, VCARD, SCHEMA, SPDX, DCATAP, XSD)
 from ckanext.dcatde.extras import Extras
 from ckanext.dcatde.profiles import DCATdeProfile
@@ -23,7 +24,7 @@ class TestDCATdeSerialize(BaseSerializeTest):
         dataset_dict = self._get_default_dataset_dict()
         dataset_ref = URIRef("http://testuri/")
 
-        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat = EuropeanDCATAP2Profile(self.graph, False)
         dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
@@ -139,91 +140,13 @@ class TestDCATdeSerialize(BaseSerializeTest):
         for object in object_list:
             title_objects = [x for x in self.graph.objects(object, DCT.title)]
             self.assertEqual(len(title_objects), 1)
+
             access_service = self._get_dict_from_list(access_services, 'title',
                                                                 six.text_type(title_objects[0]))
             self.assertTrue(access_service)
-            self._assert_simple_value(object, DCATAP.availability,
-                                  URIRef(access_service.get('availability')))
-            self._assert_simple_value(object, DCT.accessRights,
-                                  URIRef(access_service.get('access_rights')))
-            self._assert_simple_value(object, DCT.license,
-                                  URIRef(access_service.get('license')))
+
             self._assert_simple_value(object, DCATDE.licenseAttributionByText,
                                   Literal(access_service.get('licenseAttributionByText')))
-            self._assert_simple_value(object, DCT.title,
-                                  Literal(access_service.get('title')))
-            self._assert_simple_value(object, DCT.description,
-                                  Literal(access_service.get('description')))
-            self._assert_simple_value(object, DCAT.endpointDescription,
-                                  Literal(access_service.get('endpoint_description')))
-            self._assert_values_list(object, DCAT.endpointURL,
-                               self._get_typed_list(access_service.get('endpoint_url'), URIRef))
-            self._assert_values_list(object, DCAT.servesDataset,
-                               self._get_typed_list(access_service.get('serves_dataset'), URIRef))
-
-    def test_access_service_fields_literal(self):
-
-        ### prepare ###
-        self.graph = rdflib.Graph()
-        dataset_dict = self._get_default_dataset_dict()
-        dataset_ref = URIRef("http://testuri/")
-
-        access_service_list = [{
-            "availability": "AVAILABLE",
-            "title": "Sparql-end Point 1",
-            "license": "COM_REUSE",
-            "licenseAttributionByText": "License text",
-            "access_rights": "PUBLIC",
-            "endpoint_url": ["sparql"],
-            "serves_dataset": ["eu-whoiswho-the-official-directory-of-the-european-union"]
-        },
-        {
-            "availability": "EXPERIMENTAL",
-            "title": "Sparql-end Point 2",
-            "license": "CC_BY",
-            "licenseAttributionByText": "License text 2",
-            "access_rights": "OP_DATPRO",
-            "endpoint_url": ["sparql"],
-            "serves_dataset": ["eu-whoiswho-the-official-directory-of-the-european-union"]
-        }]
-
-        dataset_dict['resources'][0]['access_services'] = json.dumps(access_service_list)
-
-        ### execute ###
-        dcat = EuropeanDCATAPProfile(self.graph, False)
-        dcat.graph_from_dataset(dataset_dict, dataset_ref)
-
-        dcatde = DCATdeProfile(self.graph, False)
-        dcatde.graph_from_dataset(dataset_dict, dataset_ref)
-
-        resource = dataset_dict["resources"][0]
-        resource_ref = list(self.graph.objects(dataset_ref, DCAT.distribution))[0]
-
-        ### assert ###
-        object_list = [x for x in self.graph.objects(resource_ref, DCAT.accessService)]
-        self.assertEqual(len(object_list), 2, "dcat:accessService not found.")
-        access_services = json.loads(resource["access_services"])
-
-        for object in object_list:
-            title_objects = [x for x in self.graph.objects(object, DCT.title)]
-            self.assertEqual(len(title_objects), 1)
-            access_service = self._get_dict_from_list(access_services, 'title',
-                                                                six.text_type(title_objects[0]))
-            self.assertTrue(access_service)
-            self._assert_simple_value(object, DCATAP.availability,
-                                  Literal(access_service.get('availability')))
-            self._assert_simple_value(object, DCT.accessRights,
-                                  Literal(access_service.get('access_rights')))
-            self._assert_simple_value(object, DCT.license,
-                                  Literal(access_service.get('license')))
-            self._assert_simple_value(object, DCATDE.licenseAttributionByText,
-                                  Literal(access_service.get('licenseAttributionByText')))
-            self._assert_simple_value(object, DCT.title,
-                                  Literal(access_service.get('title')))
-            self._assert_values_list(object, DCAT.endpointURL,
-                               self._get_typed_list(access_service.get('endpoint_url'), Literal))
-            self._assert_values_list(object, DCAT.servesDataset,
-                               self._get_typed_list(access_service.get('serves_dataset'), Literal))
 
     def test_access_service_fields_invalid_json(self):
 
@@ -237,7 +160,7 @@ class TestDCATdeSerialize(BaseSerializeTest):
         dataset_dict['resources'][0]['access_services'] = access_service_list
 
         ### execute ###
-        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat = EuropeanDCATAP2Profile(self.graph, False)
         dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
@@ -262,7 +185,7 @@ class TestDCATdeSerialize(BaseSerializeTest):
         dataset_ref = URIRef("http://testuri/")
 
         ### execute ###
-        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat = EuropeanDCATAP2Profile(self.graph, False)
         dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
@@ -360,7 +283,7 @@ class TestDCATdeSerialize(BaseSerializeTest):
         self.graph = rdflib.Graph()
         dataset_ref = URIRef("http://testuri/")
 
-        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat = EuropeanDCATAP2Profile(self.graph, False)
         dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
@@ -407,7 +330,7 @@ class TestDCATdeSerialize(BaseSerializeTest):
         # execute
         self.graph = rdflib.Graph()
 
-        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat = EuropeanDCATAP2Profile(self.graph, False)
         dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
@@ -440,7 +363,7 @@ class TestDCATdeSerialize(BaseSerializeTest):
         # execute
         self.graph = rdflib.Graph()
 
-        dcat = EuropeanDCATAPProfile(self.graph, False)
+        dcat = EuropeanDCATAP2Profile(self.graph, False)
         dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)

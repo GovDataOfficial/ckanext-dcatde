@@ -85,21 +85,7 @@ class TestDCATdeParse(BaseParseTest):
             # access services
             access_service_list = json.loads(dist1.get('access_services'))
             self.assertEqual(len(access_service_list), 1)
-            access_service = access_service_list[0]
-            self.assertEqual(access_service.get('availability'),
-                             'http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE')
-            self.assertEqual(access_service.get('title'), 'Sparql-end Point')
-            self.assertEqual(access_service.get('endpoint_description'), 'SPARQL url description')
-            self.assertEqual(access_service.get('license'),
-                             'http://publications.europa.eu/resource/authority/licence/COM_REUSE')
-            self.assertEqual(access_service.get('licenseAttributionByText'), 'License text')
-            self.assertEqual(access_service.get('access_rights'),
-                             'http://publications.europa.eu/resource/authority/access-right/PUBLIC')
-            self.assertEqual(access_service.get('description'),
-                             'This SPARQL end point allow to directly query the EU Whoiswho content (organization / membership / person)')
-            endpoint_url_list = access_service.get('endpoint_url')
-            self.assertEqual(len(endpoint_url_list), 1)
-            self.assertTrue('http://publications.europa.eu/webapi/rdf/sparql' in endpoint_url_list)
+            self.assertEqual(access_service_list[0].get('licenseAttributionByText'), 'License text')
 
         else:
             self.assertEqual(len([x for x in extras if x["key"] == 'granularity']), 0)
@@ -309,62 +295,6 @@ class TestDCATdeParse(BaseParseTest):
 
         assert resource_dict.get('licenseAttributionByText') == license_attribution_by_text
         assert resource_dict.get('plannedAvailability') == planned_availability
-
-    def test_parse_distribution_access_service(self):
-
-        expected_access_services = [{
-            "availability": "http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE",
-            "title": "Sparql-end Point",
-            "endpoint_description": "SPARQL url description",
-            "license": "http://publications.europa.eu/resource/authority/licence/COM_REUSE",
-            "licenseAttributionByText": "License text",
-            "access_rights": "http://publications.europa.eu/resource/authority/access-right/PUBLIC",
-            "description": "This SPARQL end point allow to directly query the EU Whoiswho content",
-            "endpoint_url": ["http://publications.europa.eu/webapi/rdf/sparql"],
-            "serves_dataset": ["http://data.europa.eu/88u/dataset/eu-whoiswho-the-official-directory-of-the-european-union"],
-            "uri": ""
-            }, {
-            "availability": "http://publications.europa.eu/resource/authority/planned-availability/EXPERIMENTAL",
-            "title": "Sparql-end Point 2",
-            "endpoint_description": "SPARQL url description 2",
-            "license": "http://publications.europa.eu/resource/authority/licence/CC_BY",
-            "licenseAttributionByText": "License text 2",
-            "access_rights": "http://publications.europa.eu/resource/authority/access-right/OP_DATPRO",
-            "description": "This SPARQL end point allow to directly query the EU Whoiswho content",
-            "endpoint_url": ["http://publications.europa.eu/webapi/rdf/sparql"],
-            "serves_dataset": ["http://data.europa.eu/88u/dataset/eu-whoiswho-the-official-directory-of-the-european-union"],
-            "uri": ""
-        }]
-
-        self._run_parse_access_service(expected_access_services)
-
-    def test_parse_distribution_access_service_literal(self):
-
-        expected_access_services = [{
-            "availability": "http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE", 
-            "title": "Sparql-end Point",
-            "endpoint_description": "SPARQL url description",
-            "license": "COM_REUSE",
-            "licenseAttributionByText": "License text",
-            "access_rights": "PUBLIC",
-            "description": "This SPARQL end point allow to directly query the EU Whoiswho content",
-            "endpoint_url": ["sparql"],
-            "serves_dataset": ["eu-whoiswho-the-official-directory-of-the-european-union"],
-            "uri": ""
-            }, {
-            "availability": "EXPERIMENTAL",
-            "title": "Sparql-end Point 2",
-            "endpoint_description": "SPARQL url description 2",
-            "license": "CC_BY",
-            "licenseAttributionByText": "License text 2",
-            "access_rights": "OP_DATPRO",
-            "description": "This SPARQL end point allow to directly query the EU Whoiswho content",
-            "endpoint_url": ["sparql"],
-            "serves_dataset": ["eu-whoiswho-the-official-directory-of-the-european-union"],
-            "uri": ""
-        }]
-
-        self._run_parse_access_service(expected_access_services)
 
     def test_parse_dataset_dct_format_iana_uri(self):
         resources = self._build_and_parse_format_mediatype_graph(
@@ -831,3 +761,119 @@ class TestDCATdeParse(BaseParseTest):
         self.assertNotIn({'name': self.INVALID_TAG_SHORT}, datasets[0]['tags'])
         # depends on ckan.model.MIN_TAG_LENGTH and behaviour of ckan's _munge_to_length
         self.assertIn({'name': u'a_'}, datasets[0]['tags'])
+
+    def test_license_attribution_by_text_access_service(self):
+
+        license_attribution_by_text = 'License text'
+
+        data = u'''<?xml version="1.0" encoding="utf-8" ?>
+        <rdf:RDF
+         xmlns:dct="http://purl.org/dc/terms/"
+         xmlns:dcat="http://www.w3.org/ns/dcat#"
+         xmlns:dcatap="http://data.europa.eu/r5r/"
+         xmlns:dcatde="http://dcat-ap.de/def/dcatde/"
+         xmlns:schema="http://schema.org/"
+         xmlns:time="http://www.w3.org/2006/time"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+        <dcat:Dataset rdf:about="http://example.org">
+            <dcat:distribution>
+                <dcat:Distribution rdf:about="https://data.some.org/catalog/datasets/9df8df51-63db-37a8-e044-0003ba9b0d98/1">
+                    <dct:description>Das ist eine deutsche Beschreibung der Distribution</dct:description>
+                    <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
+                    <dcat:accessService>
+                        <dcat:DataService>
+                            <dct:title>Sparql-end Point</dct:title>
+                            <dcatde:licenseAttributionByText>{as_licenseAttributionByText}</dcatde:licenseAttributionByText>
+                        </dcat:DataService>
+                    </dcat:accessService>
+                </dcat:Distribution>
+            </dcat:distribution>
+        </dcat:Dataset>
+        </rdf:RDF>
+        '''.format(as_licenseAttributionByText=license_attribution_by_text)
+
+        p = self._default_parser_dcatde()
+
+        p.parse(data)
+
+        datasets = [d for d in p.datasets()]
+        self.assertEqual(len(datasets), 1)
+        dataset = datasets[0]
+
+        # Resources
+        resources = dataset.get('resources')
+        self.assertEqual(len(resources), 1)
+        resource_dict = resources[0]
+
+        access_services = resource_dict.get('access_services')
+        access_services_list = json.loads(access_services)
+        self.assertEqual(len(access_services_list), 1)
+        access_service_dict = access_services_list[0]
+        assert access_service_dict.get('licenseAttributionByText') == license_attribution_by_text
+
+    def test_license_attribution_by_text_multiple_access_services(self):
+
+        license_attribution_by_text_1 = 'License text 1'
+        license_attribution_by_text_2= 'License text 2'
+        license_attribution_by_text_3 = 'License text 3'
+
+        data = u'''<?xml version="1.0" encoding="utf-8" ?>
+        <rdf:RDF
+         xmlns:dct="http://purl.org/dc/terms/"
+         xmlns:dcat="http://www.w3.org/ns/dcat#"
+         xmlns:dcatap="http://data.europa.eu/r5r/"
+         xmlns:dcatde="http://dcat-ap.de/def/dcatde/"
+         xmlns:schema="http://schema.org/"
+         xmlns:time="http://www.w3.org/2006/time"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+        <dcat:Dataset rdf:about="http://example.org">
+            <dcat:distribution>
+                <dcat:Distribution rdf:about="https://data.some.org/catalog/datasets/9df8df51-63db-37a8-e044-0003ba9b0d98/1">
+                    <dct:description>Das ist eine deutsche Beschreibung der Distribution</dct:description>
+                    <dct:title>Download WFS Naturräume Geest und Marsch (GML)</dct:title>
+                    <dcat:accessService>
+                        <dcat:DataService>
+                            <dct:title>{as_licenseAttributionByText_1}</dct:title>
+                            <dcatde:licenseAttributionByText>{as_licenseAttributionByText_1}</dcatde:licenseAttributionByText>
+                        </dcat:DataService>
+                    </dcat:accessService>
+                    <dcat:accessService>
+                        <dcat:DataService>
+                            <dct:title>{as_licenseAttributionByText_2}</dct:title>
+                            <dcatde:licenseAttributionByText>{as_licenseAttributionByText_2}</dcatde:licenseAttributionByText>
+                        </dcat:DataService>
+                    </dcat:accessService>
+                    <dcat:accessService>
+                        <dcat:DataService>
+                            <dct:title>{as_licenseAttributionByText_3}</dct:title>
+                            <dcatde:licenseAttributionByText>{as_licenseAttributionByText_3}</dcatde:licenseAttributionByText>
+                        </dcat:DataService>
+                    </dcat:accessService>
+                </dcat:Distribution>
+            </dcat:distribution>
+        </dcat:Dataset>
+        </rdf:RDF>
+        '''.format(as_licenseAttributionByText_1=license_attribution_by_text_1,
+                   as_licenseAttributionByText_2=license_attribution_by_text_2,
+                   as_licenseAttributionByText_3=license_attribution_by_text_3)
+
+        p = self._default_parser_dcatde()
+
+        p.parse(data)
+
+        datasets = [d for d in p.datasets()]
+        self.assertEqual(len(datasets), 1)
+        dataset = datasets[0]
+
+        # Resources
+        resources = dataset.get('resources')
+        self.assertEqual(len(resources), 1)
+        resource_dict = resources[0]
+
+        access_services = resource_dict.get('access_services')
+        access_services_list = json.loads(access_services)
+        self.assertEqual(len(access_services_list), 3)
+        for access_service_dict in access_services_list:
+            assert access_service_dict.get('licenseAttributionByText') == access_service_dict.get('title')

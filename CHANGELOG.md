@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.16.0 2023-06-29
+
+* Updates ckanext-dcat to version 1.5.1 and removes support for all properties in class dcat:DataService
+  except for `dcatde:licenseAttributionByText`, as these are now supported directly in ckanext-dcat.
+* Updates ckanext-harvest to version 1.5.5
+* Fixes SA warnings from sqlalchemy that occur since version 1.4
+
 ## v5.13.0 2023-05-04
 
 * Adds support for CKAN 2.10.0

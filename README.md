@@ -12,8 +12,8 @@ For the RDF harvester, [ckanext-harvest](https://github.com/ckan/ckanext-harvest
 
 1. If you are using Python virtual environment (virtualenv), activate it.
 
-2. Install a specific version of the CKAN extension ckanext-dcat. The ckanext-dcatde requires a release greater than `v1.0.0` of ckanext-dcat.
-
+2. Install a specific version of the CKAN extension ckanext-dcat. The recommended approach is to install the version of ckanext-dcat specified in the `base-requirements.txt` in [GitHub](https://github.com/GovDataOfficial/ckanext-dcatde/blob/master/base-requirements.txt) or [Open CoDE](https://gitlab.opencode.de/fitko/govdata/ckanext-dcatde/-/blob/master/base-requirements.txt).
+Using other versions may lead to logical inconsistencies.<br>
 3. Install the extension on your virtualenv:
 
        # use project on GitHub
@@ -31,7 +31,8 @@ For the RDF harvester, [ckanext-harvest](https://github.com/ckan/ckanext-harvest
        (pyenv) $ python setup.py develop
 
 4. [Install](https://github.com/ckan/ckanext-harvest#installation) a specific version of the CKAN extension ckanext-harvest. (Only if you want to use the RDF harvester)<br>
-It is tested that ckanext-dcatde is working well with the release `v1.2.0` of ckanext-harvest.<br>
+The recommended approach is to install the version of ckanext-dcat specified in the `optional-requirements.txt` [GitHub](https://github.com/GovDataOfficial/ckanext-dcatde/blob/master/optional-requirements.txt) or [Open CoDE](https://gitlab.opencode.de/fitko/govdata/ckanext-dcatde/-/blob/master/base-requirements.txt).
+Using other versions may lead to logical inconsistencies.<br>
 
 5. Enable the required plugins by adding to your CKAN configuration file:
 

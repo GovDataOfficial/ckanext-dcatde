@@ -96,8 +96,7 @@ def gather_dataset_ids(include_private=True):
         .filter(model.Package.state == model.State.ACTIVE) \
         .filter(harvest_model.HarvestSource.active.is_(True)) \
         .filter(model.Group.state == model.State.ACTIVE) \
-        .filter(model.Group.is_organization.is_(True)) \
-        .subquery()
+        .filter(model.Group.is_organization.is_(True))
 
     # read all package IDs to reindex
     package_extra_alias = aliased(model.PackageExtra)
