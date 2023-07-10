@@ -6,7 +6,6 @@ import unittest
 import rdflib
 import pkg_resources
 import json
-import six
 
 from rdflib import Graph, URIRef, Literal, BNode
 from rdflib.namespace import Namespace, RDF
@@ -107,7 +106,7 @@ class BaseParseTest(unittest.TestCase):
         This assumes that the extras value is serialized as string."""
         item = _get_value_from_extras(extras, key)
         content = json.loads(item)
-        six.assertCountEqual(self, content, expected)
+        self.assertCountEqual(content, expected)
 
     def _assert_extras_dict_serialized(self, extras, key, expected):
         """ check if the extras field with the given key contains the expected dict
@@ -318,8 +317,8 @@ class BaseSerializeTest(unittest.TestCase):
             raise TypeError('values must be type of list')
         values_found = []
         for obj in self.graph.objects(ref, predicate):
-            if six.text_type(obj) in values:
-                values_found.append(six.text_type(obj))
+            if str(obj) in values:
+                values_found.append(str(obj))
 
         self.assertTrue(len(values_found) == len(values),
                         "Not all expected values were found in graph. remaining: {}".format(

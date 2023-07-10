@@ -3,7 +3,7 @@
 import json
 import sys
 
-from six.moves import urllib
+import urllib
 
 import ckanapi
 import click

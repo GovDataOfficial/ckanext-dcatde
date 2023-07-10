@@ -2,7 +2,6 @@
 
 import unittest
 
-import six
 import ckanext.dcatde.commands.command_util as utils
 import ckanext.dcatde.tests.commands.common_helpers as helpers
 from mock import patch, Mock
@@ -237,7 +236,7 @@ class TestThemeAdderCommand(unittest.TestCase):
         utils.migrate_user_permissions(["old1", "old2"], ["new1", "new2"])
 
         calls = permissionhelper.get_calls()
-        six.assertCountEqual(self, calls, [
+        self.assertCountEqual(calls, [
             {
                 "id": "new1",
                 "username": "user1",

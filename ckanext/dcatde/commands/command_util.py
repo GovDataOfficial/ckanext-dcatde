@@ -7,7 +7,6 @@ import json
 import socket
 import time
 
-import six
 from rdflib import URIRef
 from sqlalchemy import or_
 from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
@@ -287,7 +286,6 @@ def _get_update_package_schema():
         schema['maintainer_email'].remove(email_validator)
         schema['author_email'].remove(email_validator)
     except (ValueError, UnknownValidator):
-        # Support CKAN prior 2.7
         pass
     return schema
 
@@ -401,7 +399,7 @@ def reindex(dry_run, triplestore_client, shacl_validation_client):
         success_count = error_count = 0
         starttime = time.time()
         if triplestore_client.is_available():
-            for package_id, package_org in six.iteritems(package_obj_to_reindex):
+            for package_id, package_org in package_obj_to_reindex.items():
                 uri = 'n/a'
                 try:
                     # Reindex package

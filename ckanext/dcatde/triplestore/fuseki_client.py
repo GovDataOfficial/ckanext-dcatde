@@ -5,7 +5,6 @@
 import logging
 import os
 
-import six
 from ckan.plugins import toolkit as tk
 import requests
 from SPARQLWrapper import SPARQLWrapper, POST, JSON
@@ -113,7 +112,7 @@ class FusekiTriplestoreClient(object):
             return
         LOGGER.debug(u'Creating new dataset in triplestore. Datastore name: %s, Dataset with URI %s',
                      datastore_name, uri)
-        if isinstance(graph, six.text_type):
+        if isinstance(graph, str):
             graph = graph.encode('utf-8')
 
         headers = {'Content-Type': content_type}

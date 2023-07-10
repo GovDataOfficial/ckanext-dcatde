@@ -109,13 +109,7 @@ You need to add the following parameter to your CKAN configuration file:
 You will find an example file here: [dcat_theme.json](./examples/dcat_theme.json)
 If you want to create the standard dcat-ap categories as groups you can use the ckan command "dcatde_themeadder" by following the instructions:
 
-ON CKAN >= 2.9:
-
     (pyenv) $ ckan --config=/etc/ckan/default/production.ini dcatde_themeadder
-
-ON CKAN <= 2.8:
-
-    (pyenv) $ paster --plugin=ckanext-dcatde dcatde_themeadder --config=/etc/ckan/default/production.ini
 
 ## Migrating ogd conform datasets to dcat-ap.de
 You need to add the following parameter to your CKAN configuration file:
@@ -127,24 +121,12 @@ You will find the example files here: [dcat_license_mapping.json](./examples/dca
 The migration requires that the dcat-ap categories exists as groups in CKAN, see [Creating dcat-ap categories as groups](#creating-dcat-ap-categories-as-groups).
 If you want to migrate the datasets from ogd to dcat-ap.de you can use the ckan command "dcatde_migrate" by following the instructions:
 
-ON CKAN >= 2.9:
-
     (pyenv) $ ckan --config=/etc/ckan/default/production.ini dcatde_migrate
-
-ON CKAN <= 2.8:
-
-    (pyenv) $ paster --plugin=ckanext-dcatde dcatde_migrate --config=/etc/ckan/default/production.ini
 
 With the version 3.1.1 an additional option to the migrate command was added to fix the migration of the OGD field `metadata_original_id`. Instead of mapping this field to `adms:identifier` it will be mapped to the field `dct:identifier` now.
 The command can be executed as follows:
 
-ON CKAN >= 2.9:
-
     (pyenv) $ ckan --config=/etc/ckan/default/production.ini dcatde_migrate adms-id-migrate
-
-ON CKAN <= 2.8:
-
-    (pyenv) $ paster --plugin=ckanext-dcatde dcatde_migrate adms-id-migrate --config=/etc/ckan/default/production.ini
 
 ## Migrating contributor IDs in datasets
 Adds the ContributorID defined in the related CKAN organization to the datasets if not alredy existent.
@@ -153,13 +135,7 @@ datasets to GovData, has changed, the ContributorID in the related datasets can 
 deprecated ContributorIDs and the ContributorIDs replacing them are located in the source code.
 The command can be executed as follows:
 
-ON CKAN >= 2.9:
-
     (pyenv) $ ckan --config=/etc/ckan/default/production.ini dcatde_migrate contributor-id-migrate
-
-ON CKAN <= 2.8:
-
-    (pyenv) $ paster --plugin=ckanext-dcatde dcatde_migrate contributor-id-migrate --config=/etc/ckan/default/production.ini
 
 ## Updating data in the triplestore
 The data in the triplestore can be updated with several commands.
@@ -167,24 +143,12 @@ The data in the triplestore can be updated with several commands.
 It is possible to reindex (adding or only updating) the manually maintained datasets.
 The command can be executed as follows:
 
-ON CKAN >= 2.9:
-
     (pyenv) $ ckan --config=/etc/ckan/default/production.ini triplestore reindex
-
-ON CKAN <= 2.8:
-
-    (pyenv) $ paster --plugin=ckanext-dcatde triplestore reindex --config=/etc/ckan/default/production.ini
 
 For some reasons it can be necessary to delete the data of one or more datasets in the triplestore.
 The command can be executed as follows:
 
-ON CKAN >= 2.9:
-
     (pyenv) $ ckan --config=/etc/ckan/default/production.ini triplestore delete_datasets {uris}
-
-ON CKAN <= 2.8:
-
-    (pyenv) $ paster --plugin=ckanext-dcatde triplestore delete_datasets {uris} --config=/etc/ckan/default/production.ini
 
 `{uris}`: A comma separated list of URIs to delete from the triplestore
 

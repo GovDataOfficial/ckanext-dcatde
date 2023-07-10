@@ -2,7 +2,6 @@
 # -*- coding: utf8 -*-
 
 import json
-import six
 import unittest
 
 import ckanext.dcatde.commands.command_util as utils
@@ -333,7 +332,7 @@ class TestMigration(unittest.TestCase):
         extras_list = action_hlp.updated_datasets[pkg_id]['extras']
         assert len(extras_list) == 1
         assert 'key' in extras_list[0] and extras_list[0]['key'] == 'contributorID'
-        six.assertCountEqual(self, json.loads(extras_list[0]['value']), contributor_id_list)
+        self.assertCountEqual(json.loads(extras_list[0]['value']), contributor_id_list)
 
         mock_gather_ids.assert_called_once_with()
 
@@ -418,7 +417,7 @@ class TestMigration(unittest.TestCase):
         extras_list = action_hlp.updated_datasets[pkg_id]['extras']
         assert len(extras_list) == 1
         assert 'key' in extras_list[0] and extras_list[0]['key'] == 'contributorID'
-        six.assertCountEqual(self, json.loads(extras_list[0]['value']), contributor_id_list)
+        self.assertCountEqual(json.loads(extras_list[0]['value']), contributor_id_list)
 
         mock_gather_ids.assert_called_once_with()
 
@@ -471,6 +470,6 @@ class TestMigration(unittest.TestCase):
         extras_list = action_hlp.updated_datasets[pkg_id]['extras']
         assert len(extras_list) == 1
         assert 'key' in extras_list[0] and extras_list[0]['key'] == 'contributorID'
-        six.assertCountEqual(self, json.loads(extras_list[0]['value']), contributor_id_list)
+        self.assertCountEqual(json.loads(extras_list[0]['value']), contributor_id_list)
 
         mock_gather_ids.assert_called_once_with()

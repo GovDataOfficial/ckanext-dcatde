@@ -5,8 +5,7 @@ import json
 import logging
 import re
 
-import six
-from six.moves import urllib
+import urllib
 import pycountry
 import ckanext.dcatde.dataset_utils as ds_utils
 
@@ -95,7 +94,7 @@ def update_extras_json_list_data(dataset, extras_field, check_key, expected_val,
                 else:
                     del fld_list[index]
         if fld_list:
-            fld_content['value'] = six.text_type(json.dumps(fld_list, sort_keys=True))
+            fld_content['value'] = str(json.dumps(fld_list, sort_keys=True))
         else:
             # drop contacts if it became empty
             ds_utils.delete_extras_field(dataset, extras_field)

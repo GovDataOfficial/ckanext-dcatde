@@ -1,7 +1,6 @@
 # -*- coding: utf8 -*-
 
 import unittest
-import six
 import ckanext.dcatde.migration.migration_functions as mf
 
 
@@ -111,9 +110,9 @@ class TestMigrationFunctions(unittest.TestCase):
         '''
         real_val = self._assert_extras_key(dataset, key)
         self.assertTrue(real_val == value,
-                        u'expected value "' + six.text_type(value)
-                        + u'", but was "' + six.text_type(real_val)
-                        + u'" for key ' + six.text_type(key))
+                        u'expected value "' + str(value)
+                        + u'", but was "' + str(real_val)
+                        + u'" for key ' + str(key))
 
     def _assert_extras_other_unaffected(self, dataset):
         '''

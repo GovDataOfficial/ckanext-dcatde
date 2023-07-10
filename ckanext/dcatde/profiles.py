@@ -2,7 +2,6 @@
 # -*- coding: utf8 -*-
 import json
 import re
-import six
 
 from ckan import model
 from ckan.lib.munge import _munge_to_length
@@ -207,7 +206,7 @@ class DCATdeProfile(RDFProfile):
         Ensures that the given value string has no tel: prefix.
         '''
         if value:
-            return six.text_type(value).replace(PREFIX_TEL, u'')
+            return str(value).replace(PREFIX_TEL, u'')
         else:
             return value
 
@@ -216,7 +215,7 @@ class DCATdeProfile(RDFProfile):
         Iterates over all subject objects in graph and dict list and returns all matching objects.
         '''
         for object in self.g.objects(subject, predicate):
-            object_ref = six.text_type(object)
+            object_ref = str(object)
             for object_dict in dict_list:
                 # Match object in graph and in dict
                 if object_dict and (object_ref == object_dict.get('uri')) or \
@@ -339,7 +338,7 @@ class DCATdeProfile(RDFProfile):
             groups = []
 
         for obj in self.g.objects(dataset_ref, DCAT.theme):
-            current_theme = six.text_type(obj)
+            current_theme = str(obj)
 
             if current_theme.startswith(DCAT_THEME_PREFIX):
                 group = current_theme.replace(DCAT_THEME_PREFIX, '').lower()
@@ -354,7 +353,7 @@ class DCATdeProfile(RDFProfile):
         g = self.g
 
         # bind namespaces to have readable names in RDF Document
-        for prefix, namespace in six.iteritems(namespaces):
+        for prefix, namespace in namespaces.items():
             g.bind(prefix, namespace)
 
         # Simple additional fields

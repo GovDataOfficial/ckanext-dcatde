@@ -3,7 +3,6 @@
 import json
 import unittest
 
-import six
 import pkg_resources
 from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from SPARQLWrapper.Wrapper import QueryResult
@@ -111,7 +110,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
                 self.assertIn(s, [URIRef(uri) for uri in uris])
                 self.assertEqual(p, FOAF.knows)
                 object_list.append(o)
-            six.assertCountEqual(self, object_list, [Literal(owner_org), Literal(harvest_source_id)])
+            self.assertCountEqual(object_list, [Literal(owner_org), Literal(harvest_source_id)])
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_metadata_on_import(self, mock_super_import):
@@ -624,7 +623,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEqual(rdf_parser_return, rdf_parser)
         # check if no errors are returned
         self.assertEqual(len(error_msgs), 0)
-        uri = six.next(rdf_parser._datasets())
+        uri = next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset
@@ -688,7 +687,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEqual(rdf_parser_return, rdf_parser)
         # check if no errors are returned
         self.assertEqual(len(error_msgs), 0)
-        uri = six.next(rdf_parser._datasets())
+        uri = next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset
@@ -753,7 +752,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEqual(rdf_parser_return, rdf_parser)
         # check if no errors are returned
         self.assertEqual(len(error_msgs), 0)
-        uri = six.next(rdf_parser._datasets())
+        uri = next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset
@@ -812,7 +811,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEqual(rdf_parser_return, rdf_parser)
         # error should be returned
         self.assertEqual(len(error_msgs), 1)
-        uri = six.next(rdf_parser._datasets())
+        uri = next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # Dataset should be removed, but not created again
@@ -1084,7 +1083,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset.
-        mock_fuseki_delete_data.assert_called_once_with(six.next(rdf_parser._datasets()))
+        mock_fuseki_delete_data.assert_called_once_with(next(rdf_parser._datasets()))
         # create dataset should not be called
         mock_fuseki_create_data.assert_not_called()
         mock_shacl_validate.assert_not_called()
@@ -1129,7 +1128,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEqual(rdf_parser_return, rdf_parser)
         # check that one error is returned
         self.assertEqual(len(error_msgs), 1)
-        uri = six.next(rdf_parser._datasets())
+        uri = next(rdf_parser._datasets())
         # at the beginning of after_parsing and delete from triplestore for every dataset
         mock_triplestore_is_available.assert_has_calls([call(), call()])
         # check if delete dataset was called. Testdata has only one dataset.

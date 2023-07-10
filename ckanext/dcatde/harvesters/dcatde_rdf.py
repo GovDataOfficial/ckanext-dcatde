@@ -6,7 +6,6 @@ DCAT-AP.de RDF Harvester module.
 import json
 import logging
 import time
-import six
 from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import FOAF
@@ -415,7 +414,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             config_obj = json.loads(cfg)
             if CONFIG_PARAM_HARVESTED_PORTAL in config_obj:
                 harvested_portal = config_obj[CONFIG_PARAM_HARVESTED_PORTAL]
-                if not isinstance(harvested_portal, six.string_types):
+                if not isinstance(harvested_portal, str):
                     raise ValueError('%s must be a string' % CONFIG_PARAM_HARVESTED_PORTAL)
             else:
                 raise KeyError('%s is not set in config.' % CONFIG_PARAM_HARVESTED_PORTAL)

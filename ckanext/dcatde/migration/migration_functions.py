@@ -3,7 +3,6 @@ Migration functions for all fields that are migrated.
 '''
 import inspect
 import json
-import six
 from ckanext.dcatde.migration import util
 import ckanext.dcatde.dataset_utils as ds_utils
 from ckanext.dcatde.dataset_utils import EXTRA_KEY_HARVESTED_PORTAL
@@ -42,7 +41,7 @@ class MigrationFunctionExecutor(object):
         Returns True if all groups are found, and False otherwise.'''
         for group in self.functions.new_groups:
             if group not in ckan_group_dict:
-                util.get_migrator_log().error(u'Group ' + six.text_type(group)
+                util.get_migrator_log().error(u'Group ' + str(group)
                                               + u' not found. Did you run the '
                                               + u' theme adder command?')
                 return False
@@ -120,7 +119,7 @@ class MigrationFunctions(object):
                                                  field, True)
 
                 sr_value_dict.pop('text', None)
-                spatial_reference['value'] = six.text_type(json.dumps(sr_value_dict,
+                spatial_reference['value'] = str(json.dumps(sr_value_dict,
                                                                 sort_keys=True))
 
     def groups(self, dataset):
@@ -133,14 +132,14 @@ class MigrationFunctions(object):
                     util.delete_group(dataset, group_name)
 
                     # transform single strings to lists with one argument
-                    if isinstance(themes, six.string_types):
+                    if isinstance(themes, str):
                         themes = [themes]
 
                     if themes is not None:
                         for theme in themes:
                             dataset['groups'].append({'id': theme, 'name': theme})
                 elif group_name not in self.new_groups:
-                    util.log_error(dataset, u'INVALID: non-OGD-Category found: ' + six.text_type(group_name))
+                    util.log_error(dataset, u'INVALID: non-OGD-Category found: ' + str(group_name))
 
     def temporal_coverage_from(self, dataset):
         '''temporal_coverage_from -> temporal_start'''
@@ -276,7 +275,7 @@ class MigrationFunctions(object):
         elif license_id_data not in list(self.license_mapping.values()):
             # Invalid value, neither OGD nor DCAT
             util.log_error(dataset, u"license_id '{}' not part of the mapping".format(
-                six.text_type(license_id_data)))
+                str(license_id_data)))
             return
 
         # At this point, a valid DCAT license is present in dataset['license_id'].

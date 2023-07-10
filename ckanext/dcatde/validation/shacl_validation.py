@@ -3,7 +3,7 @@
 """SHACL validation utility"""
 
 import logging
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 from ckan.plugins import toolkit as tk
 from rdflib.namespace import Namespace
 import requests

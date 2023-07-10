@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '5.16.0'
+VERSION = '6.0.0'
 
 with open('base-requirements.txt') as f:
     required = [line.strip() for line in f]
@@ -13,7 +13,7 @@ setup(
     ''',
     classifiers=[],
     keywords='',
-    author='Seitenbau GmbH',
+    author='SEITENBAU GmbH',
     author_email='info@seitenbau.com',
     url='https://github.com/GovDataOfficial/ckanext-dcatde',
     license='AGPL',
@@ -30,11 +30,6 @@ setup(
 
     [ckan.rdf.profiles]
     dcatap_de=ckanext.dcatde.profiles:DCATdeProfile
-
-    [paste.paster_command]
-    dcatde_migrate = ckanext.dcatde.commands.migration:DCATdeMigrateCommand
-    dcatde_themeadder = ckanext.dcatde.commands.themeadder:ThemeAdder
-    triplestore = ckanext.dcatde.commands.triplestore:Triplestore
     ''',
     message_extractors={
         'ckanext': [

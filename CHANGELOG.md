@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.0.0 2023-07-05
+
+* Removes support for old CKAN versions prior 2.9 and Python 2
+
 ## v5.16.0 2023-06-29
 
 * Updates ckanext-dcat to version 1.5.1 and removes support for all properties in class dcat:DataService

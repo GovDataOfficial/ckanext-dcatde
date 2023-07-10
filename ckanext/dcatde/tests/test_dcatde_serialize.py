@@ -2,7 +2,6 @@
 # -*- coding: utf8 -*-
 
 import json
-import six
 
 import rdflib
 
@@ -142,7 +141,7 @@ class TestDCATdeSerialize(BaseSerializeTest):
             self.assertEqual(len(title_objects), 1)
 
             access_service = self._get_dict_from_list(access_services, 'title',
-                                                                six.text_type(title_objects[0]))
+                                                                str(title_objects[0]))
             self.assertTrue(access_service)
 
             self._assert_simple_value(object, DCATDE.licenseAttributionByText,
