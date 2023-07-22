@@ -11,7 +11,8 @@ from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import FOAF
 from ckan import model
 from ckan import plugins as p
-from ckan.logic import UnknownValidator
+from ckan.logic import UnknownValidator, get_action
+from ckan.model import GroupExtra
 from ckan.plugins import toolkit as tk
 from ckanext.dcat.exceptions import RDFParserException
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
@@ -26,7 +27,8 @@ from ckanext.dcatde.triplestore.sparql_query_templates import GET_DATASET_BY_URI
     GET_URIS_FROM_HARVEST_INFO_QUERY
 from ckanext.dcatde.validation.shacl_validation import ShaclValidator
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
-
+from ckan.lib.search.common import SearchIndexError
+from pysolr import SolrError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -120,6 +122,52 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         return None
 
     def before_create(self, harvest_object, dataset_dict, temp_dict):
+        base_context = {'model': model, 'session': model.Session,
+                'user': self._get_user_name()}
+
+        remote_orgs = json.loads(harvest_object.job.source.config).get('remote_orgs', None)
+        if remote_orgs in ('only_local', 'create'):
+                publisher_name = get_extras_field(dataset_dict, 'publisher_name')
+                if (publisher_name):
+                    publisher_name = " ".join(publisher_name.get('value').split())
+
+                # Look for the publisher by name
+                owner_org = None
+
+                organizations = model.Session.query(model.Group.id).filter(model.Group.state == 'active').filter(model.Group.is_organization == True).filter(model.Group.title == publisher_name).all()
+
+                if len(organizations) == 1:
+                    for org in organizations:
+                        owner_org = org.id
+                if len(organizations) == 0:
+                    # Look for an alternative name contained the extra values of the organization
+                    organizations = model.Session.query(GroupExtra.group_id).\
+                        filter(GroupExtra.key.like('alternate_name%')).\
+                        filter(GroupExtra.value == publisher_name ).all()
+                    if len(organizations) == 1:
+                       for org in organizations:
+                           owner_org = org.group_id
+
+                if not owner_org:
+                    if remote_orgs == 'create':
+                        org = {}
+                        org['title'] = publisher_name
+                        org['name'] = publisher_name.lower().replace(" ", "-").replace('ü','ue').replace('ä','ae').replace('ö','oe').replace('ß','ss')
+                        org['type'] = 'organization'
+                        get_action('organization_create')(base_context.copy(), org)
+                        # search for the organization just created
+                        organizations = model.Session.query(model.Group.id).filter(model.Group.state == 'active').filter(model.Group.is_organization == True).filter(model.Group.title == publisher_name).all()
+
+                        if len(organizations) == 1:
+                           for org in organizations:
+                              owner_org = org.id
+                        LOGGER.info('Organization %s has been newly created', owner_org )
+                    else:
+                        # At this point a configuration of the Harvest Source should be considered if there should be an error if the publisher is missing.
+                        raise ValueError("We need a new publisher with the name "+ str(publisher_name))
+
+                dataset_dict['owner_org'] = owner_org
+
         pass
 
     def after_create(self, harvest_object, dataset_dict, temp_dict):
