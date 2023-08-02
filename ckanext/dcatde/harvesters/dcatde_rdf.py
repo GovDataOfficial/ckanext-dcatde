@@ -27,8 +27,6 @@ from ckanext.dcatde.triplestore.sparql_query_templates import GET_DATASET_BY_URI
     GET_URIS_FROM_HARVEST_INFO_QUERY
 from ckanext.dcatde.validation.shacl_validation import ShaclValidator
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
-from ckan.lib.search.common import SearchIndexError
-from pysolr import SolrError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -122,6 +120,9 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         return None
 
     def before_create(self, harvest_object, dataset_dict, temp_dict):
+        self._assign_owner_org(harvest_object, dataset_dict)
+
+    def _assign_owner_org(self, harvest_object, dataset_dict):
         base_context = {'model': model, 'session': model.Session,
                 'user': self._get_user_name()}
 
@@ -152,7 +153,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                     if remote_orgs == 'create':
                         org = {}
                         org['title'] = publisher_name
-                        org['name'] = publisher_name.lower().replace(" ", "-").replace('ü','ue').replace('ä','ae').replace('ö','oe').replace('ß','ss')
+                        org['name'] = _gen_new_name(publisher_name)
                         org['type'] = 'organization'
                         get_action('organization_create')(base_context.copy(), org)
                         # search for the organization just created
@@ -164,11 +165,10 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                         LOGGER.info('Organization %s has been newly created', owner_org )
                     else:
                         # At this point a configuration of the Harvest Source should be considered if there should be an error if the publisher is missing.
-                        raise ValueError("We need a new publisher with the name "+ str(publisher_name))
+                        self._save_object_error( 'Missing publisher {0}'.format( publisher_name ), harvest_object, 'Import')
+                        return False
 
                 dataset_dict['owner_org'] = owner_org
-
-        pass
 
     def after_create(self, harvest_object, dataset_dict, temp_dict):
         return None
