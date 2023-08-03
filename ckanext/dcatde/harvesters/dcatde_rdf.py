@@ -113,15 +113,6 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
         return rdf_parser, error_messages
 
-    def before_update(self, harvest_object, dataset_dict, temp_dict):
-        pass
-
-    def after_update(self, harvest_object, dataset_dict, temp_dict):
-        return None
-
-    def before_create(self, harvest_object, dataset_dict, temp_dict):
-        self._assign_owner_org(harvest_object, dataset_dict)
-
     def _assign_owner_org(self, harvest_object, dataset_dict):
         base_context = {'model': model, 'session': model.Session,
                 'user': self._get_user_name()}
@@ -166,9 +157,17 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                     else:
                         # At this point a configuration of the Harvest Source should be considered if there should be an error if the publisher is missing.
                         self._save_object_error( 'Missing publisher {0}'.format( publisher_name ), harvest_object, 'Import')
-                        return False
 
                 dataset_dict['owner_org'] = owner_org
+
+    def before_update(self, harvest_object, dataset_dict, temp_dict):
+        pass
+
+    def after_update(self, harvest_object, dataset_dict, temp_dict):
+        return None
+
+    def before_create(self, harvest_object, dataset_dict, temp_dict):
+        pass
 
     def after_create(self, harvest_object, dataset_dict, temp_dict):
         return None
@@ -339,6 +338,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         # add contributor_id if missing
         self._set_contributor_id_for_dataset(harvest_object, package)
 
+        self._assign_owner_org(harvest_object, package)
+
         portal = self._get_portal_from_config(harvest_object.source.config)
         set_extras_field(package, EXTRA_KEY_HARVESTED_PORTAL, portal)
 
@@ -443,6 +444,9 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
         # set custom field and perform other fixes on the data
         self._amend_package(harvest_object)
+        package = json.loads(harvest_object.content)
+        if package.get('owner_org') == None:
+            return False
 
         import_dataset = HarvestUtils.handle_duplicates(harvest_object)
         if import_dataset:
