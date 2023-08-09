@@ -1,5 +1,10 @@
 # Changelog
 
+## v6.1.0 2023-08-01
+
+* Updates and cleans up dependencies
+* Standardization of the `test.ini` file
+
 ## v6.0.0 2023-07-05
 
 * Removes support for old CKAN versions prior 2.9 and Python 2
