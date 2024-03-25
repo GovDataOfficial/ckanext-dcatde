@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '6.4.2'
+VERSION = '6.7.0'
 
 with open('base-requirements.txt') as f:
     required = [line.strip() for line in f]
