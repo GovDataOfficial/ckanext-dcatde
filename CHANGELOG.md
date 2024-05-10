@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.7.0 2024-03-26
+
+* Updates ckanext-dcat to version 1.6.0
+
 ## v6.4.2 2023-11-07
 
 * The ckanext-harvest extension is no longer required to use the DCAT-AP.de RDF profile

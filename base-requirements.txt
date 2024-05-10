@@ -1,5 +1,5 @@
 ckanapi>=4
-ckanext-dcat>=1.5.1
+ckanext-dcat~=1.6.0
 ckantoolkit>=0.0.7
 pycountry>=21
 python-dateutil>=2.8.2
