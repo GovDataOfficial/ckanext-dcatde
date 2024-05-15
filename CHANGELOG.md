@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.8.0 2024-04-25
+
+* Updates ckanext-dcat to version 1.7.0
+
 ## v6.7.0 2024-03-26
 
 * Updates ckanext-dcat to version 1.6.0
