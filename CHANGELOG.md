@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.8.3 2024-08-26
+
+* Adds error handling for the SearchIndexError exception
+
 ## v6.8.0 2024-04-25
 
 * Updates ckanext-dcat to version 1.7.0
