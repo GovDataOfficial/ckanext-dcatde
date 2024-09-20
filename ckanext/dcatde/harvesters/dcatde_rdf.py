@@ -13,6 +13,7 @@ from ckan import model
 from ckan import plugins as p
 from ckan.logic import UnknownValidator, get_action
 from ckan.model import GroupExtra
+from ckan.lib.search import SearchIndexError
 from ckan.plugins import toolkit as tk
 from ckanext.dcat.exceptions import RDFParserException
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
@@ -450,7 +451,14 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
         import_dataset = HarvestUtils.handle_duplicates(harvest_object)
         if import_dataset:
-            return super(DCATdeRDFHarvester, self).import_stage(harvest_object)
+            try:
+                return super(DCATdeRDFHarvester, self).import_stage(harvest_object)
+            except SearchIndexError as ex:
+                model.Session.rollback()
+                self._save_object_error('Skipping importing dataset {0}, because of a SearchIndexError!'.format(
+                    harvest_object.guid),
+                     harvest_object, 'Import')
+                return False
 
         self._save_object_error('Skipping importing dataset, because of duplicate detection!',
                                 harvest_object, 'Import')
