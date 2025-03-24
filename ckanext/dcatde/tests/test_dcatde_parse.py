@@ -137,12 +137,13 @@ class TestDCATdeParse(BaseParseTest):
 
         # dcat:contactPoint
         self._assert_extras_string(extras, 'contact_email', u'michael.schroeder@bue.hamburg.de')
+        self._assert_extras_string(extras, 'contact_url', u'http://michaelschroeder.de')
         self._assert_extras_string(extras, 'contact_name', u'Herr Dr. Michael Schröder')
-        self._assert_extras_string(extras, 'maintainer_tel', u'+49 40 4 28 40 - 3494')
-        self._assert_extras_string(extras, 'maintainer_street', u'Beispielstraße 4')
-        self._assert_extras_string(extras, 'maintainer_city', u'Beispielort')
-        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
-        self._assert_extras_string(extras, 'maintainer_country', u'DE')
+        self._assert_extras_string(extras, 'contact_tel', u'+49 40 4 28 40 - 3494')
+        self._assert_extras_string(extras, 'contact_street', u'Beispielstraße 4')
+        self._assert_extras_string(extras, 'contact_city', u'Beispielort')
+        self._assert_extras_string(extras, 'contact_zip', u'12345')
+        self._assert_extras_string(extras, 'contact_country', u'DE')
 
         # Groups
         self.assertEqual(len(dataset['groups']), 2)
@@ -392,8 +393,8 @@ class TestDCATdeParse(BaseParseTest):
 
         dataset = [d for d in p.datasets()][0]
         extras = dataset.get('extras')
-        self._assert_extras_string(extras, 'maintainer_url', u'http://contact-point-url.de')
-        self._assert_extras_string(extras, 'maintainer_tel', u'+490531-24262-10')
+        self._assert_extras_string(extras, 'contact_url', u'http://contact-point-url.de')
+        self._assert_extras_string(extras, 'contact_tel', u'+490531-24262-10')
 
     def test_dataset_contact_point_vcard_hasURL_hasTelephone_uriref(self):
         g = Graph()
@@ -413,8 +414,8 @@ class TestDCATdeParse(BaseParseTest):
 
         dataset = [d for d in p.datasets()][0]
         extras = dataset.get('extras')
-        self._assert_extras_string(extras, 'maintainer_url', u'http://contact-point-url.de')
-        self._assert_extras_string(extras, 'maintainer_tel', u'+490531-24262-10')
+        self._assert_extras_string(extras, 'contact_url', u'http://contact-point-url.de')
+        self._assert_extras_string(extras, 'contact_tel', u'+490531-24262-10')
 
     def test_dataset_contact_point_vcard_hasURL_hasTelephone_hasValue_literal(self):
         g = Graph()
@@ -436,8 +437,8 @@ class TestDCATdeParse(BaseParseTest):
 
         dataset = [d for d in p.datasets()][0]
         extras = dataset.get('extras')
-        self._assert_extras_string(extras, 'maintainer_url', u'http://contact-point-url.de')
-        self._assert_extras_string(extras, 'maintainer_tel', u'+490531-24262-10')
+        self._assert_extras_string(extras, 'contact_url', u'http://contact-point-url.de')
+        self._assert_extras_string(extras, 'contact_tel', u'+490531-24262-10')
 
     def test_dataset_contact_point_vcard_hasURL_hasTelephone_hasValue_uriref(self):
         g = Graph()
@@ -459,8 +460,8 @@ class TestDCATdeParse(BaseParseTest):
 
         dataset = [d for d in p.datasets()][0]
         extras = dataset.get('extras')
-        self._assert_extras_string(extras, 'maintainer_url', u'http://contact-point-url.de')
-        self._assert_extras_string(extras, 'maintainer_tel', u'+490531-24262-10')
+        self._assert_extras_string(extras, 'contact_url', u'http://contact-point-url.de')
+        self._assert_extras_string(extras, 'contact_tel', u'+490531-24262-10')
 
     def test_dataset_contact_point_vcard_address_has_fields_direct(self):
         g = Graph()
@@ -482,10 +483,10 @@ class TestDCATdeParse(BaseParseTest):
 
         dataset = [d for d in p.datasets()][0]
         extras = dataset.get('extras')
-        self._assert_extras_string(extras, 'maintainer_city', u'Berlin')
-        self._assert_extras_string(extras, 'maintainer_street', u'Hauptstraße 1')
-        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
-        self._assert_extras_string(extras, 'maintainer_country', u'Deutschland')
+        self._assert_extras_string(extras, 'contact_city', u'Berlin')
+        self._assert_extras_string(extras, 'contact_street', u'Hauptstraße 1')
+        self._assert_extras_string(extras, 'contact_zip', u'12345')
+        self._assert_extras_string(extras, 'contact_country', u'Deutschland')
 
     def test_dataset_contact_point_vcard_address_has_fields_direct_with_hasvalue(self):
         g = Graph()
@@ -511,10 +512,10 @@ class TestDCATdeParse(BaseParseTest):
 
         dataset = [d for d in p.datasets()][0]
         extras = dataset.get('extras')
-        self._assert_extras_string(extras, 'maintainer_city', u'Berlin')
-        self._assert_extras_string(extras, 'maintainer_street', u'Hauptstraße 1')
-        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
-        self._assert_extras_string(extras, 'maintainer_country', u'Deutschland')
+        self._assert_extras_string(extras, 'contact_city', u'Berlin')
+        self._assert_extras_string(extras, 'contact_street', u'Hauptstraße 1')
+        self._assert_extras_string(extras, 'contact_zip', u'12345')
+        self._assert_extras_string(extras, 'contact_country', u'Deutschland')
 
     def test_dataset_contact_point_vcard_address_has_fields_within_address_object(self):
         g = Graph()
@@ -539,10 +540,10 @@ class TestDCATdeParse(BaseParseTest):
 
         dataset = [d for d in p.datasets()][0]
         extras = dataset.get('extras')
-        self._assert_extras_string(extras, 'maintainer_city', u'Berlin')
-        self._assert_extras_string(extras, 'maintainer_street', u'Hauptstraße 1')
-        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
-        self._assert_extras_string(extras, 'maintainer_country', u'Deutschland')
+        self._assert_extras_string(extras, 'contact_city', u'Berlin')
+        self._assert_extras_string(extras, 'contact_street', u'Hauptstraße 1')
+        self._assert_extras_string(extras, 'contact_zip', u'12345')
+        self._assert_extras_string(extras, 'contact_country', u'Deutschland')
 
     def test_dataset_contact_point_vcard_address_has_fields_within_address_object_with_hasvalue(self):
         g = Graph()
@@ -571,10 +572,10 @@ class TestDCATdeParse(BaseParseTest):
 
         dataset = [d for d in p.datasets()][0]
         extras = dataset.get('extras')
-        self._assert_extras_string(extras, 'maintainer_city', u'Berlin')
-        self._assert_extras_string(extras, 'maintainer_street', u'Hauptstraße 1')
-        self._assert_extras_string(extras, 'maintainer_zip', u'12345')
-        self._assert_extras_string(extras, 'maintainer_country', u'Deutschland')
+        self._assert_extras_string(extras, 'contact_city', u'Berlin')
+        self._assert_extras_string(extras, 'contact_street', u'Hauptstraße 1')
+        self._assert_extras_string(extras, 'contact_zip', u'12345')
+        self._assert_extras_string(extras, 'contact_country', u'Deutschland')
 
     def test_dataset_contact_point_vcard_multiple_nodes_matched_name(self):
 
@@ -608,10 +609,10 @@ class TestDCATdeParse(BaseParseTest):
 
         # test if contact has been matched using name
         contact_name_value = _get_value_from_extras(extras, 'contact_name')
-        maintainer_url_value = _get_value_from_extras(extras, 'maintainer_url')
+        contact_url_value = _get_value_from_extras(extras, 'contact_url')
         for contact in contacts:
             if contact_name_value == contact['name']:
-                self.assertEqual(contact['url'], maintainer_url_value)
+                self.assertEqual(contact['url'], contact_url_value)
 
 
     def test_dataset_contact_point_vcard_multiple_nodes_matched_email(self):
@@ -646,10 +647,10 @@ class TestDCATdeParse(BaseParseTest):
 
         # test if contact has been matched using email
         contact_email_value = _get_value_from_extras(extras, 'contact_email')
-        maintainer_url_value = _get_value_from_extras(extras, 'maintainer_url')
+        contact_url_value = _get_value_from_extras(extras, 'contact_url')
         for contact in contacts:
             if contact_email_value == contact['email']:
-                self.assertEqual(contact['url'], maintainer_url_value)
+                self.assertEqual(contact['url'], contact_url_value)
 
     def test_dataset_contact_point_vcard_multiple_nodes_matched_uri(self):
 
@@ -682,10 +683,10 @@ class TestDCATdeParse(BaseParseTest):
 
         # test if contact has been matched using uri
         contact_uri_value = _get_value_from_extras(extras, 'contact_uri')
-        maintainer_tel_value = _get_value_from_extras(extras, 'maintainer_tel')
+        contact_tel_value = _get_value_from_extras(extras, 'contact_tel')
         for contact in contacts:
             if contact_uri_value == contact['uri']:
-                self.assertEqual(contact['tel'], maintainer_tel_value)
+                self.assertEqual(contact['tel'], contact_tel_value)
 
     def test_parse_dataset_remove_mailto_from_email(self):
         g = Graph()

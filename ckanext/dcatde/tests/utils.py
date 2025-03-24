@@ -10,23 +10,20 @@ import json
 from rdflib import Graph, URIRef, Literal, BNode
 from rdflib.namespace import Namespace, RDF
 from ckanext.dcat.processors import RDFParser
-from ckanext.dcat.profiles import EuropeanDCATAP2Profile
 from ckanext.dcatde.profiles import DCATdeProfile
 from ckanext.dcat.profiles import (DCAT, DCT, ADMS, LOCN, SKOS, GSP, RDFS,
-                                    VCARD, FOAF, VCARD)
-
-
+                                   VCARD, FOAF, VCARD)
 
 DCATDE = Namespace("http://dcat-ap.de/def/dcatde/")
 
-class BaseParseTest(unittest.TestCase):
 
+class BaseParseTest(unittest.TestCase):
     INVALID_TAG = u'Som`E:-in.valid tagäß!;'
     INVALID_TAG_SHORT = u';;a'
     VALID_TAG = {'name': u'some-in.valid-tagäß'}
 
     def _default_parser_dcatde(self):
-        return RDFParser(profiles=['euro_dcat_ap_2', 'dcatap_de'])
+        return RDFParser(profiles=['dcatap_de'])
 
     def _addLanguages(self, rdf_parser, dataset_ref, subject, predicate, text):
         object_refs = [d for d in rdf_parser.g.objects(dataset_ref, subject)]
@@ -44,12 +41,17 @@ class BaseParseTest(unittest.TestCase):
         rdf_parser.g.add((dataset_ref, DCT.title, Literal(u'Naturräume Geest und Marsch (EN)', lang='en')))
         rdf_parser.g.add((dataset_ref,
                           DCT.description,
-                          Literal(u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. (DE)', lang='de')))
+                          Literal(
+                              u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. (DE)',
+                              lang='de')))
         rdf_parser.g.add((dataset_ref,
                           DCT.description,
-                          Literal(u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. (EN)', lang='en')))
+                          Literal(
+                              u'Die Zuordnung des Hamburger Stadtgebietes zu den Naturräumen Geest und Marsch wird dargestellt. (EN)',
+                              lang='en')))
         # Publisher
-        self._addLanguages(rdf_parser, dataset_ref, DCT.publisher, FOAF.name, u'Behörde für Umwelt und Energie (BUE), Amt für Umweltschutz')
+        self._addLanguages(rdf_parser, dataset_ref, DCT.publisher, FOAF.name,
+                           u'Behörde für Umwelt und Energie (BUE), Amt für Umweltschutz')
         # ContactPoint
         self._addLanguages(rdf_parser, dataset_ref, DCAT.contactPoint, VCARD.fn, u'Herr Dr. Michael Schröder')
         # Distributions
@@ -66,15 +68,17 @@ class BaseParseTest(unittest.TestCase):
             rdf_parser.g.add((dist_ref, DCT.title, Literal(u'Naturräume Geest und Marsch (EN)', lang='en')))
             rdf_parser.g.add((dist_ref,
                               DCT.description,
-                              Literal(u'Das ist eine deutsche Beschreibung der Distribution %s (DE)' % number, lang='de')))
+                              Literal(u'Das ist eine deutsche Beschreibung der Distribution %s (DE)' % number,
+                                      lang='de')))
             rdf_parser.g.add((dist_ref,
                               DCT.description,
-                              Literal(u'Das ist eine deutsche Beschreibung der Distribution %s (EN)' % number, lang='en')))
-        
+                              Literal(u'Das ist eine deutsche Beschreibung der Distribution %s (EN)' % number,
+                                      lang='en')))
+
     def _assert_tag_list(self, dataset, expected_tags):
         """ checks if the given tags are present in the dataset """
         self.assertEqual(len(dataset['tags']), len(expected_tags))
-    
+
         for tag in expected_tags:
             self.assertTrue({'name': tag} in dataset['tags'])
 
@@ -85,14 +89,18 @@ class BaseParseTest(unittest.TestCase):
 
     def _assert_contact_info_in_dict(self, extras, field_name):
         self._assert_extras_string(extras, field_name + '_name', u'Peter Schröder ' + field_name)
+        self._assert_extras_string(extras, field_name + '_email', u'peter@schroeder.de')
         self._assert_extras_string(extras, field_name + '_contacttype', u'Person')
+        self._assert_extras_string(extras, field_name + '_url', u'http://www.peterschroeder.de')
         self._assert_extras_string(extras, field_name + '_type', u'http://purl.org/adms/publishertype/LocalAuthority')
 
     def _assert_contact_info_combined_in_dict(self, dataset, extras, field_name, name_suffix=''):
         if name_suffix:
             name_suffix = ' ' + name_suffix
         self.assertEqual(dataset.get(field_name), u'Peter Schröder' + name_suffix)
+        self.assertEqual(dataset.get(field_name + '_email'), u'peter@schroeder.de')
         self._assert_extras_string(extras, field_name + '_contacttype', u'Person')
+        self._assert_extras_string(extras, field_name + '_url', u'http://www.peterschroeder.de')
         self._assert_extras_string(extras, field_name + '_type', u'http://purl.org/adms/publishertype/LocalAuthority')
 
     def _get_max_rdf(self, item_name="metadata_max"):
@@ -181,8 +189,8 @@ class BaseParseTest(unittest.TestCase):
                 res.get('description'),
                 u'Das ist eine deutsche Beschreibung der Distribution %s (%s)' % (number, lang_string))
 
-class BaseSerializeTest(unittest.TestCase):
 
+class BaseSerializeTest(unittest.TestCase):
     predicate_pattern = re.compile("[a-zA-Z]:[a-zA-Z]")
     DCAT_THEME_PREFIX = "http://publications.europa.eu/resource/authority/data-theme/"
 
@@ -201,10 +209,10 @@ class BaseSerializeTest(unittest.TestCase):
 
             "groups": [{"name": "GRUPPEA"},
                        {"name": "GRUPPEB"}
-                      ],
-            "tags": [{"name":"dcat:keyword"},
+                       ],
+            "tags": [{"name": "dcat:keyword"},
                      {"name": "tagB"}
-                    ],
+                     ],
 
             "author": "nocheck",
             "author_email": "nocheck",
@@ -221,7 +229,8 @@ class BaseSerializeTest(unittest.TestCase):
                 "dcat_type": "dct:type",
                 "granularity": "dcat:granularity",
                 "availability": "http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE",
-                "references": ["https://musterdatenkatalog.de/def/musterdatensatz/abfallwirtschaft/abfallkalender", "test_references_literal"],
+                "references": ["https://musterdatenkatalog.de/def/musterdatensatz/abfallwirtschaft/abfallkalender",
+                               "test_references_literal"],
 
                 "author_url": "nocheck",
                 "author_type": "nocheck",
@@ -233,6 +242,17 @@ class BaseSerializeTest(unittest.TestCase):
                 'maintainer_zip': "nocheck",
                 'maintainer_country': "nocheck",
                 "maintainer_type": "nocheck",
+                "maintainer_contacttype": "nocheck",
+
+                "contact_uri": "nocheck",
+                "contact_name": "nocheck",
+                "contact_email": "nocheck",
+                "contact_url": "nocheck",
+                "contact_tel": "nocheck",
+                'contact_street': "nocheck",
+                'contact_city': "nocheck",
+                'contact_zip': "nocheck",
+                'contact_country': "nocheck",
 
                 "publisher_name": "nocheck",
                 "publisher_email": "nocheck",
@@ -266,7 +286,7 @@ class BaseSerializeTest(unittest.TestCase):
 
                 "language": ["dct:language"],
                 "conforms_to": ["dct:conformsTo"],
-                "alternate_identifier" : ["adms:identifier"],
+                "alternate_identifier": ["adms:identifier"],
                 "used_datasets": ["dct:relation", "bla"],
                 "has_version": ["dct:hasVersion"],
                 "is_version_of": ["dct:isVersionOf"]
@@ -282,12 +302,12 @@ class BaseSerializeTest(unittest.TestCase):
                 "hash": 24,
                 "access_services": json.dumps([
                     {
-                        "access_service_ref" :"N4344f368651b4ec884b83dc09aad9f19",
+                        "access_service_ref": "N4344f368651b4ec884b83dc09aad9f19",
                         "title": "Sparql-end Point 1",
                         "licenseAttributionByText": "License text 1"
                     },
                     {
-                        "access_service_ref" :"N4344f368651b4ec884b83dc09aad9f20",
+                        "access_service_ref": "N4344f368651b4ec884b83dc09aad9f20",
                         "title": "Sparql-end Point 2",
                         "licenseAttributionByText": "License text 2"
                     }
@@ -386,9 +406,6 @@ class BaseSerializeTest(unittest.TestCase):
         self.graph = rdflib.Graph()
         dataset_ref = URIRef("http://example.org/datasets/1")
 
-        dcat = EuropeanDCATAP2Profile(self.graph, False)
-        dcat.graph_from_dataset(dataset_dict, dataset_ref)
-
         dcatde = DCATdeProfile(self.graph, False)
         dcatde.graph_from_dataset(dataset_dict, dataset_ref)
 
@@ -413,14 +430,11 @@ class BaseSerializeTest(unittest.TestCase):
                 "granularity": value}),
             "groups": [],
             "tags": []
-            }
+        }
 
         # execute
         self.graph = rdflib.Graph()
         dataset_ref = URIRef("http://testuri/")
-
-        dcat = EuropeanDCATAP2Profile(self.graph, False)
-        dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
         dcatde.graph_from_dataset(dataset_dict, dataset_ref)
@@ -434,7 +448,7 @@ class BaseSerializeTest(unittest.TestCase):
     def _get_dict_from_list(self, dict_list, key, value):
         """ returns the dict with the given key-value """
         for dict in dict_list:
-            if(dict.get(key) == value):
+            if (dict.get(key) == value):
                 return dict
         return None
 
@@ -444,6 +458,11 @@ class BaseSerializeTest(unittest.TestCase):
         self.assertTrue(obj_list[0] == value,
                         '{!r} not found in {}'.format(value, obj_list))
 
+
 def _get_value_from_extras(extras, key):
     """ retrieves a value from the key-value representation used in extras dict """
-    return [x["value"] for x in extras if x["key"] == key][0]
+    extra_value = [x["value"] for x in extras if x["key"] == key]
+    if len(extra_value) > 0:
+        return extra_value[0]
+
+    return None

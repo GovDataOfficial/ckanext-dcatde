@@ -45,7 +45,7 @@ Using other versions may lead to logical inconsistencies.<br>
 
 6. Add the following parameter to your CKAN configuration file to activate the additional profile for DCAT-AP.de:
 
-       ckanext.dcat.rdf.profiles = euro_dcat_ap_2 dcatap_de
+       ckanext.dcat.rdf.profiles = dcatap_de
 
 ## RDF DCAT-AP.de Harvester
 If the plugin `dcatde_rdf_harvester` is activated an additional source type `DCAT-AP.de RDF Harvester` is selectable.
@@ -110,6 +110,15 @@ You will find an example file here: [dcat_theme.json](./examples/dcat_theme.json
 If you want to create the standard dcat-ap categories as groups you can use the ckan command "dcatde_themeadder" by following the instructions:
 
     (pyenv) $ ckan --config=/etc/ckan/default/production.ini dcatde_themeadder
+
+## Upgrading licenses from DCAT-AP.de version v1.0 to v1.0.2
+In DCAT-AP.de version v1.0.2, the syntax of some license URIs has changed. 
+If you want to upgrade licenses which are still using the v1.0 syntax, you can add the following parameter to your CKAN configuration file:
+
+    ckanext.dcatde.urls.dcat_licenses_upgrade_mapping = file:///path/to/file/dcat_licenses_upgrade.json
+
+Once configured, the mapping of the licenses happens automatically during harvesting according to your customized mappings in this file.
+You can find an example file here: [dcat_licenses_upgrade.json](./examples/dcat_licenses_upgrade.json)
 
 ## Migrating ogd conform datasets to dcat-ap.de
 You need to add the following parameter to your CKAN configuration file:

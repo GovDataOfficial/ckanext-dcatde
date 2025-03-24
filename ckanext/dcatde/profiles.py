@@ -9,7 +9,8 @@ from ckan.plugins import toolkit
 from ckantoolkit import config
 from rdflib import URIRef, BNode, Literal
 from rdflib.namespace import Namespace, RDF, SKOS
-from ckanext.dcat.profiles import RDFProfile, CleanedURIRef, URIRefOrLiteral
+from ckanext.dcat.profiles import EuropeanDCATAP2Profile, CleanedURIRef
+from ckanext.dcat.profiles.base import URIRefOrLiteral
 from ckanext.dcat.utils import resource_uri, DCAT_CLEAN_TAGS
 import ckanext.dcatde.dataset_utils as ds_utils
 
@@ -55,7 +56,7 @@ namespaces = {
 
 PREFIX_TEL = u'tel:'
 
-class DCATdeProfile(RDFProfile):
+class DCATdeProfile(EuropeanDCATAP2Profile):
     """ DCAT-AP.de Profile extension """
 
     def _add_contact(self, dataset_dict, dataset_ref, predicate, prefix):
@@ -114,9 +115,6 @@ class DCATdeProfile(RDFProfile):
 
         for contact in self.g.objects(dataset_ref, predicate):
 
-            contact_url = self._get_vcard_property_value(contact, VCARD.hasURL)
-            ds_utils.insert(dataset_dict, prefix + '_url', contact_url, True)
-
             contact_tel = self._get_vcard_property_value(contact, VCARD.hasTelephone)
             ds_utils.insert(dataset_dict, prefix + '_tel', self._without_tel(contact_tel), True)
 
@@ -145,16 +143,11 @@ class DCATdeProfile(RDFProfile):
 
         contact_details = self._get_contact_details(contact_obj)
 
-        contact_uri = ds_utils.get_extras_field(dataset_dict, 'contact_uri')
+        for key in ("uri", "identifier", "name", "email"):
+            contact_field =  ds_utils.get_extras_field(dataset_dict, 'contact_{0}'.format(key))
+            if contact_field and contact_details[key] == contact_field['value']:
+                return True
 
-        if contact_uri and contact_details['uri'] == contact_uri:
-            return True
-        else:
-            contact_email = ds_utils.get_extras_field(dataset_dict, 'contact_email')
-            contact_name = ds_utils.get_extras_field(dataset_dict, 'contact_name')
-
-            return (contact_details['email'] == contact_email or
-                        contact_details['name'] == contact_name)
         return False
 
     def _get_contact_details(self, contact_obj):
@@ -223,6 +216,15 @@ class DCATdeProfile(RDFProfile):
                     yield object, object_dict
 
     def parse_dataset(self, dataset_dict, dataset_ref):
+        """ Transforms DCAT-AP.de-Data to CKAN-Dictionary """
+
+        # call super method
+        super(DCATdeProfile, self).parse_dataset(dataset_dict, dataset_ref)
+
+        # DCAT-AP.de properties
+        self._parse_dataset_dcatapde(dataset_dict, dataset_ref)
+
+    def _parse_dataset_dcatapde(self, dataset_dict, dataset_ref):
         """ Transforms DCAT-AP.de-Data to CKAN-Dictionary """
 
         # Different implementation of clean tags for keywords
@@ -327,9 +329,8 @@ class DCATdeProfile(RDFProfile):
             if access_service_list:
                 resource_dict['access_services'] = json.dumps(access_service_list)
 
-        # dcat:contactPoint
-        # TODO: dcat-ap adds the values to extras.contact_... . Maybe better than maintainer?
-        self._parse_contact_vcard(dataset_dict, dataset_ref, DCAT.contactPoint, 'maintainer')
+        # dcat:contactPoint: Saves more fields in addition to the default profile in ckanext-dcat
+        self._parse_contact_vcard(dataset_dict, dataset_ref, DCAT.contactPoint, 'contact')
 
         # Groups
         groups = self._get_dataset_value(dataset_dict, 'groups')
@@ -350,6 +351,18 @@ class DCATdeProfile(RDFProfile):
 
     def graph_from_dataset(self, dataset_dict, dataset_ref):
         """ Transforms CKAN-Dictionary to DCAT-AP.de-Data """
+
+        # call super method
+        super(DCATdeProfile, self).graph_from_dataset(
+            dataset_dict, dataset_ref
+        )
+
+        # DCAT-AP.de properties
+        self._graph_from_dataset_dcatapde(dataset_dict, dataset_ref)
+
+    def _graph_from_dataset_dcatapde(self, dataset_dict, dataset_ref):
+        """ Transforms CKAN-Dictionary to DCAT-AP.de-Data """
+
         g = self.g
 
         # bind namespaces to have readable names in RDF Document
@@ -393,21 +406,24 @@ class DCATdeProfile(RDFProfile):
         self._add_contact(dataset_dict, dataset_ref, DCT.contributor, 'contributor')
         self._add_contact(dataset_dict, dataset_ref, DCT.creator, 'author')
 
-        # Add maintainer_url to contact_point
-        maintainer_url = self._get_dataset_value(dataset_dict, 'maintainer_url')
-        if maintainer_url:
-            contact_point = self._get_or_create_contact_point(dataset_dict, dataset_ref)
-            self._add_triple_from_dict(dataset_dict, contact_point, VCARD.hasURL, 'maintainer_url',
-                                       _type=URIRef)
+        # Adds additional fields to contact_point. For compatibility reasons, some "maintainer_" fields used
+        # as fallback.
+        items = [
+            ('contact_url', VCARD.hasURL, None, URIRef, None),
+            ('contact_tel', VCARD.hasTelephone, 'maintainer_tel', URIRef, self._add_tel)
+        ]
+        for field_name, predicate, fallback, type, v_modifier in items:
+            value = self._get_dataset_value(dataset_dict, field_name)
+            if not value and fallback:
+                field_name = fallback
+                value = self._get_dataset_value(dataset_dict, field_name)
+            if value:
+                contact_point = self._get_or_create_contact_point(dataset_dict, dataset_ref)
+                self._add_triple_from_dict(dataset_dict, contact_point, predicate, field_name, _type=type,
+                                           value_modifier=v_modifier)
 
-        # add maintainer_tel to contact_point
-        maintainer_tel = self._get_dataset_value(dataset_dict, 'maintainer_tel')
-        if maintainer_tel:
-            contact_point = self._get_or_create_contact_point(dataset_dict, dataset_ref)
-            self._add_triple_from_dict(dataset_dict, contact_point, VCARD.hasTelephone, 'maintainer_tel',
-                                       _type=URIRef, value_modifier=self._add_tel)
-
-        # add maintainer postal data to contact_point if available
+        # Add contact postal data to contact_point. If not available, use maintainer postal data
+        # to ensure backwards compatibility
         vcard_mapping = {
             'street': VCARD.hasStreetAddress,
             'city': VCARD.hasLocality,
@@ -415,7 +431,8 @@ class DCATdeProfile(RDFProfile):
             'country': VCARD.hasCountryName
         }
         for vc_name, vcard_predicate in vcard_mapping.items():
-            vcard_fld = self._get_dataset_value(dataset_dict, 'maintainer_' + vc_name)
+            vcard_fld = self._get_dataset_value(dataset_dict, 'contact_' + vc_name) or self._get_dataset_value(
+                dataset_dict, 'maintainer_' + vc_name)
             if vcard_fld:
                 contact_point = self._get_or_create_contact_point(dataset_dict, dataset_ref)
                 g.add((contact_point, vcard_predicate, Literal(vcard_fld)))
@@ -477,7 +494,11 @@ class DCATdeProfile(RDFProfile):
 
     def graph_from_catalog(self, catalog_dict, catalog_ref):
         """ Creates a Catalog representation, will not be used for now """
-        pass
+
+        # call super method
+        super(DCATdeProfile, self).graph_from_catalog(
+            catalog_dict, catalog_ref
+        )
 
 
 def _munge_tag(tag):

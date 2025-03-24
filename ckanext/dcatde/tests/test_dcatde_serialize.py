@@ -6,7 +6,7 @@ import json
 import rdflib
 
 from rdflib import Graph, URIRef, Literal, BNode
-from ckanext.dcat.profiles import (EuropeanDCATAP2Profile, DCAT, DCT, ADMS, LOCN, SKOS, GSP, RDFS,
+from ckanext.dcat.profiles import (DCAT, DCT, ADMS, LOCN, SKOS, GSP, RDFS,
                                     VCARD, FOAF, VCARD, SCHEMA, SPDX, DCATAP, XSD)
 from ckanext.dcatde.extras import Extras
 from ckanext.dcatde.profiles import DCATdeProfile
@@ -22,9 +22,6 @@ class TestDCATdeSerialize(BaseSerializeTest):
         self.graph = rdflib.Graph()
         dataset_dict = self._get_default_dataset_dict()
         dataset_ref = URIRef("http://testuri/")
-
-        dcat = EuropeanDCATAP2Profile(self.graph, False)
-        dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
         dcatde.graph_from_dataset(dataset_dict, dataset_ref)
@@ -62,17 +59,17 @@ class TestDCATdeSerialize(BaseSerializeTest):
 
         # temporal
         temporal = list(self.graph.objects(dataset_ref, DCT.temporal))[0]
-        self.assertEqual(len(list(self.graph.objects(temporal, SCHEMA.startDate))), 1,
-                         SCHEMA.startDate + " not found")
-        self.assertEqual(len(list(self.graph.objects(temporal, SCHEMA.endDate))), 1,
-                         SCHEMA.endDate + " not found")
+        self.assertEqual(len(list(self.graph.objects(temporal, DCAT.startDate))), 1,
+                         DCAT.startDate + " not found")
+        self.assertEqual(len(list(self.graph.objects(temporal, DCAT.endDate))), 1,
+                         DCAT.endDate + " not found")
 
         # spatial
         for spatial in list(self.graph.objects(dataset_ref, DCT.spatial)):
             geonodes = len(list(self.graph.objects(spatial, LOCN.geometry)))
             adminnodes = len(list(self.graph.objects(spatial, LOCN.adminUnitL2)))
             if geonodes > 0:
-                self.assertEqual(geonodes, 2, LOCN.geometry + " not present, 2x")
+                self.assertEqual(geonodes, 1, LOCN.geometry + " not present, 1x")
             elif adminnodes > 0:
                 self.assertEqual(adminnodes, 1, LOCN.adminUnitL2 + " not present")
             else:
@@ -159,9 +156,6 @@ class TestDCATdeSerialize(BaseSerializeTest):
         dataset_dict['resources'][0]['access_services'] = access_service_list
 
         ### execute ###
-        dcat = EuropeanDCATAP2Profile(self.graph, False)
-        dcat.graph_from_dataset(dataset_dict, dataset_ref)
-
         dcatde = DCATdeProfile(self.graph, False)
         dcatde.graph_from_dataset(dataset_dict, dataset_ref)
 
@@ -171,28 +165,62 @@ class TestDCATdeSerialize(BaseSerializeTest):
         object_list = [x for x in self.graph.objects(resource_ref, DCAT.accessService)]
         self.assertEqual(len(object_list), 0, "Invalid Json but dcat:accessService was found.")
 
-    def test_graph_from_dataset_only_dcatde_contact_point_values(self):
+    def test_graph_from_dataset_contact_point_values(self):
 
         ### prepare ###
         self.graph = rdflib.Graph()
         dataset_dict = self._get_default_dataset_dict()
-        # remove fields processed by ckanext-dcat default profile
+
+        # remove fields processed by ckanext-dcat default profile as default values for DCAT.ContactPoint
         dataset_dict.pop('maintainer')
         dataset_dict.pop('maintainer_email')
         dataset_dict.pop('author')
         dataset_dict.pop('author_email')
+
         dataset_ref = URIRef("http://testuri/")
 
         ### execute ###
-        dcat = EuropeanDCATAP2Profile(self.graph, False)
-        dcat.graph_from_dataset(dataset_dict, dataset_ref)
-
         dcatde = DCATdeProfile(self.graph, False)
         dcatde.graph_from_dataset(dataset_dict, dataset_ref)
 
         ### assert ###
         # contactPoint
+        self._assert_contact_point(dataset_ref)
+
+    def test_graph_from_dataset_only_dcatde_contact_point_values(self):
+
+        ### prepare ###
+        self.graph = rdflib.Graph()
+        dataset_dict = self._get_default_dataset_dict()
+
+        dataset_ref = URIRef("http://testuri/")
+
+        ### execute ###
+        dcatde = DCATdeProfile(self.graph, False)
+        dcatde._graph_from_dataset_dcatapde(dataset_dict, dataset_ref)
+
+        ### assert ###
+        # contactPoint
         self._assert_contact_point(dataset_ref, [VCARD.fn, VCARD.hasEmail])
+
+    def test_graph_from_dataset_contact_point_maintainer_tel_fallback(self):
+        ### prepare ###
+        self.graph = rdflib.Graph()
+        dataset_dict = self._get_default_dataset_dict()
+
+        # remove every field from extras which starts with 'contact_'
+        dataset_dict['extras'] = [item for item in dataset_dict['extras'] if not item['key'].startswith('contact')]
+
+        dataset_ref = URIRef("http://testuri/")
+
+        ### execute ###
+        dcatde = DCATdeProfile(self.graph, False)
+        dcatde.graph_from_dataset(dataset_dict, dataset_ref)
+
+        ### assert ###
+        # contactPoint name and email are set by dcat
+        # everything else should be set by dcatde using maintainer_xxx as fallback
+        self._assert_contact_point(dataset_ref, [VCARD.hasURL])
 
     def test_graph_from_dataset_format_iana_uri(self):
         dataset_dict = self._get_default_dataset_dict()
@@ -282,9 +310,6 @@ class TestDCATdeSerialize(BaseSerializeTest):
         self.graph = rdflib.Graph()
         dataset_ref = URIRef("http://testuri/")
 
-        dcat = EuropeanDCATAP2Profile(self.graph, False)
-        dcat.graph_from_dataset(dataset_dict, dataset_ref)
-
         dcatde = DCATdeProfile(self.graph, False)
         dcatde.graph_from_dataset(dataset_dict, dataset_ref)
 
@@ -329,9 +354,6 @@ class TestDCATdeSerialize(BaseSerializeTest):
         # execute
         self.graph = rdflib.Graph()
 
-        dcat = EuropeanDCATAP2Profile(self.graph, False)
-        dcat.graph_from_dataset(dataset_dict, dataset_ref)
-
         dcatde = DCATdeProfile(self.graph, False)
         dcatde.graph_from_dataset(dataset_dict, dataset_ref)
 
@@ -361,9 +383,6 @@ class TestDCATdeSerialize(BaseSerializeTest):
 
         # execute
         self.graph = rdflib.Graph()
-
-        dcat = EuropeanDCATAP2Profile(self.graph, False)
-        dcat.graph_from_dataset(dataset_dict, dataset_ref)
 
         dcatde = DCATdeProfile(self.graph, False)
         dcatde.graph_from_dataset(dataset_dict, dataset_ref)

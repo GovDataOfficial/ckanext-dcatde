@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.9.0 2025-03-24
+
+* The DCAT-AP.de profile class DCATdeProfile now inherits from EuropeanDCATAP2Profile instead of RDFProfile.
+  **NOTICE:** This requires an modification at the line `ckanext.dcat.rdf.profiles` in the CKAN configuration. The value `euro_dcat_ap_2` has to be removed, see [README](./README.md#getting-started)
+* Updates ckanext-dcat to version 2.3.0
+* Fixes processing of DCAT.contactPoint ([#24](https://github.com/GovDataOfficial/ckanext-dcatde/issues/24))
+* Updates the README.md with information about the config parameter `ckanext.dcatde.urls.dcat_licenses_upgrade_mapping` ([#28](https://github.com/GovDataOfficial/ckanext-dcatde/issues/28))
+
 ## v6.8.3 2024-08-26
 
 * Adds error handling for the SearchIndexError exception

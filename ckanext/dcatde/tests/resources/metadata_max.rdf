@@ -22,6 +22,8 @@
     <dcatde:maintainer>
       <foaf:Person rdf:nodeID="N8c44dec506154c269ec60476e1a25429">
         <foaf:name>Peter Schröder</foaf:name>
+        <foaf:mbox rdf:resource="mailto:peter@schroeder.de"/>
+        <foaf:homepage rdf:resource="http://www.peterschroeder.de"/>
         <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
       </foaf:Person>
     </dcatde:maintainer>
@@ -76,18 +78,24 @@
     <dcatde:originator>
       <foaf:Person rdf:nodeID="N7c3cb6824ee84deb9387fb967600df44">
         <foaf:name>Peter Schröder originator</foaf:name>
+        <foaf:mbox rdf:resource="mailto:peter@schroeder.de"/>
+        <foaf:homepage rdf:resource="http://www.peterschroeder.de"/>
         <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
       </foaf:Person>
     </dcatde:originator>
     <dct:creator>
       <foaf:Person rdf:nodeID="N7c3cb6824ee84deb9387fb967600df55">
         <foaf:name>Peter Schröder creator</foaf:name>
+        <foaf:mbox rdf:resource="mailto:peter@schroeder.de"/>
+        <foaf:homepage rdf:resource="http://www.peterschroeder.de"/>
         <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
       </foaf:Person>
     </dct:creator>
     <dct:contributor>
       <foaf:Person rdf:nodeID="N7c3cb6824ee84deb9387fb967600df66">
         <foaf:name>Peter Schröder contributor</foaf:name>
+        <foaf:mbox rdf:resource="mailto:peter@schroeder.de"/>
+        <foaf:homepage rdf:resource="http://www.peterschroeder.de"/>
         <dct:type rdf:resource="http://purl.org/adms/publishertype/LocalAuthority"/>
       </foaf:Person>
     </dct:contributor>
@@ -111,6 +119,7 @@
         <vcard:hasTelephone rdf:resource="tel:+49 40 4 28 40 - 3494"/>
         <vcard:fn>Herr Dr. Michael Schröder</vcard:fn>
         <vcard:hasEmail rdf:resource="mailto:michael.schroeder@bue.hamburg.de"/>
+        <vcard:hasURL rdf:resource="http://michaelschroeder.de"/>
         <vcard:hasStreetAddress>Beispielstraße 4</vcard:hasStreetAddress>
         <vcard:hasCountryName>DE</vcard:hasCountryName>
         <vcard:hasLocality>Beispielort</vcard:hasLocality>
