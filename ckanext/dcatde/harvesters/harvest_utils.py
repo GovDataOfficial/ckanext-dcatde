@@ -17,7 +17,6 @@ import ckan.plugins as p
 from ckanext.dcatde.extras import Extras
 from ckanext.harvest.model import HarvestObject, HarvestSource
 
-
 LOGGER = logging.getLogger(__name__)
 
 # TODO: class methods from ckanext-govdatade. Refactor such that they only occur here
@@ -134,11 +133,9 @@ class HarvestUtils(object):
         Checks if the dataset of a harvest_object already exists. If so then check which dataset to keep.
         Returns True if the remote dataset should be imported, otherwise False.
         '''
-
         harvest_object_content = harvest_object.content
         harvester_title = harvest_object.source.title
         method_prefix = 'handle_duplicates: '
-        context = HarvestUtils.build_context()
 
         remote_dataset = json.loads(harvest_object_content)
         remote_dataset_extras = Extras(remote_dataset['extras'])
@@ -150,12 +147,41 @@ class HarvestUtils(object):
             # remote dataset contains identifier
             if orig_id:
                 try:
-                    data_dict = {"q": EXTRAS_KEY_DCT_IDENTIFIER + ':"' + orig_id + '"'}
-                    # Add filter that local dataset guid is not equal to guid of the remote dataset
+                    # Search for other datasets with the same identifier
+                    query = model.Session.query(model.Package.id, model.Package.metadata_modified,
+                                                model.PackageExtra.value, HarvestObject.harvest_source_id) \
+                        .join(HarvestObject, HarvestObject.package_id == model.Package.id) \
+                        .join(model.PackageExtra, model.PackageExtra.package_id == model.Package.id) \
+                        .filter(model.Package.state == 'active') \
+                        .filter(model.PackageExtra.state == 'active') \
+                        .filter(model.PackageExtra.key == 'modified') \
+                        .filter(model.Package.id.in_(
+                            model.Session.query(model.PackageExtra.package_id)
+                            .filter(model.PackageExtra.key == 'identifier')
+                            .filter(model.PackageExtra.value == orig_id)
+                        ))
+
                     if remote_dataset_extras.key('guid'):
-                        data_dict['fq'] = '-guid:"' + remote_dataset_extras.value('guid') + '"'
-                    # search for other datasets with the same identifier
-                    local_search_result = p.toolkit.get_action("package_search")(context, data_dict)
+                        # Add filter which excludes datasets with the same guid as the remote dataset
+                        query = query.filter(model.Package.id.in_(
+                            model.Session.query(model.PackageExtra.package_id)
+                            .filter(model.PackageExtra.key == 'guid')
+                            .filter(model.PackageExtra.value != remote_dataset_extras.value('guid'))
+                        ))
+
+                    local_search_result = {'count': query.count(), 'results': []}
+                    for package_id, metadata_modified, modified, harvest_src_id in query:
+                        extras = []
+                        if modified:
+                            extras.append({'key': 'modified', 'value': modified})
+                        if harvest_src_id:
+                            extras.append({'key': 'harvest_source_id', 'value': harvest_src_id})
+                        local_search_result['results'].append({
+                            'id': package_id,
+                            'metadata_modified': metadata_modified,
+                            'extras': extras
+                        })
+
                     if local_search_result['count'] == 0:
                         # no other dataset with the same identifier was found, import accepted
                         LOGGER.debug(u'[%s] %sDid not find any existing dataset in the database with ' \
@@ -325,9 +351,12 @@ def _delete_packages_keep(local_dataset_list, dataset_to_keep=None):
         if dataset_to_keep is None or 'id' not in dataset_to_keep or \
                 local_dataset['id'] != dataset_to_keep['id']:
             package_ids_to_delete.add(local_dataset['id'])
-    _mark_harvest_objects_as_not_current(package_ids_to_delete)
-    packages_deleted = HarvestUtils.delete_packages(package_ids_to_delete)
-    return packages_deleted
+
+    deleted_package_ids = []
+    if len(package_ids_to_delete) > 0:
+        _mark_harvest_objects_as_not_current(package_ids_to_delete)
+        deleted_package_ids = HarvestUtils.delete_packages(package_ids_to_delete)
+    return deleted_package_ids
 
 
 def _set_or_update_latest_dataset(latest_local_dataset, modified_date_string, dataset_id):
@@ -365,5 +394,5 @@ def _parse_priority(value):
         return int(value)
     except ValueError:
         method_prefix = "parsePriority: "
-        LOGGER.warn(u'[%s] Parsing an invalid priority: " %s ". Use default priority.', method_prefix, value)
+        LOGGER.warning(u'[%s] Parsing an invalid priority: " %s ". Use default priority.', method_prefix, value)
         return DEFAULT_PRIORITY

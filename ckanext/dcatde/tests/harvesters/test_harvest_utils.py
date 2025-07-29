@@ -3,9 +3,10 @@
 import json
 import unittest
 
-from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils
+from ckanext.dcatde.harvesters.harvest_utils import HarvestUtils, model
 from ckanext.harvest.model import HarvestObject
-from mock import call, patch, Mock, ANY
+from mock import call, patch, Mock, ANY, MagicMock
+
 
 class DummySource():
 
@@ -224,113 +225,63 @@ class TestHandleDuplicates(unittest.TestCase):
         cls.local_newer_modified = '2017-08-17T10:00:00.000'
         cls.remote_source = DummySource('DummyHarvester', '{"priority": 0 }')
         cls.mock_package_delete_action = Mock("package_delete")
-        cls.mock_update_harvest_obj = Mock(name='update-harvest-obj')
+        cls.mock_filter = MagicMock(name='filter')
+        # to allow an arbitrary number of filter calls, return mock_filter again
+        cls.mock_filter.filter.return_value = cls.mock_filter
+        cls.mock_join = MagicMock(name='join')
+        cls.mock_join.join.side_effect = cls.join_side_effect
         cls.mock_query = Mock(name='query')
-        cls.mock_query.side_effect =  cls.mock_update_harvest_obj
+        cls.mock_query.return_value = cls.mock_join
         cls.mock_model = patch('ckanext.dcatde.harvesters.harvest_utils.model').start()
         cls.mock_model.Session.query = cls.mock_query
         cls.mock_get_action = patch('ckan.plugins.toolkit.get_action').start()
-        cls.mock_get_action.side_effect = cls.mock_action_methods
+        cls.mock_get_action.return_value = cls.mock_package_delete_action
 
     @classmethod
     def tearDownClass(cls):
         patch.stopall()
 
     @classmethod
-    def mock_action_methods(cls, action):
-        if action == 'package_search':
-            return cls.package_search_action
-        if action == 'package_delete':
-            return cls.mock_package_delete_action
+    def join_side_effect(cls, *args):
+        if args[0]._extract_mock_name() == 'model.PackageExtra':
+            return cls.mock_filter
+        return cls.mock_join
 
     @classmethod
-    def package_search_action(cls, context, data_dict):
-        if data_dict["q"] == 'identifier:"hasone"':
-            return {
-                       'count': 1,
-                       'results': [{
-                           'id': 'hasone-local',
-                           'name': 'hasone-name',
-                           'extras': [{'key': 'modified', 'value': cls.local_modified},
-                                      {'key': 'metadata_harvested_portal', 'value': 'harvest1'},
-                                      {'key': 'harvest_source_id', 'value': 'source_id1'}]
-                       }]
-                   }
-        elif data_dict["q"] == 'identifier:"nodata"':
-            return {
-                       'count': 0
-                   }
-        elif data_dict["q"] == 'identifier:"multiple"':
-            return {
-                       'count': 2,
-                       'results': [{
-                           'id': 'one-local',
-                           'name': 'one-name',
-                           'extras': [{'key': 'modified', 'value': cls.local_modified}]
-                       }, {
-                           'id': 'two-local',
-                           'name': 'two-name',
-                           'extras': [{'key': 'modified', 'value': cls.local_modified}]
-                       }]
-                   }
-        elif data_dict["q"] == 'identifier:"newer"':
-            return {
-                       'count': 1,
-                       'results': [{
-                           'id': 'newer-local',
-                           'name': 'newer-name',
-                           'extras': [{'key': 'modified', 'value': cls.local_newer_modified}]
-                       }]
-                   }
-        elif data_dict["q"] == 'identifier:"with-guid"' and data_dict["fq"] == '-guid:"1234567890"':
-            return {
-                        'count': 1,
-                        'results': [{
-                            'id': 'with-guid-local',
-                            'name': 'with-guid-name',
-                            'identifier': 'with-guid',
-                            'extras': [{'key': 'modified', 'value': cls.local_modified}]
-                        }]
-                   }
-        elif data_dict["q"] == 'identifier:"multiple-local-newer"':
-            return {
-                       'count': 2,
-                       'results': [{
-                           'id': 'one-local',
-                           'name': 'one-name',
-                           'extras': [{'key': 'modified', 'value': cls.local_newer_modified}]
-                       }, {
-                           'id': 'two-local',
-                           'name': 'two-name',
-                           'extras': [{'key': 'modified', 'value': cls.local_modified}]
-                       }]
-                   }
-        elif data_dict["q"] == 'identifier:"multiple-without-modified-date"':
-            return {
-                       'count': 2,
-                       'results': [{
-                           'id': 'one-local',
-                           'name': 'one-name',
-                           'metadata_modified': cls.local_newer_modified,
-                           'extras': []
-                       }, {
-                           'id': 'two-local',
-                           'name': 'two-name',
-                           'metadata_modified': cls.local_modified,
-                           'extras': []
-                       }]
-                   }
+    def mock_db_data(cls, remote_dataset_str):
+        remote_dataset = json.loads(remote_dataset_str)
+
+        identifier = remote_dataset['extras']['identifier']
+        guid = remote_dataset['extras']['guid'] if 'guid' in remote_dataset['extras'] else None
+        if identifier == 'hasone':
+            db_data = [('hasone-local', None, cls.local_modified, 'source_id1')]
+        elif identifier == 'multiple':
+            db_data = [('one-local', None, cls.local_modified, None),
+                       ('two-local', None, cls.local_modified, None)]
+        elif identifier == 'newer':
+            db_data = [('newer-local', None, cls.local_newer_modified, None)]
+        elif identifier == 'with-guid' and guid == '1234567890':
+            db_data = [('with-guid-local', None, cls.local_modified, None)]
+        elif identifier == 'multiple-local-newer' or identifier == 'multiple-without-modified-date':
+            db_data = [('one-local', None, cls.local_newer_modified, None),
+                       ('two-local', None, cls.local_modified, None)]
         else:
             raise AssertionError('Unexpected query!')
+
+        cls.mock_filter.count.return_value = len(db_data)
+        cls.mock_filter.__iter__.return_value = iter(db_data)
+
 
     def tearDown(self):
         self.mock_query.reset_mock()
         self.mock_package_delete_action.reset_mock()
         self.mock_get_action.reset_mock()
+        self.mock_filter.reset_mock()
+        self.mock_join.reset_mock()
 
-    def test_handle_duplicates_remote_is_newer(self, mock_harvest_object,
-                                               mock_get_harvest_config):
-        '''Tests if remote dataset, which is newer is accepted'''
+
+    def test_handle_duplicates_remote_is_newer(self, mock_harvest_object, mock_get_harvest_config):
+        """Tests if newer remote dataset is accepted"""
         # prepare
         remote_dataset = json.dumps({
                 'extras': {
@@ -338,24 +289,24 @@ class TestHandleDuplicates(unittest.TestCase):
                     'identifier': 'hasone'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         # execute
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertTrue(result, "Dataset should be accepted as update.")
+        self.assertEqual(self.mock_get_action.call_count, 1)
+        self.mock_get_action.assert_has_calls([call("package_delete")])
         self.assertEqual(self.mock_package_delete_action.call_count, 1)
         self.mock_package_delete_action.assert_called_with(
             TestHarvestUtils._mock_api_context(), {'id': 'hasone-local'})
-        self.assertEqual(self.mock_query.call_count, 1)
+        self.assertEqual(self.mock_query.call_count, 3)
         mock_get_harvest_config.assert_not_called()
 
-    def test_handle_duplicates_remote_has_multiple_duplicates(self, mock_harvest_object,
-                                                              mock_get_harvest_config):
-        '''Tests if remote dataset, which has multiple duplicates is accepted'''
+    def test_handle_duplicates_remote_has_multiple_duplicates(self, mock_harvest_object, mock_get_harvest_config):
+        """Tests if remote dataset with multiple duplicates is accepted"""
         # prepare
         remote_dataset = json.dumps({
                 'extras': {
@@ -363,27 +314,26 @@ class TestHandleDuplicates(unittest.TestCase):
                     'identifier': 'multiple'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         # execute
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertTrue(result, "Dataset should be accepted as update.")
+        self.assertEqual(self.mock_get_action.call_count, 1)
+        self.mock_get_action.assert_has_calls([call("package_delete")])
         self.assertEqual(self.mock_package_delete_action.call_count, 2)
         self.mock_package_delete_action.assert_has_calls([
             call(TestHarvestUtils._mock_api_context(), {'id': 'one-local'}),
             call(TestHarvestUtils._mock_api_context(), {'id': 'two-local'})],
             any_order=True)
-        self.assertEqual(self.mock_query.call_count, 1)
+        self.assertEqual(self.mock_query.call_count, 3)
         mock_get_harvest_config.assert_not_called()
 
-    def test_handle_duplicates_remote_newer_no_local(self, mock_harvest_object,
-                                                     mock_get_harvest_config):
-        '''Tests if remote dataset, which is newer - and no local dataset,
-            is accepted'''
+    def test_handle_duplicates_remote_newer_no_local(self, mock_harvest_object, mock_get_harvest_config):
+        """Tests if newer remote dataset without local dependant is accepted"""
         # prepare
         remote_dataset = json.dumps({
                 'extras': {
@@ -397,16 +347,14 @@ class TestHandleDuplicates(unittest.TestCase):
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 1)
-        self.mock_get_action.assert_has_calls([call("package_search")])
+        self.assertTrue(result, "Dataset should be accepted as update.")
+        self.mock_get_action.assert_not_called()
         self.mock_package_delete_action.assert_not_called()
-        self.mock_query.assert_not_called()
+        self.assertEqual(self.mock_query.call_count, 2)
         mock_get_harvest_config.assert_not_called()
 
-    def test_handle_duplicates_remote_without_id(self, mock_harvest_object,
-                                                 mock_get_harvest_config):
-        '''Tests if remote dataset without ID is accepted'''
+    def test_handle_duplicates_remote_without_id(self, mock_harvest_object, mock_get_harvest_config):
+        """Tests if remote dataset without ID is accepted"""
         # prepare
         remote_dataset = json.dumps({
                 'extras': {
@@ -419,7 +367,7 @@ class TestHandleDuplicates(unittest.TestCase):
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertTrue(result, "Dataset was not accepted as update.")
+        self.assertTrue(result, "Dataset should be accepted as update.")
         self.mock_get_action.assert_not_called()
         self.mock_package_delete_action.assert_not_called()
         self.mock_query.assert_not_called()
@@ -428,53 +376,28 @@ class TestHandleDuplicates(unittest.TestCase):
     def test_handle_duplicates_remote_without_timestamp_local_has_one(self,
                                                                       mock_harvest_object,
                                                                       mock_get_harvest_config):
-        '''Tests if remote dataset without timestamp but local has older one is rejected'''
+        """Tests if remote dataset without timestamp but local with older timestamp is rejected"""
         # prepare
         remote_dataset = json.dumps({
                 'extras': {
                     'identifier': 'hasone'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertFalse(result, "Dataset should NOT be accepted as update.")
+        self.mock_get_action.assert_not_called()
         self.mock_package_delete_action.assert_not_called()
-        self.assertEqual(self.mock_query.call_count, 1)
+        self.assertEqual(self.mock_query.call_count, 2)
         mock_get_harvest_config.assert_not_called()
 
-    def test_handle_duplicates_remote_without_timestamp_same_harvester(self,
-                                                                       mock_harvest_object,
-                                                                       mock_get_harvest_config):
-        '''Tests if remote dataset without timestamp, but same harvester is rejected'''
-        # prepare
-        remote_dataset = json.dumps({
-                'extras': {
-                    'identifier': 'hasone',
-                    'metadata_harvested_portal': 'harvest1'
-                }
-            })
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
-
-        # verify
-        result = HarvestUtils.handle_duplicates(harvest_object)
-
-        # verify
-        self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
-        self.mock_package_delete_action.assert_not_called()
-        self.assertEqual(self.mock_query.call_count, 1)
-        mock_get_harvest_config.assert_not_called()
-
-    def test_handle_duplicates_local_is_newer(self, mock_harvest_object,
-                                              mock_get_harvest_config):
-        '''Tests if remote dataset, which older is rejected'''
+    def test_handle_duplicates_local_is_newer(self, mock_harvest_object, mock_get_harvest_config):
+        """Tests if older remote dataset is rejected"""
         # prepare
         remote_dataset = json.dumps({
                 'extras': {
@@ -482,22 +405,21 @@ class TestHandleDuplicates(unittest.TestCase):
                     'identifier': 'newer'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertFalse(result, "Dataset should NOT be accepted as update.")
+        self.mock_get_action.assert_not_called()
         self.mock_package_delete_action.assert_not_called()
-        self.assertEqual(self.mock_query.call_count, 1)
+        self.assertEqual(self.mock_query.call_count, 2)
         mock_get_harvest_config.assert_not_called()
 
-    def test_handle_duplicates_remote_has_guid_and_newer(self, mock_harvest_object,
-                                                         mock_get_harvest_config):
-        '''Tests if remote dataset, which has guid and is newer, is accepted'''
+    def test_handle_duplicates_remote_has_guid_and_newer(self, mock_harvest_object, mock_get_harvest_config):
+        """Tests if newer remote dataset with guid is accepted"""
         # prepare
         remote_dataset = json.dumps({
                 'extras': {
@@ -506,24 +428,24 @@ class TestHandleDuplicates(unittest.TestCase):
                     'guid': '1234567890'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertTrue(result, "Dataset was not accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertTrue(result, "Dataset should be accepted as update.")
+        self.assertEqual(self.mock_get_action.call_count, 1)
+        self.mock_get_action.assert_has_calls([call("package_delete")])
         self.assertEqual(self.mock_package_delete_action.call_count, 1)
         self.mock_package_delete_action.assert_called_with(
             TestHarvestUtils._mock_api_context(), {'id': 'with-guid-local'})
-        self.assertEqual(self.mock_query.call_count, 1)
+        self.assertEqual(self.mock_query.call_count, 4)
         mock_get_harvest_config.assert_not_called()
 
-    def test_handle_duplicates_remote_with_empty_identifier(self, mock_harvest_object,
-                                                            mock_get_harvest_config):
-        '''Tests if remote dataset with empty field identifier is accepted'''
+    def test_handle_duplicates_remote_with_empty_identifier(self, mock_harvest_object, mock_get_harvest_config):
+        """Tests if remote dataset with empty field identifier is accepted"""
 
         # prepare
         remote_dataset = json.dumps({
@@ -538,7 +460,7 @@ class TestHandleDuplicates(unittest.TestCase):
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertTrue(result, "Dataset was not accepted as update.")
+        self.assertTrue(result, "Dataset should be accepted as update.")
         self.mock_get_action.assert_not_called()
         self.mock_package_delete_action.assert_not_called()
         self.mock_query.assert_not_called()
@@ -547,8 +469,7 @@ class TestHandleDuplicates(unittest.TestCase):
     def test_handle_duplicates_remote_with_multiple_duplicates_one_local_is_newer(self,
                                                                                   mock_harvest_object,
                                                                                   mock_get_harvest_config):
-        '''Tests if remote dataset, which has multiple duplicates and one local is newer,
-           is rejected'''
+        """Tests if remote dataset with multiple duplicates and a newer local one is rejected"""
         # prepare
         remote_dataset = json.dumps({
                 'extras': {
@@ -556,46 +477,48 @@ class TestHandleDuplicates(unittest.TestCase):
                     'identifier': 'multiple-local-newer'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertFalse(result, "Dataset should NOT be accepted as update.")
+        self.assertEqual(self.mock_get_action.call_count, 1)
+        self.mock_get_action.assert_has_calls([call("package_delete")])
         self.mock_package_delete_action.assert_called_once_with(
             TestHarvestUtils._mock_api_context(), {'id': 'two-local'})
-        self.assertEqual(self.mock_query.call_count, 1)
+        self.assertEqual(self.mock_query.call_count, 3)
         mock_get_harvest_config.assert_not_called()
 
     def test_handle_duplicates_remote_without_timestamp_local_has_none(self,
                                                                        mock_harvest_object,
                                                                        mock_get_harvest_config):
-        '''Tests if remote dataset without timestamp and local has none is rejected'''
+        """Tests if remote dataset without timestamp and local has none is rejected"""
         # prepare
         remote_dataset = json.dumps({
                 'extras': {
                     'identifier': 'multiple-without-modified-date'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         # verify
-        self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertFalse(result, "Dataset should NOT be accepted as update.")
+        self.assertEqual(self.mock_get_action.call_count, 1)
+        self.mock_get_action.assert_has_calls([call("package_delete")])
         self.mock_package_delete_action.assert_called_once_with(
             TestHarvestUtils._mock_api_context(), {'id': 'two-local'})
-        self.assertEqual(self.mock_query.call_count, 1)
+        self.assertEqual(self.mock_query.call_count, 3)
         mock_get_harvest_config.assert_not_called()
 
     def test_handle_duplicates_priority_check(self, mock_harvest_object, mock_get_harvest_config):
-        '''Priority check Tests'''
+        """Priority check tests"""
         # Prepare both datasets got the same timestamp - same priority
         local_harvest_source = DummySource('DummyHarvester', '{"priority": 0 }')
         mock_get_harvest_config.return_value = local_harvest_source
@@ -607,13 +530,14 @@ class TestHandleDuplicates(unittest.TestCase):
                     'metadata_harvested_portal': 'harvest2'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
 
-        self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertFalse(result, "Dataset should NOT be accepted as update.")
+        self.assertEqual(self.mock_query.call_count, 2)
+        self.mock_get_action.assert_not_called()
         mock_get_harvest_config.assert_called_once_with('source_id1')
 
         # Prepare both datasets got the same timestamp - local priority is higher - reject it
@@ -632,13 +556,14 @@ class TestHandleDuplicates(unittest.TestCase):
                     'metadata_harvested_portal': 'harvest2'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
 
-        self.assertFalse(result, "Dataset should not be accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertFalse(result, "Dataset should NOT be accepted as update.")
+        self.assertEqual(self.mock_query.call_count, 2)
+        self.mock_get_action.assert_not_called()
         mock_get_harvest_config.assert_called_once_with('source_id1')
 
         # Prepare both datasets got the same timestamp - remote priority is higher - accept it
@@ -657,11 +582,16 @@ class TestHandleDuplicates(unittest.TestCase):
                     'metadata_harvested_portal': 'harvest2'
                 }
             })
+        self.mock_db_data(remote_dataset)
         harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
 
         self.assertTrue(result, "Dataset should be accepted as update.")
-        self.assertEqual(self.mock_get_action.call_count, 2)
-        self.mock_get_action.assert_has_calls([call("package_search"), call("package_delete")])
+        self.assertEqual(self.mock_query.call_count, 3)
+        self.assertEqual(self.mock_get_action.call_count, 1)
+        self.mock_get_action.assert_has_calls([call("package_delete")])
+        self.assertEqual(self.mock_package_delete_action.call_count, 1)
+        self.mock_package_delete_action.assert_called_with(
+            TestHarvestUtils._mock_api_context(), {'id': 'hasone-local'})
         mock_get_harvest_config.assert_called_once_with('source_id1')

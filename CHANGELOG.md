@@ -1,5 +1,10 @@
 # Changelog
 
+## v6.10.0 2025-07-28
+
+* The duplicate detection is now using the CKAN database instead of the solr index to avoid data inconsistencies. ([#30](https://github.com/GovDataOfficial/ckanext-dcatde/issues/30))
+* Makes the harvester config option `harvested_portal` optional and updates the README.md with information about it. ([#27](https://github.com/GovDataOfficial/ckanext-dcatde/issues/27))
+
 ## v6.9.0 2025-03-24
 
 * The DCAT-AP.de profile class DCATdeProfile now inherits from EuropeanDCATAP2Profile instead of RDFProfile.

@@ -1,5 +1,6 @@
 pylint>=1.4
 mock
+parameterized
 isort
 
 factory-boy>=2

@@ -209,72 +209,87 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         return False
 
     def _mark_datasets_for_deletion(self, guids_in_source, harvest_job):
-        # This is the same as the method in the base class, except that a different query is used.
+        # If a harvested portal is configured in the harvest source, we call the superclass method to mark
+        # datasets for deletion. Otherwise, we use a different query to mark datasets for deletion.
 
         object_ids = []
+        guids_to_delete = []
+        guids_in_source_unique = set(guids_in_source)
 
         portal = self._get_portal_from_config(harvest_job.source.config)
+        if not portal:
+            LOGGER.debug('No harvested portal configured. Using superclass method to mark datasets for ' \
+                         'deletion.')
+            object_ids = super()._mark_datasets_for_deletion(guids_in_source, harvest_job)
 
-        starttime = time.time()
-        # Get all previous current guids and dataset ids for this harvested portal independent of
-        # the harvest objects. This allows cleaning the harvest data without loosing the
-        # dataset mappings.
-        # Build a subquery to get all active packages having a GUID first
-        subquery = model.Session.query(model.PackageExtra.value, model.Package.id) \
-            .join(model.Package, model.Package.id == model.PackageExtra.package_id)\
-            .filter(model.Package.state == model.State.ACTIVE) \
-            .filter(model.PackageExtra.state == model.State.ACTIVE) \
-            .filter(model.PackageExtra.key == 'guid') \
-            .subquery()
-        # then get all active packages of the current portal and join with their GUIDs if
-        # available (outer join)
-        query = model.Session.query(model.Package.id, subquery.c.value) \
-            .join(model.PackageExtra, model.PackageExtra.package_id == model.Package.id)\
-            .outerjoin(subquery, subquery.c.id == model.Package.id)\
-            .filter(model.Package.state == model.State.ACTIVE) \
-            .filter(model.PackageExtra.state == model.State.ACTIVE) \
-            .filter(model.PackageExtra.key == EXTRA_KEY_HARVESTED_PORTAL) \
-            .filter(model.PackageExtra.value == portal)
+            if len(object_ids) > 0:
+                query = model.Session.query(HarvestObject.guid, HarvestObject.package_id) \
+                    .filter(HarvestObject.id.in_(object_ids))
 
-        checkpoint_start = time.time()
-        guid_to_package_id = {}
-        for package_id, guid in query:
-            if guid:
-                guid_to_package_id[guid] = package_id
-            # Also remove all packages without a GUID, use ID as GUID to share logic below
-            else:
-                guid_to_package_id[package_id] = package_id
-        checkpoint_end = time.time()
-        LOGGER.debug('Time for query harvest source related datasets : %s',
-                     str(checkpoint_end - checkpoint_start))
+                guids_to_delete.extend(query)
 
-        guids_in_db = list(guid_to_package_id.keys())
+        else:
 
-        # Get objects/datasets to delete (ie in the DB but not in the source)
-        guids_in_source_unique = set(guids_in_source)
-        guids_in_db_unique = set(guids_in_db)
-        LOGGER.debug('guids in source: %s, unique guids in source: %s, '\
-                      'guids in db: %s, unique guids in db: %s', len(guids_in_source),
-                     len(guids_in_source_unique), len(guids_in_db), len(guids_in_db_unique))
-        guids_to_delete = guids_in_db_unique - guids_in_source_unique
+            starttime = time.time()
+            # Get all previous current guids and dataset ids for this harvested portal independent of
+            # the harvest objects. This allows cleaning the harvest data without losing the
+            # dataset mappings.
+            # Build a subquery to get all active packages having a GUID first
+            subquery = model.Session.query(model.PackageExtra.value, model.Package.id) \
+                .join(model.Package, model.Package.id == model.PackageExtra.package_id) \
+                .filter(model.Package.state == model.State.ACTIVE) \
+                .filter(model.PackageExtra.state == model.State.ACTIVE) \
+                .filter(model.PackageExtra.key == 'guid') \
+                .subquery()
 
-        # Create a harvest object for each of them, flagged for deletion
-        for guid in guids_to_delete:
-            obj = HarvestObject(guid=guid, job=harvest_job,
-                                package_id=guid_to_package_id[guid],
-                                extras=[HarvestObjectExtra(key='status',
-                                                           value='delete')])
+            # then get all active packages of the current portal and join with their GUIDs if
+            # available (outer join)
+            query = model.Session.query(model.Package.id, subquery.c.value) \
+                .join(model.PackageExtra, model.PackageExtra.package_id == model.Package.id) \
+                .outerjoin(subquery, subquery.c.id == model.Package.id) \
+                .filter(model.Package.state == model.State.ACTIVE) \
+                .filter(model.PackageExtra.state == model.State.ACTIVE) \
+                .filter(model.PackageExtra.key == EXTRA_KEY_HARVESTED_PORTAL) \
+                .filter(model.PackageExtra.value == portal)
 
-            # Mark the rest of objects for this guid as not current
-            model.Session.query(HarvestObject) \
-                .filter_by(guid=guid) \
-                .update({'current': False}, False)
-            obj.save()
-            object_ids.append(obj.id)
+            checkpoint_start = time.time()
+            guid_to_package_id = {}
+            for package_id, guid in query:
+                if guid:
+                    guid_to_package_id[guid] = package_id
+                # Also remove all packages without a GUID, use ID as GUID to share logic below
+                else:
+                    guid_to_package_id[package_id] = package_id
+            checkpoint_end = time.time()
+            LOGGER.debug('Time for query harvest source related datasets : %s',
+                         str(checkpoint_end - checkpoint_start))
 
-        endtime = time.time()
-        LOGGER.debug('Found %s packages for deletion. Time total: %s', len(guids_to_delete),
-                     str(endtime - starttime))
+            guids_in_db = list(guid_to_package_id.keys())
+
+            # Get objects/datasets to delete (ie in the DB but not in the source)
+            guids_in_db_unique = set(guids_in_db)
+            LOGGER.debug('guids in source: %s, unique guids in source: %s, ' \
+                         'guids in db: %s, unique guids in db: %s', len(guids_in_source),
+                         len(guids_in_source_unique), len(guids_in_db), len(guids_in_db_unique))
+            guids_to_delete = guids_in_db_unique - guids_in_source_unique
+
+            # Create a harvest object for each of them, flagged for deletion
+            for guid in guids_to_delete:
+                obj = HarvestObject(guid=guid, job=harvest_job,
+                                    package_id=guid_to_package_id[guid],
+                                    extras=[HarvestObjectExtra(key='status',
+                                                               value='delete')])
+
+                # Mark the rest of objects for this guid as not current
+                model.Session.query(HarvestObject) \
+                    .filter_by(guid=guid) \
+                    .update({'current': False}, False)
+                obj.save()
+                object_ids.append(obj.id)
+
+            endtime = time.time()
+            LOGGER.debug('Found %s packages for deletion. Time total: %s', len(guids_to_delete),
+                         str(endtime - starttime))
 
         self._delete_deprecated_datasets_from_triplestore(
             guids_in_source_unique, guids_to_delete, harvest_job)
@@ -293,7 +308,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         self._set_contributor_id_for_dataset(harvest_object, package)
 
         portal = self._get_portal_from_config(harvest_object.source.config)
-        set_extras_field(package, EXTRA_KEY_HARVESTED_PORTAL, portal)
+        if portal:
+            set_extras_field(package, EXTRA_KEY_HARVESTED_PORTAL, portal)
 
         # ensure all resources have a (recent) license
         for resource in package.get('resources', []):
@@ -400,12 +416,11 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         import_dataset = HarvestUtils.handle_duplicates(harvest_object)
         if import_dataset:
             try:
-                return super(DCATdeRDFHarvester, self).import_stage(harvest_object)
+                return super().import_stage(harvest_object)
             except SearchIndexError as ex:
                 model.Session.rollback()
-                self._save_object_error('Skipping importing dataset {0}, because of a SearchIndexError!'.format(
-                    harvest_object.guid),
-                     harvest_object, 'Import')
+                self._save_object_error('Skipping importing dataset {0}, because of a SearchIndexError!' \
+                    .format(harvest_object.guid), harvest_object, 'Import')
                 return False
 
         self._save_object_error('Skipping importing dataset, because of duplicate detection!',
@@ -416,7 +431,7 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         '''
         Validates additional configuration parameters for DCAT-AP.de harvester.
         '''
-        cfg = super(DCATdeRDFHarvester, self).validate_config(source_config)
+        cfg = super().validate_config(source_config)
 
         if cfg:
             config_obj = json.loads(cfg)
@@ -424,11 +439,6 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                 harvested_portal = config_obj[CONFIG_PARAM_HARVESTED_PORTAL]
                 if not isinstance(harvested_portal, str):
                     raise ValueError('%s must be a string' % CONFIG_PARAM_HARVESTED_PORTAL)
-            else:
-                raise KeyError('%s is not set in config.' % CONFIG_PARAM_HARVESTED_PORTAL)
-        else:
-            raise ValueError('The parameter %s has to be set in the configuration.' % \
-                             CONFIG_PARAM_HARVESTED_PORTAL)
 
         return cfg
 

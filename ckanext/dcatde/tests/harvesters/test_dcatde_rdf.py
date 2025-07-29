@@ -3,12 +3,14 @@
 import json
 import unittest
 
+from parameterized import parameterized
 import pkg_resources
 from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException
 from SPARQLWrapper.Wrapper import QueryResult
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF, Namespace, FOAF
 from ckanext.dcat.processors import RDFParser
+from ckanext.dcatde.dataset_utils import EXTRA_KEY_HARVESTED_PORTAL
 from ckanext.dcatde.harvesters.dcatde_rdf import DCATdeRDFHarvester
 from ckanext.dcatde.triplestore.sparql_query_templates import GET_URIS_FROM_HARVEST_INFO_QUERY
 from ckantoolkit.tests import helpers
@@ -26,7 +28,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         """
         Builds a mocked Harvest object.
 
-        :param portal: The harvested_portal config setting
+        :param portal: The harvested_portal config setting (optional)
         :param status: The harvest object status string
         :return: Mocked harvest object
         """
@@ -34,10 +36,14 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
             'id': 'test-id',
             'name': 'test-name'
         })
-        source_config = json.dumps({
-            'harvested_portal': portal,
+
+        config_dict = {
             'contributorID': 'http://dcat-ap.de/def/contributors/testId'
-        })
+        }
+        if portal is not None:
+            config_dict['harvested_portal'] = portal
+
+        source_config = json.dumps(config_dict)
 
         harvest_src = Mock(config=source_config, id='test-id-123')
         harvest_extra = Mock(key='status', value=status)
@@ -112,14 +118,18 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
                 object_list.append(o)
             self.assertCountEqual(object_list, [Literal(owner_org), Literal(harvest_source_id)])
 
+    @parameterized.expand([
+        'testportal',
+        None
+    ])
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
-    def test_metadata_on_import(self, mock_super_import):
+    def test_metadata_on_import(self, harvested_portal, mock_super_import):
         """
-        Tests if metadata_harvested_portal is set for a package in the import_stage.
+        Tests if metadata_harvested_portal is set for a package in the import_stage when configured.
         """
         # prepare
         harvester = DCATdeRDFHarvester()
-        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', 'no-delete')
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy(harvested_portal, 'no-delete')
 
         # run
         harvester.import_stage(harvest_obj)
@@ -129,13 +139,13 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # check if import of the base class was called
         mock_super_import.assert_called_with(harvest_obj)
 
-        # check if the extras field is set properly
-        for extra in updated_content.get('extras'):
-            if extra['key'] == 'metadata_harvested_portal':
-                self.assertEqual(extra['value'], 'testportal')
-                return
-
-        self.fail("extras.metadata_harvested_portal was not set")
+        # check if the extras field is set properly if metadata_harvested_portal is configured
+        if harvested_portal:
+            self.assertIn({'key': EXTRA_KEY_HARVESTED_PORTAL, 'value': 'testportal'},
+                          updated_content.get('extras', []))
+        else:
+            self.assertNotIn(EXTRA_KEY_HARVESTED_PORTAL,
+                             [extra['key'] for extra in updated_content.get('extras', [])])
 
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
     def test_license_fallback_without_cfg(self, mock_super_import):
@@ -655,10 +665,10 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     @patch('ckanext.dcatde.validation.shacl_validation.ShaclValidator.validate')
     @patch('ckan.model.Package.get')
     def test_harvesting_one_dataset_after_parse_contributor_id_from_config(self, mock_model_get, mock_shacl_validate,
-                                                mock_fuseki_create_data_mqa, mock_fuseki_delete_data_mqa,
-                                                mock_fuseki_create_data, mock_fuseki_delete_data,
-                                                mock_fuseki_create_hi, mock_fuseki_delete_hi,
-                                                mock_get_contrib_from_config):
+                                                                           mock_fuseki_create_data_mqa, mock_fuseki_delete_data_mqa,
+                                                                           mock_fuseki_create_data, mock_fuseki_delete_data,
+                                                                           mock_fuseki_create_hi, mock_fuseki_delete_hi,
+                                                                           mock_get_contrib_from_config):
         """
         Test valid content in after_parsing() and check if correct contributor id is beeing used.
         """
@@ -721,10 +731,10 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     @patch('ckanext.dcatde.validation.shacl_validation.ShaclValidator.validate')
     @patch('ckan.model.Package.get')
     def test_harvesting_one_dataset_after_parse_no_contributor_id(self, mock_model_get, mock_shacl_validate,
-                                                mock_fuseki_create_data_mqa, mock_fuseki_delete_data_mqa,
-                                                mock_fuseki_create_data, mock_fuseki_delete_data,
-                                                mock_fuseki_create_hi, mock_fuseki_delete_hi,
-                                                mock_get_contrib_from_config):
+                                                                  mock_fuseki_create_data_mqa, mock_fuseki_delete_data_mqa,
+                                                                  mock_fuseki_create_data, mock_fuseki_delete_data,
+                                                                  mock_fuseki_create_hi, mock_fuseki_delete_hi,
+                                                                  mock_get_contrib_from_config):
         """
         Test valid content in after_parsing() and check if owner_org is used as fallback for missing contributor id.
         """
@@ -785,9 +795,9 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     @patch('ckanext.dcatde.validation.shacl_validation.ShaclValidator.validate')
     @patch('ckan.model.Package.get')
     def test_harvesting_invalid_uriref_after_parse(self, mock_model_get, mock_shacl_validate,
-                                                mock_fuseki_create_data_mqa, mock_fuseki_delete_data_mqa,
-                                                mock_fuseki_create_data, mock_fuseki_delete_data,
-                                                mock_fuseki_create_hi, mock_fuseki_delete_hi):
+                                                   mock_fuseki_create_data_mqa, mock_fuseki_delete_data_mqa,
+                                                   mock_fuseki_create_data, mock_fuseki_delete_data,
+                                                   mock_fuseki_create_hi, mock_fuseki_delete_hi):
         """
         Check if datasets containing invalid URIRefs are skipped.
         """
@@ -1215,7 +1225,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_fuseki_create_hi.assert_called_once_with(ANY, uris[0])
         # check if create harvest_info was called with correct parameters
         # the order of the graph is random, so we to check values individually
-        self._assert_rdf_harvest_info(mock_fuseki_create_hi.call_args_list, [uris[0]], 
+        self._assert_rdf_harvest_info(mock_fuseki_create_hi.call_args_list, [uris[0]],
                                       org_id, harvest_obj.source.id)
 
     @patch('ckanext.harvest.harvesters.base.HarvesterBase._get_user_name')
@@ -1375,7 +1385,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._get_existing_dataset_uris_from_triplestore')
     @patch('ckan.model.Package.get')
     def test_delete_deprecated_datasets_from_triplestore(self, mock_package_get, mock_get_uris,
-            mock_triplestore_delete_ds, mock_triplestore_delete_mqa, mock_triplestore_delete_hi):
+                                                         mock_triplestore_delete_ds, mock_triplestore_delete_mqa, mock_triplestore_delete_hi):
         """ Check if the functions to delete an URI in all triplestore datastores are called properly """
 
         uris_db_marked_as_deleted = ["URI-3"]
@@ -1408,7 +1418,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._get_existing_dataset_uris_from_triplestore')
     @patch('ckan.model.Package.get')
     def test_delete_deprecated_datasets_from_triplestore_no_source(self, mock_package_get, mock_get_uris,
-            mock_triplestore_delete_ds, mock_triplestore_delete_mqa, mock_triplestore_delete_hi):
+                                                                   mock_triplestore_delete_ds, mock_triplestore_delete_mqa, mock_triplestore_delete_hi):
         """
         Test behaviour if owner org is not found: Deletes dataset from all triple stores as with owner org,
         because owner org is only used for logging
@@ -1465,7 +1475,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
 
         packages_in_db = [('id-3', "URI-3"), ('id-4', "URI-4"), ('id-5', "URI-5")]
         uris_db_marked_as_deleted = [guid for package_id, guid in packages_in_db[1:]]
-        # Mocking attribute 'id' with side_effect doesn't works. Possibly because the attribute 'id' isn't
+        # Mocking attribute 'id' with side_effect doesn't work. Possibly because the attribute 'id' isn't
         # declared for the HarvestObject class
         # harvest_obj_property_mock = PropertyMock(side_effect=uris_db_marked_as_deleted)
         # type(mock_harvest_object).id = harvest_obj_property_mock
@@ -1476,7 +1486,8 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_query_result.join().outerjoin().filter().filter().filter().filter.return_value = packages_in_db
         mock_query = Mock(name='query')
         mock_update_harvest_obj = Mock(name='update-harvest-obj')
-        mock_query.side_effect = [Mock(name='subquery'), mock_query_result, mock_update_harvest_obj, mock_update_harvest_obj]
+        mock_query.side_effect = [Mock(name='subquery'), mock_query_result, mock_update_harvest_obj,
+                                  mock_update_harvest_obj]
         mock_model.Session.query = mock_query
         harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', 'test-status')
 
@@ -1490,3 +1501,34 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         self.assertEqual(mock_query.call_count, 4)
         mock_delete_deprecated_datasets.assert_called_once_with(
             set(harvested_uris), set(uris_db_marked_as_deleted), harvest_obj)
+
+    @patch('ckanext.dcat.harvesters.DCATRDFHarvester._mark_datasets_for_deletion')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.HarvestObject')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._delete_deprecated_datasets_from_triplestore')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    def test_mark_datasets_for_deletion_no_harvested_portal(self, mock_model,
+                                                          mock_delete_deprecated_datasets,
+                                                          mock_harvest_object,
+                                                          mock_super_mark_datasets_for_deletion):
+        """ Check if the functions to delete deprecated datasets are called properly
+            when no harvested portal is configured in the harvest source. """
+
+        packages_in_db = [('id-3', "URI-3"), ('id-4', "URI-4"), ('id-5', "URI-5")]
+        uris_db_marked_as_deleted = [guid for package_id, guid in packages_in_db[1:]]
+        ids_db_marked_as_deleted = [package_id for package_id, guid in packages_in_db[1:]]
+        harvested_uris = ["URI-1", "URI-2", "URI-3"]
+        mock_super_mark_datasets_for_deletion.return_value = ids_db_marked_as_deleted
+        mock_query = Mock(name='query')
+        mock_query.return_value.filter.return_value = uris_db_marked_as_deleted
+        mock_model.Session.query = mock_query
+
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy(None, 'test-status')
+
+        harvester = DCATdeRDFHarvester()
+        result = harvester._mark_datasets_for_deletion(harvested_uris, harvest_obj)
+
+        self.assertEqual(result, ids_db_marked_as_deleted)
+        self.assertEqual(mock_query.call_count, 1)
+        mock_super_mark_datasets_for_deletion.assert_called_once_with(harvested_uris, harvest_obj)
+        mock_delete_deprecated_datasets.assert_called_once_with(
+            set(harvested_uris), uris_db_marked_as_deleted, harvest_obj)
