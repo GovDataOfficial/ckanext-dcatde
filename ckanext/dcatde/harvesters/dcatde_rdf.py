@@ -11,8 +11,9 @@ from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import FOAF
 from ckan import model
 from ckan import plugins as p
+from ckan.logic import UnknownValidator, get_action
+from ckan.model import GroupExtra
 from ckan.lib.search import SearchIndexError
-from ckan.logic import UnknownValidator
 from ckan.plugins import toolkit as tk
 from ckanext.dcat.exceptions import RDFParserException
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
@@ -27,7 +28,6 @@ from ckanext.dcatde.triplestore.sparql_query_templates import GET_DATASET_BY_URI
     GET_URIS_FROM_HARVEST_INFO_QUERY
 from ckanext.dcatde.validation.shacl_validation import ShaclValidator
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -113,6 +113,53 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             LOGGER.debug(u'Finished updating triplestore.')
 
         return rdf_parser, error_messages
+
+    def _assign_owner_org(self, harvest_object, dataset_dict):
+        base_context = {'model': model, 'session': model.Session,
+                'user': self._get_user_name()}
+
+        remote_orgs = json.loads(harvest_object.job.source.config).get('remote_orgs', None)
+        if remote_orgs in ('only_local', 'create'):
+                publisher_name = get_extras_field(dataset_dict, 'publisher_name')
+                if (publisher_name):
+                    publisher_name = " ".join(publisher_name.get('value').split())
+
+                # Look for the publisher by name
+                owner_org = None
+
+                organizations = model.Session.query(model.Group.id).filter(model.Group.state == 'active').filter(model.Group.is_organization == True).filter(model.Group.title == publisher_name).all()
+
+                if len(organizations) == 1:
+                    for org in organizations:
+                        owner_org = org.id
+                if len(organizations) == 0:
+                    # Look for an alternative name contained the extra values of the organization
+                    organizations = model.Session.query(GroupExtra.group_id).\
+                        filter(GroupExtra.key.like('alternate_name%')).\
+                        filter(GroupExtra.value == publisher_name ).all()
+                    if len(organizations) == 1:
+                       for org in organizations:
+                           owner_org = org.group_id
+
+                if not owner_org:
+                    if remote_orgs == 'create':
+                        org = {}
+                        org['title'] = publisher_name
+                        org['name'] = _gen_new_name(publisher_name)
+                        org['type'] = 'organization'
+                        get_action('organization_create')(base_context.copy(), org)
+                        # search for the organization just created
+                        organizations = model.Session.query(model.Group.id).filter(model.Group.state == 'active').filter(model.Group.is_organization == True).filter(model.Group.title == publisher_name).all()
+
+                        if len(organizations) == 1:
+                           for org in organizations:
+                              owner_org = org.id
+                        LOGGER.info('Organization %s has been newly created', owner_org )
+                    else:
+                        # At this point a configuration of the Harvest Source should be considered if there should be an error if the publisher is missing.
+                        self._save_object_error( 'Missing publisher {0}'.format( publisher_name ), harvest_object, 'Import')
+
+                dataset_dict['owner_org'] = owner_org
 
     def before_update(self, harvest_object, dataset_dict, temp_dict):
         pass
@@ -307,6 +354,8 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         # add contributor_id if missing
         self._set_contributor_id_for_dataset(harvest_object, package)
 
+        self._assign_owner_org(harvest_object, package)
+
         portal = self._get_portal_from_config(harvest_object.source.config)
         if portal:
             set_extras_field(package, EXTRA_KEY_HARVESTED_PORTAL, portal)
@@ -412,6 +461,9 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
         # set custom field and perform other fixes on the data
         self._amend_package(harvest_object)
+        package = json.loads(harvest_object.content)
+        if package.get('owner_org') == None:
+            return False
 
         import_dataset = HarvestUtils.handle_duplicates(harvest_object)
         if import_dataset:
