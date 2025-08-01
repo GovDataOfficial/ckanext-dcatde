@@ -305,7 +305,6 @@ def create_groups(old_groups, new_groups):
 
             group_dict = {
                 'name': group_key,
-                'id': group_key,
                 'title': new_groups[group_key]
             }
 
@@ -325,7 +324,7 @@ def _create_and_purge_group(group_dict):
     '''
 
     try:
-        tk.get_action('group_purge')(_get_context(), group_dict)
+        tk.get_action('group_purge')(_get_context(), { "id": group_dict ['name']})
     except NotFound:
         not_found_message = 'Group {group_name} not found, nothing to purge.'.format(
             group_name=group_dict['name']
