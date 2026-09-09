@@ -4,3 +4,4 @@ ckantoolkit>=0.0.7
 pycountry>=21
 python-dateutil>=2.8.2
 SPARQLWrapper>=1.8.5
+pyLD<3.0.0 ; python_version < '3.10'

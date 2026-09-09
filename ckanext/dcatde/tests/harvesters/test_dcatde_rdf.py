@@ -46,9 +46,10 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         source_config = json.dumps(config_dict)
 
         harvest_src = Mock(config=source_config, id='test-id-123')
+        harvest_job = Mock(source=harvest_src)
         harvest_extra = Mock(key='status', value=status)
         harvest_obj = Mock(content=obj_content, package_id='test-id', guid='guid-123',
-                           source=harvest_src, extras=[harvest_extra])
+                           source=harvest_src, job=harvest_job, extras=[harvest_extra])
 
         return harvest_obj
 
@@ -404,7 +405,8 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # no call to the custom delete logic was made
         mock_deletion.assert_not_called()
         mock_get_action.assert_not_called()
-        mock_harvest_get_username.assert_not_called()
+        # _get_user_name is called during _amend_package -> _assign_owner_org
+        mock_harvest_get_username.assert_called()
         mock_triplestore_is_available.assert_not_called()
         mock_fuseki_delete_data.assert_not_called()
         mock_handle_duplicates.assert_called_with(harvest_obj)
@@ -1532,3 +1534,186 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_super_mark_datasets_for_deletion.assert_called_once_with(harvested_uris, harvest_obj)
         mock_delete_deprecated_datasets.assert_called_once_with(
             set(harvested_uris), uris_db_marked_as_deleted, harvest_obj)
+
+    # -- remote_orgs / _assign_owner_org --
+
+    @staticmethod
+    def _get_harvest_obj_with_remote_orgs(remote_orgs_value, publisher_name=None):
+        """
+        Builds a mocked HarvestObject with a ``remote_orgs`` setting in the harvest source config and an
+        optional ``publisher_name`` extra on the dataset content.
+        """
+        config_dict = {
+            'contributorID': 'http://dcat-ap.de/def/contributors/testId',
+            'harvested_portal': 'testportal',
+        }
+        if remote_orgs_value is not None:
+            config_dict['remote_orgs'] = remote_orgs_value
+        source_config = json.dumps(config_dict)
+
+        dataset_content = {'id': 'test-id', 'name': 'test-name'}
+        if publisher_name is not None:
+            dataset_content['extras'] = [{'key': 'publisher_name', 'value': publisher_name}]
+        obj_content = json.dumps(dataset_content)
+
+        harvest_src = Mock(config=source_config, id='test-id-123')
+        harvest_job = Mock(source=harvest_src)
+        harvest_extra = Mock(key='status', value='')
+        harvest_obj = Mock(content=obj_content, package_id='test-id', guid='guid-123',
+                           source=harvest_src, job=harvest_job, extras=[harvest_extra])
+        return harvest_obj
+
+    @parameterized.expand([
+        ('only_local_value', json.dumps({'remote_orgs': 'only_local'}), 'only_local'),
+        ('create_value', json.dumps({'remote_orgs': 'create'}), 'create'),
+        ('empty_config', '', None),
+        ('none_config', None, None),
+        ('missing_key', json.dumps({'foo': 'bar'}), None),
+    ])
+    def test_get_remote_orgs_from_config(self, _name, source_config, expected):
+        self.assertEqual(DCATdeRDFHarvester._get_remote_orgs_from_config(source_config), expected)
+
+    @parameterized.expand([
+        ('lowercase_and_spaces', 'Hello World', 'hello-world'),
+        ('umlauts', 'Bundesbehörde für Ämter', 'bundesbehorde-fur-amter'),
+        ('special_chars_collapse', 'Foo & Bar / Baz!', 'foo-bar-baz'),
+        ('trims_edges', '  --Test--  ', 'test'),
+    ])
+    def test_slugify(self, _name, value, expected):
+        self.assertEqual(DCATdeRDFHarvester._slugify(value), expected)
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    def test_assign_owner_org_without_remote_orgs_does_not_touch_dataset(self, mock_model):
+        """ If remote_orgs is not configured, _assign_owner_org must not set owner_org. """
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_with_remote_orgs(
+            None, publisher_name='Some Publisher')
+        dataset = json.loads(harvest_obj.content)
+
+        with patch.object(harvester, '_get_user_name', return_value='harvest'):
+            harvester._assign_owner_org(harvest_obj, dataset)
+
+        self.assertNotIn('owner_org', dataset)
+        mock_model.Session.query.assert_not_called()
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    def test_assign_owner_org_only_local_found_by_title(self, mock_model):
+        """ Publisher matches an organization by title -> owner_org is assigned. """
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_with_remote_orgs(
+            'only_local', publisher_name='  Some   Publisher ')
+        dataset = json.loads(harvest_obj.content)
+
+        title_query = Mock()
+        title_query.filter.return_value.filter.return_value.filter.return_value.all.return_value = [
+            Mock(id='org-abc')
+        ]
+        mock_model.Session.query.return_value = title_query
+
+        with patch.object(harvester, '_get_user_name', return_value='harvest'):
+            harvester._assign_owner_org(harvest_obj, dataset)
+
+        self.assertEqual(dataset['owner_org'], 'org-abc')
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    def test_assign_owner_org_only_local_found_by_alternate_name(self, mock_model):
+        """ Publisher matches via GroupExtra alternate_name -> owner_org is assigned. """
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_with_remote_orgs(
+            'only_local', publisher_name='Some Publisher')
+        dataset = json.loads(harvest_obj.content)
+
+        title_query = Mock()
+        title_query.filter.return_value.filter.return_value.filter.return_value.all.return_value = []
+        alternate_query = Mock()
+        alternate_query.filter.return_value.filter.return_value.all.return_value = [
+            Mock(group_id='org-def')
+        ]
+        mock_model.Session.query.side_effect = [title_query, alternate_query]
+
+        with patch.object(harvester, '_get_user_name', return_value='harvest'):
+            harvester._assign_owner_org(harvest_obj, dataset)
+
+        self.assertEqual(dataset['owner_org'], 'org-def')
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    def test_assign_owner_org_only_local_missing_publisher_saves_error(self, mock_model):
+        """ In only_local mode with no matching org: object error is saved, owner_org stays None. """
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_with_remote_orgs(
+            'only_local', publisher_name='Unknown Publisher')
+        dataset = json.loads(harvest_obj.content)
+
+        empty_title_query = Mock()
+        empty_title_query.filter.return_value.filter.return_value.filter.return_value.all.return_value = []
+        empty_alternate_query = Mock()
+        empty_alternate_query.filter.return_value.filter.return_value.all.return_value = []
+        mock_model.Session.query.side_effect = [empty_title_query, empty_alternate_query]
+
+        with patch.object(harvester, '_get_user_name', return_value='harvest'), \
+                patch.object(harvester, '_save_object_error') as mock_save_object_error:
+            harvester._assign_owner_org(harvest_obj, dataset)
+
+        mock_save_object_error.assert_called_once()
+        error_msg, obj_arg, stage_arg = mock_save_object_error.call_args[0]
+        self.assertIn('Missing publisher', error_msg)
+        self.assertIn('Unknown Publisher', error_msg)
+        self.assertIs(obj_arg, harvest_obj)
+        self.assertEqual(stage_arg, 'Import')
+        self.assertIsNone(dataset['owner_org'])
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.get_action')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    def test_assign_owner_org_create_missing_publisher_creates_org(self, mock_model, mock_get_action):
+        """ In create mode with no matching org: a new organization is created and used as owner_org. """
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_with_remote_orgs(
+            'create', publisher_name='New Publisher')
+        dataset = json.loads(harvest_obj.content)
+
+        empty_title_query = Mock()
+        empty_title_query.filter.return_value.filter.return_value.filter.return_value.all.return_value = []
+        empty_alternate_query = Mock()
+        empty_alternate_query.filter.return_value.filter.return_value.all.return_value = []
+        after_create_query = Mock()
+        after_create_query.filter.return_value.filter.return_value.filter.return_value.all.return_value = [
+            Mock(id='new-org-id')
+        ]
+        mock_model.Session.query.side_effect = [
+            empty_title_query, empty_alternate_query, after_create_query
+        ]
+
+        mock_organization_create = Mock()
+        mock_get_action.return_value = mock_organization_create
+
+        with patch.object(harvester, '_get_user_name', return_value='harvest'):
+            harvester._assign_owner_org(harvest_obj, dataset)
+
+        mock_get_action.assert_called_with('organization_create')
+        _context_arg, created_org = mock_organization_create.call_args[0]
+        self.assertEqual(created_org['title'], 'New Publisher')
+        self.assertEqual(created_org['name'], 'new-publisher')
+        self.assertEqual(created_org['type'], 'organization')
+        self.assertEqual(dataset['owner_org'], 'new-org-id')
+
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
+    def test_import_stage_skips_when_remote_orgs_and_no_owner_org(self, mock_super_import, mock_model):
+        """ import_stage must return False (and not call super) if remote_orgs is set and no owner_org
+            could be assigned. """
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_with_remote_orgs(
+            'only_local', publisher_name='Unknown Publisher')
+
+        empty_title_query = Mock()
+        empty_title_query.filter.return_value.filter.return_value.filter.return_value.all.return_value = []
+        empty_alternate_query = Mock()
+        empty_alternate_query.filter.return_value.filter.return_value.all.return_value = []
+        mock_model.Session.query.side_effect = [empty_title_query, empty_alternate_query]
+
+        with patch.object(harvester, '_get_user_name', return_value='harvest'), \
+                patch.object(harvester, '_save_object_error'):
+            result = harvester.import_stage(harvest_obj)
+
+        self.assertFalse(result)
+        mock_super_import.assert_not_called()
