@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.13.0] - 2026-10-22
+
+### Changed
+- Updated license URLs to concrete versions and changed protocol in `Lizenztext` from `http` to `https`
+
 ## [6.12.0] - 2026-09-04
 
 ### Added

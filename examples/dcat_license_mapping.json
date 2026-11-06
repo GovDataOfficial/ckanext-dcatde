@@ -4,9 +4,9 @@
   "list": [
     {
       "URI": "http://dcat-ap.de/def/licenses/apache",
-      "Name": "Freie Softwarelizenz der Apache Software Foundation",
+      "Name": "Freie Softwarelizenz der Apache Software Foundation - Version 2.0",
       "Lizenzcode": "apache",
-      "Lizenztext": "http://www.apache.org/licenses",
+      "Lizenztext": "https://www.apache.org/licenses/LICENSE-2.0",
       "OGDLizenzcode": "apache",
       "Lizenztyp": "offen"
     },
@@ -14,7 +14,7 @@
       "URI": "http://dcat-ap.de/def/licenses/bsd",
       "Name": "BSD Lizenz",
       "Lizenzcode": "bsdlicense",
-      "Lizenztext": "http://www.opensource.org/licenses/bsd-license.php",
+      "Lizenztext": "https://opensource.org/license/BSD-3-Clause",
       "OGDLizenzcode": "bsd-license",
       "Lizenztyp": "offen"
     },
@@ -22,7 +22,7 @@
       "URI": "http://dcat-ap.de/def/licenses/cc-by",
       "Name": "Creative Commons Namensnennung (CC-BY)",
       "Lizenzcode": "cc-by",
-      "Lizenztext": "http://www.opendefinition.org/licenses/cc-by",
+      "Lizenztext": "https://creativecommons.org/licenses/by/4.0/",
       "OGDLizenzcode": "cc-by",
       "Lizenztyp": "offen"
     },
@@ -30,7 +30,7 @@
       "URI": "http://dcat-ap.de/def/licenses/cc-by/4.0",
       "Name": "Creative Commons Namensnennung – 4.0 International (CC BY 4.0)",
       "Lizenzcode": "cc-by/4.0",
-      "Lizenztext": "http://creativecommons.org/licenses/by/4.0/",
+      "Lizenztext": "https://creativecommons.org/licenses/by/4.0/",
       "OGDLizenzcode": "cc-by-4.0",
       "Lizenztyp": "offen"
     },
@@ -46,7 +46,7 @@
       "URI": "http://dcat-ap.de/def/licenses/cc-by-nc",
       "Name": "Creative Commons Namensnennung - Nicht kommerziell (CC BY-NC)",
       "Lizenzcode": "cc-by-nc",
-      "Lizenztext": "http://creativecommons.org/licenses/by-nc/",
+      "Lizenztext": "https://creativecommons.org/licenses/by-nc/4.0/",
       "OGDLizenzcode": "cc-nc",
       "Lizenztyp": "geschlossen"
     },
@@ -62,7 +62,7 @@
       "URI": "http://dcat-ap.de/def/licenses/cc-by-nc/4.0",
       "Name": "Creative Commons Namensnennung - Nicht kommerziell 4.0 International (CC BY-NC 4.0)",
       "Lizenzcode": "cc-by-nc/4.0",
-      "Lizenztext": "http://creativecommons.org/licenses/by-nc/4.0/",
+      "Lizenztext": "https://creativecommons.org/licenses/by-nc/4.0/",
       "OGDLizenzcode": "cc-by-nc-4.0",
       "Lizenztyp": "geschlossen"
     },
@@ -70,7 +70,7 @@
       "URI": "http://dcat-ap.de/def/licenses/cc-by-nd",
       "Name": "Creative Commons Namensnennung - Keine Bearbeitung (CC BY-ND)",
       "Lizenzcode": "cc-by-nd",
-      "Lizenztext": "http://creativecommons.org/licenses/by-nd/3.0/",
+      "Lizenztext": "https://creativecommons.org/licenses/by-nd/3.0/",
       "OGDLizenzcode": "cc-by-nd",
       "Lizenztyp": "geschlossen"
     },
@@ -78,7 +78,7 @@
       "URI": "http://dcat-ap.de/def/licenses/cc-by-nd/3.0",
       "Name": "Creative Commons Namensnennung -- Keine Bearbeitung 3.0 Unported (CC BY-ND 3.0)",
       "Lizenzcode": "cc-by-nd/3.0",
-      "Lizenztext": "http://creativecommons.org/licenses/by-nd/3.0/",
+      "Lizenztext": "https://creativecommons.org/licenses/by-nd/3.0/",
       "OGDLizenzcode": "cc-by-nd-3.0",
       "Lizenztyp": "geschlossen"
     },
@@ -94,7 +94,7 @@
       "URI": "http://dcat-ap.de/def/licenses/cc-by-sa",
       "Name": "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen (CC-BY-SA)",
       "Lizenzcode": "cc-by-sa",
-      "Lizenztext": "http://www.opendefinition.org/licenses/cc-by-sa",
+      "Lizenztext": "https://creativecommons.org/licenses/by-sa/4.0/",
       "OGDLizenzcode": "cc-by-sa",
       "Lizenztyp": "offen"
     },
@@ -102,7 +102,7 @@
       "URI": "http://dcat-ap.de/def/licenses/cc-by-sa/4.0",
       "Name": "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen 4.0 International (CC-BY-SA 4.0)",
       "Lizenzcode": "cc-by-sa/4.0",
-      "Lizenztext": "http://creativecommons.org/licenses/by-sa/4.0/",
+      "Lizenztext": "https://creativecommons.org/licenses/by-sa/4.0/",
       "OGDLizenzcode": "cc-by-sa-4.0",
       "Lizenztyp": "offen"
     },
@@ -110,7 +110,7 @@
       "URI": "http://dcat-ap.de/def/licenses/ccpdm/1.0",
       "Name": "Public Domain Mark 1.0 (PDM)",
       "Lizenzcode": "ccpdm/1.0",
-      "Lizenztext": "http://creativecommons.org/publicdomain/mark/1.0/",
+      "Lizenztext": "https://creativecommons.org/publicdomain/mark/1.0/",
       "OGDLizenzcode": "cc-pdm-1.0",
       "Lizenztyp": "offen"
     },
@@ -118,7 +118,7 @@
       "URI": "http://dcat-ap.de/def/licenses/cc-zero",
       "Name": "Creative Commons CC Zero License (cc-zero)",
       "Lizenzcode": "cc-zero",
-      "Lizenztext": "http://www.opendefinition.org/licenses/cc-zero",
+      "Lizenztext": "https://creativecommons.org/publicdomain/zero/1.0/",
       "OGDLizenzcode": "cc-zero",
       "Lizenztyp": "offen"
     },
@@ -158,7 +158,7 @@
       "URI": "http://dcat-ap.de/def/licenses/geonutz/20130319",
       "Name": "Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes",
       "Lizenzcode": "geoNutz/20130319",
-      "Lizenztext": "http://www.geodatenzentrum.de/docpdf/geonutzv.pdf",
+      "Lizenztext": "https://www.geodatenzentrum.de/docpdf/geonutzv.pdf",
       "OGDLizenzcode": "geonutzv-de-2013-03-19",
       "Lizenztyp": "offen"
     },
@@ -166,7 +166,7 @@
       "URI": "http://dcat-ap.de/def/licenses/geoNutz/20131001",
       "Name": "Nutzungsbestimmungen für die Bereitstellung von Geodaten des Landes Berlin",
       "Lizenzcode": "geoNutz/20131001",
-      "Lizenztext": "http://www.stadtentwicklung.berlin.de/geoinformation/download/nutzIII.pdf",
+      "Lizenztext": "https://www.stadtentwicklung.berlin.de/geoinformation/download/nutzIII.pdf",
       "OGDLizenzcode": "geonutz-be-2013-10-01",
       "Lizenztyp": "offen"
     },
@@ -174,7 +174,7 @@
       "URI": "http://dcat-ap.de/def/licenses/gfdl",
       "Name": "GNU Free Documentation License (GFDL)",
       "Lizenzcode": "gfdl",
-      "Lizenztext": "http://www.opendefinition.org/licenses/gfdl",
+      "Lizenztext": "https://www.gnu.org/licenses/fdl-1.3.html",
       "OGDLizenzcode": "gfdl",
       "Lizenztyp": "offen"
     },
@@ -182,7 +182,7 @@
       "URI": "http://dcat-ap.de/def/licenses/gpl/3.0",
       "Name": "GNU General Public License version 3.0 (GPLv3)",
       "Lizenzcode": "gpl/3.0",
-      "Lizenztext": "http://www.opensource.org/licenses/gpl-3.0.html",
+      "Lizenztext": "https://www.gnu.org/licenses/gpl-3.0.html",
       "OGDLizenzcode": "gpl-3.0",
       "Lizenztyp": "offen"
     },
@@ -190,7 +190,7 @@
       "URI": "http://dcat-ap.de/def/licenses/mozilla",
       "Name": "Mozilla Public License 2.0 (MPL)",
       "Lizenzcode": "mozilla",
-      "Lizenztext": "http://www.mozilla.org/MPL",
+      "Lizenztext": "https://www.mozilla.org/MPL/2.0/",
       "OGDLizenzcode": "mozilla",
       "Lizenztyp": "offen"
     },
@@ -198,7 +198,7 @@
       "URI": "http://dcat-ap.de/def/licenses/odbl",
       "Name": "Open Data Commons Open Database License (ODbL)",
       "Lizenzcode": "odbl",
-      "Lizenztext": "http://www.opendefinition.org/licenses/odc-odbl",
+      "Lizenztext": "https://opendatacommons.org/licenses/odbl/1-0/",
       "OGDLizenzcode": "odc-odbl",
       "Lizenztyp": "offen"
     },
@@ -206,7 +206,7 @@
       "URI": "http://dcat-ap.de/def/licenses/odby",
       "Name": "Open Data Commons Attribution License (ODC-BY 1.0)",
       "Lizenzcode": "odby",
-      "Lizenztext": "http://www.opendefinition.org/licenses/odc-by",
+      "Lizenztext": "https://opendatacommons.org/licenses/by/1-0/",
       "OGDLizenzcode": "odc-by",
       "Lizenztyp": "offen"
     },
@@ -214,7 +214,7 @@
       "URI": "http://dcat-ap.de/def/licenses/odcpddl",
       "Name": "Open Data Commons Public Domain Dedication and Licence (ODC PDDL)",
       "Lizenzcode": "odcpddl",
-      "Lizenztext": "http://www.opendefinition.org/licenses/odc-pddl",
+      "Lizenztext": "https://opendatacommons.org/licenses/pddl/1-0/",
       "OGDLizenzcode": "odc-pddl",
       "Lizenztyp": "offen"
     },
@@ -222,7 +222,7 @@
       "URI": "http://dcat-ap.de/def/licenses/officialWork",
       "Name": "Amtliches Werk, lizenzfrei nach §5 Abs. 1 UrhG",
       "Lizenzcode": "officialWork",
-      "Lizenztext": "http://www.gesetze-im-internet.de/urhg/__5.html",
+      "Lizenztext": "https://www.gesetze-im-internet.de/urhg/__5.html",
       "OGDLizenzcode": "official-work",
       "Lizenztyp": "offen"
     },

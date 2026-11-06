@@ -290,7 +290,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # execute
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -315,7 +315,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # execute
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -341,7 +341,7 @@ class TestHandleDuplicates(unittest.TestCase):
                     'identifier': 'nodata'
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # execute
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -361,7 +361,7 @@ class TestHandleDuplicates(unittest.TestCase):
                     'modified': self.remote_modified,
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # execute
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -384,7 +384,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -406,7 +406,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -429,7 +429,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -454,7 +454,7 @@ class TestHandleDuplicates(unittest.TestCase):
                     'identifier': ''
                 }
             })
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -478,7 +478,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -503,7 +503,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         # verify
         result = HarvestUtils.handle_duplicates(harvest_object)
@@ -531,7 +531,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
 
@@ -557,7 +557,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
 
@@ -583,7 +583,7 @@ class TestHandleDuplicates(unittest.TestCase):
                 }
             })
         self.mock_db_data(remote_dataset)
-        harvest_object = HarvestObject(content=remote_dataset, source=self.remote_source)
+        harvest_object = Mock(spec=HarvestObject, content=remote_dataset, source=self.remote_source)
 
         result = HarvestUtils.handle_duplicates(harvest_object)
 
