@@ -78,6 +78,17 @@ configuration:
 
     {"resources_required": true}
 
+### Keeping datasets which are no longer present in the source
+By default, datasets which are no longer present in the harvested source are deleted, as well as existing
+local datasets without resources if `resources_required` is set. To keep these datasets, set the optional
+configuration parameter `delete_missing_datasets` in the harvest source configuration:
+
+    {"delete_missing_datasets": false}
+
+To keep them for all harvest sources, add the following parameter to your CKAN configuration file:
+
+    ckanext.dcatde.delete_missing_datasets = false
+
 ### Cleaning Tags/Keywords
 The DCAT-AP.de profile implements a different logic for cleaning tags/keywords as implemented in ckanext-dcat,
 e.g. not replacing/removing German umlauts and 'ß'.

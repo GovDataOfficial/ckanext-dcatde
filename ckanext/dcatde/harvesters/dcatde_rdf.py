@@ -39,6 +39,8 @@ CONFIG_PARAM_CONTRIBUTOR_ID = 'contributorID'
 CONTRIBUTOR_ID_FIELD_NAME = 'contributorID'
 RES_EXTRA_KEY_LICENSE = 'license'
 CONFIG_PARAM_REMOTE_ORGS = 'remote_orgs'
+CONFIG_PARAM_DELETE_MISSING_DATASETS = 'delete_missing_datasets'
+CKAN_CONFIG_DELETE_MISSING_DATASETS = 'ckanext.dcatde.delete_missing_datasets'
 
 class DCATdeRDFHarvester(DCATRDFHarvester):
     """ DCAT-AP.de RDF Harvester """
@@ -261,6 +263,19 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
         return json.loads(source_config).get(CONFIG_PARAM_REMOTE_ORGS)
 
     @staticmethod
+    def _get_delete_missing_datasets_config(source_config):
+        '''
+        Check if datasets should be deleted that are no longer present in the source. The setting of
+        the harvest source takes precedence over the CKAN configuration, default is True.
+        '''
+        delete_missing_datasets = tk.asbool(tk.config.get(CKAN_CONFIG_DELETE_MISSING_DATASETS, True))
+        if source_config:
+            return json.loads(source_config).get(CONFIG_PARAM_DELETE_MISSING_DATASETS,
+                                                 delete_missing_datasets)
+
+        return delete_missing_datasets
+
+    @staticmethod
     def _slugify(value):
         value = value.lower()
         value = unicodedata.normalize("NFKD", value)
@@ -279,6 +294,11 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
     def _mark_datasets_for_deletion(self, guids_in_source, harvest_job):
         # If a harvested portal is configured in the harvest source, we call the superclass method to mark
         # datasets for deletion. Otherwise, we use a different query to mark datasets for deletion.
+
+        if not self._get_delete_missing_datasets_config(harvest_job.source.config):
+            LOGGER.debug('Not deleting datasets missing in the source (%s is disabled)',
+                         CONFIG_PARAM_DELETE_MISSING_DATASETS)
+            return []
 
         object_ids = []
         guids_to_delete = []
@@ -461,7 +481,11 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
             info_deleted_local_dataset = ''
             datasets_from_db = self._read_datasets_from_db(harvest_object.guid)
             if datasets_from_db:
-                if len(datasets_from_db) == 1:
+                if not self._get_delete_missing_datasets_config(harvest_object.source.config):
+                    LOGGER.info(u'Not deleting local dataset with GUID %s without resources, because %s '\
+                                u'is disabled.', harvest_object.guid, CONFIG_PARAM_DELETE_MISSING_DATASETS)
+                    info_deleted_local_dataset = ' Local dataset kept.'
+                elif len(datasets_from_db) == 1:
                     HarvestUtils.rename_delete_dataset_with_id(datasets_from_db[0][0])
                     LOGGER.info(u'Deleted local dataset with GUID %s as harvest object has '\
                                 u'no resources.', harvest_object.guid)
@@ -515,6 +539,9 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
                 harvested_portal = config_obj[CONFIG_PARAM_HARVESTED_PORTAL]
                 if not isinstance(harvested_portal, str):
                     raise ValueError('%s must be a string' % CONFIG_PARAM_HARVESTED_PORTAL)
+            if CONFIG_PARAM_DELETE_MISSING_DATASETS in config_obj:
+                if not isinstance(config_obj[CONFIG_PARAM_DELETE_MISSING_DATASETS], bool):
+                    raise ValueError('%s must be a boolean' % CONFIG_PARAM_DELETE_MISSING_DATASETS)
 
         return cfg
 

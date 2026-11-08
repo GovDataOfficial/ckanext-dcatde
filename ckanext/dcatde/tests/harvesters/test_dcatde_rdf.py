@@ -468,6 +468,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         # dataset should be skipped
         mock_super_import.assert_not_called()
 
+    @helpers.change_config('ckanext.dcatde.delete_missing_datasets', 'true')
     @patch('ckanext.harvest.harvesters.base.HarvesterBase._get_user_name')
     @patch('ckanext.dcatde.triplestore.fuseki_client.FusekiTriplestoreClient.delete_dataset_in_triplestore')
     @patch("ckan.plugins.toolkit.get_action")
@@ -508,6 +509,38 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_triplestore_is_available.assert_not_called()
         mock_get_action.assert_not_called()
         mock_fuseki_delete_data.assert_not_called()
+        # dataset should not be imported
+        mock_super_import.assert_not_called()
+
+    @patch('ckanext.dcatde.harvesters.harvest_utils.HarvestUtils.rename_delete_dataset_with_id')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._read_datasets_from_db')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester._save_object_error')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATRDFHarvester.import_stage')
+    def test_import_no_resources_skip_dataset_exists_delete_disabled(self, mock_super_import,
+                                                                     mock_save_object_error,
+                                                                     mock_read_datasets_from_db,
+                                                                     mock_deletion):
+        """
+        Tests if datasets without resources are skipped if configured, but an existing local dataset
+        is kept if delete_missing_datasets is disabled.
+        """
+        # prepare
+        harvester = DCATdeRDFHarvester()
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', '')
+        cfg = json.loads(harvest_obj.source.config)
+        cfg['resources_required'] = True
+        cfg['delete_missing_datasets'] = False
+        harvest_obj.source.config = json.dumps(cfg)
+        mock_read_datasets_from_db.return_value = [['test-id', 'extra']]
+
+        # run
+        harvester.import_stage(harvest_obj)
+
+        # check if error was saved
+        self._assert_no_resources_error(harvest_obj, mock_save_object_error)
+        self.assertTrue('kept' in mock_save_object_error.call_args[0][0].lower())
+        # local dataset should not be deleted
+        mock_deletion.assert_not_called()
         # dataset should not be imported
         mock_super_import.assert_not_called()
 
@@ -1468,6 +1501,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
             'owner_org_or_source_id': test_owner_org})
         self.assertEqual(result, expected_result)
 
+    @helpers.change_config('ckanext.dcatde.delete_missing_datasets', 'true')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.HarvestObject')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._delete_deprecated_datasets_from_triplestore')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
@@ -1504,6 +1538,7 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_delete_deprecated_datasets.assert_called_once_with(
             set(harvested_uris), set(uris_db_marked_as_deleted), harvest_obj)
 
+    @helpers.change_config('ckanext.dcatde.delete_missing_datasets', 'true')
     @patch('ckanext.dcat.harvesters.DCATRDFHarvester._mark_datasets_for_deletion')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.HarvestObject')
     @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._delete_deprecated_datasets_from_triplestore')
@@ -1534,6 +1569,80 @@ class TestDCATdeRDFHarvester(unittest.TestCase):
         mock_super_mark_datasets_for_deletion.assert_called_once_with(harvested_uris, harvest_obj)
         mock_delete_deprecated_datasets.assert_called_once_with(
             set(harvested_uris), uris_db_marked_as_deleted, harvest_obj)
+
+    @parameterized.expand([
+        'testportal',
+        None
+    ])
+    @patch('ckanext.dcat.harvesters.DCATRDFHarvester._mark_datasets_for_deletion')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._delete_deprecated_datasets_from_triplestore')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    def test_mark_datasets_for_deletion_disabled_in_source(self, harvested_portal, mock_model,
+                                                           mock_delete_deprecated_datasets,
+                                                           mock_super_mark_datasets_for_deletion):
+        """ Check that no datasets are marked for deletion if disabled in the harvest source """
+
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy(harvested_portal, 'test-status')
+        cfg = json.loads(harvest_obj.source.config)
+        cfg['delete_missing_datasets'] = False
+        harvest_obj.source.config = json.dumps(cfg)
+
+        harvester = DCATdeRDFHarvester()
+        result = harvester._mark_datasets_for_deletion(["URI-1", "URI-2"], harvest_obj)
+
+        self.assertEqual(result, [])
+        mock_model.Session.query.assert_not_called()
+        mock_super_mark_datasets_for_deletion.assert_not_called()
+        mock_delete_deprecated_datasets.assert_not_called()
+
+    @helpers.change_config('ckanext.dcatde.delete_missing_datasets', 'false')
+    @patch('ckanext.dcat.harvesters.DCATRDFHarvester._mark_datasets_for_deletion')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._delete_deprecated_datasets_from_triplestore')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    def test_mark_datasets_for_deletion_disabled_globally(self, mock_model, mock_delete_deprecated_datasets,
+                                                          mock_super_mark_datasets_for_deletion):
+        """ Check that no datasets are marked for deletion if disabled in the CKAN configuration """
+
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy('testportal', 'test-status')
+
+        harvester = DCATdeRDFHarvester()
+        result = harvester._mark_datasets_for_deletion(["URI-1", "URI-2"], harvest_obj)
+
+        self.assertEqual(result, [])
+        mock_model.Session.query.assert_not_called()
+        mock_super_mark_datasets_for_deletion.assert_not_called()
+        mock_delete_deprecated_datasets.assert_not_called()
+
+    @helpers.change_config('ckanext.dcatde.delete_missing_datasets', 'false')
+    @patch('ckanext.dcat.harvesters.DCATRDFHarvester._mark_datasets_for_deletion')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.DCATdeRDFHarvester._delete_deprecated_datasets_from_triplestore')
+    @patch('ckanext.dcatde.harvesters.dcatde_rdf.model')
+    def test_mark_datasets_for_deletion_enabled_in_source(self, mock_model, mock_delete_deprecated_datasets,
+                                                          mock_super_mark_datasets_for_deletion):
+        """ Check that the setting of the harvest source takes precedence over the CKAN configuration """
+
+        mock_super_mark_datasets_for_deletion.return_value = []
+        harvest_obj = TestDCATdeRDFHarvester._get_harvest_obj_dummy(None, 'test-status')
+        cfg = json.loads(harvest_obj.source.config)
+        cfg['delete_missing_datasets'] = True
+        harvest_obj.source.config = json.dumps(cfg)
+        harvested_uris = ["URI-1", "URI-2"]
+
+        harvester = DCATdeRDFHarvester()
+        harvester._mark_datasets_for_deletion(harvested_uris, harvest_obj)
+
+        mock_super_mark_datasets_for_deletion.assert_called_once_with(harvested_uris, harvest_obj)
+        mock_delete_deprecated_datasets.assert_called_once_with(set(harvested_uris), [], harvest_obj)
+
+    def test_validate_config_delete_missing_datasets(self):
+        """ Check that delete_missing_datasets has to be a boolean """
+
+        harvester = DCATdeRDFHarvester()
+        for config in ['{"delete_missing_datasets": false}', '{"delete_missing_datasets": true}']:
+            self.assertEqual(harvester.validate_config(config), config)
+
+        with self.assertRaises(ValueError):
+            harvester.validate_config('{"delete_missing_datasets": "false"}')
 
     # -- remote_orgs / _assign_owner_org --
 
