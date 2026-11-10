@@ -1,1 +1,5 @@
-ckanext-harvest==1.5.5
+ckanext-harvest==1.6.3
+# redis-py >=8 defaults ``socket_timeout`` to 5 seconds; earlier versions had no timeout by default.
+# Issue: https://github.com/ckan/ckanext-harvest/issues/581
+# PR: https://github.com/ckan/ckanext-harvest/pull/582.
+redis<8

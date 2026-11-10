@@ -2,7 +2,6 @@
 # -*- coding: utf8 -*-
 import unittest
 from ckanext.dcatde.extras import Extras
-from nose.tools import raises
 
 
 class TestExtras(unittest.TestCase):
@@ -107,10 +106,10 @@ class TestExtras(unittest.TestCase):
         for extra in extras_in:
             self.assertTrue(extras.key(extra['key']))
 
-    @raises(KeyError)
     def test_raises_error_when_list_empty(self):
         extras = Extras([])
-        extras.value('raiser')
+        with self.assertRaises(KeyError):
+            extras.value('raiser')
 
     def test_returns_value_on_flat_list(self):
         extras = Extras({'dates': 'foo', 'bar': 'baz'})
@@ -174,10 +173,10 @@ class TestExtras(unittest.TestCase):
         extras = Extras({'dates': 'foo', 'bar': 'baz'})
         self.assertEqual('Default', extras.value('foo', 'Default'))
 
-    @raises(KeyError)
     def test_raises_error_when_key_not_found_on_flat_list(self):
         extras = Extras({'dates': 'foo', 'bar': 'baz'})
-        extras.value('raiser')
+        with self.assertRaises(KeyError):
+            extras.value('raiser')
 
     def test_returns_value_on_dict_list(self):
         extras = Extras([
@@ -209,15 +208,15 @@ class TestExtras(unittest.TestCase):
         ])
         self.assertEqual('OhNo', extras.value('baz', 'OhNo'))
 
-    @raises(KeyError)
     def test_raises_error_when_key_not_found_on_dict_list(self):
         extras = Extras([{'dates': 'foo'}, {'bar': 'baz'}])
-        extras.value('raiser')
+        with self.assertRaises(KeyError):
+            extras.value('raiser')
 
-    @raises(KeyError)
     def test_raises_error_when_key_not_found_for_update(self):
         extras = Extras({'dates': 'foo', 'bar': 'baz'})
-        extras.update('raiser', 'foo')
+        with self.assertRaises(KeyError):
+            extras.update('raiser', 'foo')
 
     def test_update_on_flat_list_works_as_expected(self):
         extras = Extras({'dates': 'foo', 'bar': 'baz', 'some': 'thing'})

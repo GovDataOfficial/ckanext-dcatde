@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.14.0] - 2026-11-05
+
+### Changed
+- Updated ckanext-dcat to 2.4.4 and ckanext-harvest to 1.6.3
+- Support for CKAN 2.11
+- Harvest database setup now uses the Alembic migration `ckan db upgrade -p harvest`
+- Pin `redis` to a version < 8 to prevent ckanext-harvest consumer timeouts
+
+### Fixed
+- `DCATdeRDFHarvester` now uses its own singleton instance so `dcatde_rdf` is registered independently of `dcat_rdf`
+- Replaced `nose.tools.raises` with `unittest.assertRaises` for Python 3.10 compatibility
+
 ## [6.13.0] - 2026-10-22
 
 ### Changed

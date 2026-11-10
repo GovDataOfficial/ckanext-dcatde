@@ -45,6 +45,11 @@ class DCATdeRDFHarvester(DCATRDFHarvester):
 
     p.implements(IDCATRDFHarvester)
 
+    def __new__(cls, *args, **kwargs):
+        if "_instance" not in cls.__dict__:
+            cls._instance = object.__new__(cls)
+        return cls._instance
+
     # -- begin IDCATRDFHarvester implementation --
     # pylint: disable=missing-function-docstring,unused-argument
     def before_download(self, url, harvest_job):
