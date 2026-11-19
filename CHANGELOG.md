@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.15.1] - 2026-11-19
+
+### Changed
+- Updated README with the info that versions with the `+gd0` suffix should be installed using the forked GovDataOfficial ckanext-dcat GitHub repository
+
 ## [6.15.0] - 2026-11-18
 
 ### Changed
