@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.15.0] - 2026-11-18
+
+### Changed
+- Updates requirement ckanext-dcat to fix security issues and AttributeError when serializing access services with `contact` or `publisher` as a list
+
 ## [6.14.0] - 2026-11-05
 
 ### Changed
